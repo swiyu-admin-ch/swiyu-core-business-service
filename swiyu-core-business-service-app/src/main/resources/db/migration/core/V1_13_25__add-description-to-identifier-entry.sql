@@ -1,0 +1,1 @@
+ALTER TABLE identifier_entry ADD description VARCHAR(255);

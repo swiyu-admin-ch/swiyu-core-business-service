@@ -1,0 +1,12 @@
+services:
+  antivirus:
+    image: mockserver/mockserver:5.15.0
+    container_name: antivirus
+    ports:
+      - "8203:8203"
+    volumes:
+      - ./antivirus/initializerJson.json:/config/initializerJson.json
+      - ./../specs/antivirus-openapi-spec.yml:/config/antivirus-openapi-spec.yml
+    environment:
+      SERVER_PORT: 8203
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/initializerJson.json

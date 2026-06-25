@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="start:app:shared" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <option name="ACTIVE_PROFILES" value="local,shared,test-data-injection" />
+    <option name="ALTERNATIVE_JRE_PATH" value="25" />
+    <module name="swiyu-core-business-service-app" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="ch.admin.bj.swiyu.core.business.Application" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="ch.admin.bj.swiyu.core.business.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

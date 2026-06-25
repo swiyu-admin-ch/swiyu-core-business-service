@@ -1,0 +1,214 @@
+openapi: 3.1.0
+info:
+  title: Antivirus API
+  description: A REST API for scanning files via the ClamAV antivirus engine
+  version: 0.6.1
+  contact:
+    name: CBCD Support
+    url: https://confluence.bit.admin.ch/x/fWv5E
+servers:
+  - url: https://clamav-centralized-clamav.apps.{cluster}.cloud.admin.ch/
+    description: The base URL of the API
+    variables:
+      cluster:
+        default: p-szb-ros-shrd-prd-01
+paths:
+  # TERGUM ADDED ENDPOINT TO VALIDATE SYSTEM IS AVAILABLE
+  # The Antivirus scanner does not provide a builtin check for health.
+  # To still get an indication about the system we added a check to at least see if a
+  # HTTP server does respond to our requests.
+  #
+  # We had to add a /health endpoint to the spec as all existing endpoints respond with a
+  # 500 error code on a client issue (like not providing a File/URL to check).
+  /health:
+    get:
+      summary: Check system is available
+      responses:
+        '200':
+          $ref: '#/components/responses/BadRequestError'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - basicAuth: [ ]
+      tags:
+        - scan
+  /scan:
+    get:
+      summary: Scan a file from a given HTTP(S) URL
+      description: |
+        Scans a file accessible via the provided HTTP(S) URL.
+        Internet calls are not allowed!
+      parameters:
+        - name: url
+          in: query
+          description: URL of the file to be scanned
+          required: true
+          schema:
+            type: string
+            format: uri
+      responses:
+        '200':
+          $ref: '#/components/responses/ScanResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - basicAuth: [ ]
+      tags:
+        - scan
+    post:
+      summary: Scan multiple files
+      description: Scans multiple files sent in the request body with Content-Type `multipart/form-data`
+      requestBody:
+        $ref: '#/components/requestBodies/FilesRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/ScanResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - basicAuth: [ ]
+      tags:
+        - scan
+    put:
+      summary: Scan a single file
+      description: Scans a single file sent in the request body with the Content-Type `application/x-www-form-urlencoded`
+      requestBody:
+        $ref: '#/components/requestBodies/FileRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/ScanResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - basicAuth: [ ]
+      tags:
+        - scan
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Basic authentication using username and password
+
+  responses:
+    ScanResponse:
+      description: Successful file scan results
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ScanResults'
+          example:
+            - ClamavDatabaseVersion: "26.4"
+              ClamavVersion: "1.0.1"
+              Description: "EICAR-Test-File"
+              Filename: "test.txt"
+              RequestID: "123e4567-e89b-12d3-a456-426614174000"
+              Result: "FOUND"
+    BadRequestError:
+      description: Invalid request parameters or file format
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            unauthorized:
+              error: Unauthorized
+              description: Unauthorized
+    InternalServerError:
+      description: Internal server error occurred
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            internal_error:
+              error: Internal Server Error
+              description: An unexpected error occurred
+
+  requestBodies:
+    FilesRequest:
+      description: Files to be scanned
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required:
+              - files
+            properties:
+              files:
+                type: array
+                items:
+                  type: string
+                  format: binary
+                description: Array of files to scan
+    FileRequest:
+      description: Single file to be scanned
+      required: true
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+            description: File content to scan
+
+  schemas:
+    ScanResult:
+      type: object
+      description: Result of an individual file scan
+      properties:
+        ClamavDatabaseVersion:
+          description: Version of the ClamAV database used for the scan
+          type: string
+        ClamavVersion:
+          description: Version of ClamAV used to scan the file(s)
+          type: string
+        Description:
+          description: Contains the name of the virus, if found, or `No virus found`
+          type: string
+        Filename:
+          description: Name of the scanned file
+          type: string
+        RequestID:
+          description: Unique identifier for the scan request
+          type: string
+          format: uuid
+        Result:
+          description: Result of the scan ("FOUND" if a virus was detected).
+          type: string
+    ScanResults:
+      type: array
+      description: Array of scan results for multiple files
+      items:
+        $ref: '#/components/schemas/ScanResult'
+    ErrorResponse:
+      type: object
+      description: Standard error response format
+      properties:
+        error:
+          type: string
+          description: Error type
+        description:
+          type: string
+          description: Error description

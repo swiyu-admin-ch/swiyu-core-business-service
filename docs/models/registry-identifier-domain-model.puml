@@ -1,0 +1,52 @@
+@startuml registry-identifier
+
+!pragma layout smetana
+
+skinparam ClassBackgroundColor White
+skinparam ClassBorderColor Black
+skinparam ArrowColor Black
+skinparam packageStyle rectangle
+
+package "Registry Identifier" #F9FBE7 {
+
+    enum DatastoreStatus {
+        SETUP
+        ACTIVE
+    }
+
+    enum DidType {
+        DID_WEB
+        DID_TDW
+    }
+
+    entity IdentifierDatastoreEntity <<entity, table=datastore_entity>> {
+        + id : UUID <<PK>>
+        + version : int
+        + status : DatastoreStatus
+        -- embedded --
+        + createdAt : Instant
+        + createdBy : String
+        + lastModifiedAt : Instant
+        + lastModifiedBy : String
+    }
+
+    entity DidEntity <<entity, table=did_entity>> {
+        + id : Long <<PK>>
+        + version : int
+        + fileType : DidType
+        + content : String
+        + readUri : String
+        -- embedded --
+        + createdAt : Instant
+        + createdBy : String
+        + lastModifiedAt : Instant
+        + lastModifiedBy : String
+    }
+
+    DidEntity }o--|| IdentifierDatastoreEntity : "base_id"
+    IdentifierDatastoreEntity --> DatastoreStatus : status
+    DidEntity --> DidType : fileType
+}
+
+@enduml
+

@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://business.core.swiyu.bj.admin.ch/diddoc.schema.json",
+  "type": "object",
+  "title": "DidDoc",
+  "properties": {
+    "@context": {
+      "anyOf": [
+        {
+          "type": "array",
+          "description": "didtoolbox 1.0.0 compatible",
+          "items": {
+            "type": "string",
+            "enum": [
+              "https://www.w3.org/ns/did/v1",
+              "https://w3id.org/security/suites/jws-2020/v1"
+            ]
+          }
+        },
+        {
+          "type": "array",
+          "description": "didtoolbox 1.2.0 compatible",
+          "items": {
+            "type": "string",
+            "enum": [
+              "https://www.w3.org/ns/did/v1",
+              "https://w3id.org/security/jwk/v1"
+            ]
+          }
+        }
+      ]
+    },
+    "id": {
+      "type": "string"
+    },
+    "profile_version": {
+      "type": "string",
+      "enum": [
+        "swiss-profile-anchor:1.0.0"
+      ]
+    },
+    "verificationMethod": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "JsonWebKey2020",
+              "Ed25519VerificationKey2020"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type"
+        ]
+      }
+    },
+    "authentication": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Ed25519VerificationKey2020",
+                  "JsonWebKey2020"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "id",
+    "verificationMethod"
+  ],
+  "not": {
+    "anyOf": [
+      {
+        "properties": {
+          "alsoKnownAs": {}
+        },
+        "required": [
+          "alsoKnownAs"
+        ]
+      },
+      {
+        "properties": {
+          "keyAgreement": {}
+        },
+        "required": [
+          "keyAgreement"
+        ]
+      },
+      {
+        "properties": {
+          "capabilityInvocation": {}
+        },
+        "required": [
+          "capabilityInvocation"
+        ]
+      },
+      {
+        "properties": {
+          "capabilityDelegation": {}
+        },
+        "required": [
+          "capabilityDelegation"
+        ]
+      },
+      {
+        "properties": {
+          "service": {}
+        },
+        "required": [
+          "service"
+        ]
+      },
+      {
+        "properties": {
+          "verificationMethod": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "publicKeyMultibase"
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

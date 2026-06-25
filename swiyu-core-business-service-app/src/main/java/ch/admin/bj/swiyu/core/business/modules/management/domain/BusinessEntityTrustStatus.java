@@ -1,0 +1,37 @@
+package ch.admin.bj.swiyu.core.business.modules.management.domain;
+
+/**
+ *
+ * Defines the current aggregated state of the trust process.
+ *
+ * @startuml [*] --> NOT_VERIFIED
+ * <p>
+ * NOT_VERIFIED -[#green]-> VERIFICATION_STARTED
+ * <p>
+ * VERIFICATION_STARTED -[#green]-> VERIFICATION_IN_PROGRESS
+ * <p>
+ * VERIFICATION_IN_PROGRESS -[#orange]-> INFORMATION_REQUESTED
+ * VERIFICATION_IN_PROGRESS -[#green]-> VERIFIED
+ * VERIFICATION_IN_PROGRESS -[#red]-> NOT_VERIFIED
+ * <p>
+ * INFORMATION_REQUESTED -[#green]-> VERIFIED
+ * INFORMATION_REQUESTED -[#red]-> NOT_VERIFIED
+ * <p>
+ * VERIFIED -[#green]-> RE_VERIFICATION_STARTED
+ * <p>
+ * RE_VERIFICATION_STARTED -[#green]-> RE_VERIFICATION_IN_PROGRESS
+ * <p>
+ * RE_VERIFICATION_IN_PROGRESS -[#orange]-> INFORMATION_REQUESTED
+ * RE_VERIFICATION_IN_PROGRESS -[#green]-> VERIFIED
+ * RE_VERIFICATION_IN_PROGRESS -[#red]-> NOT_VERIFIED
+ * @enduml
+ */
+public enum BusinessEntityTrustStatus {
+    NOT_VERIFIED,
+    VERIFICATION_STARTED,
+    VERIFICATION_IN_PROGRESS,
+    INFORMATION_REQUESTED,
+    VERIFIED,
+    RE_VERIFICATION_STARTED,
+    RE_VERIFICATION_IN_PROGRESS,
+}

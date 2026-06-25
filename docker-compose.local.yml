@@ -1,0 +1,4 @@
+include:
+  - docker-compose-module/docker-compose.s3.yml
+  - docker-compose-module/docker-compose.antivirus.yaml
+  - docker-compose-module/docker-compose.db.yml

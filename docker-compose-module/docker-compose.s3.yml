@@ -1,0 +1,42 @@
+# S3 mock server inspired by https://bitbucket.bit.admin.ch/projects/EZV_WVS/repos/wvs-devtools/browse/local-infrastructure/docker/minio/docker-compose.yml
+services:
+  minio:
+    image: repo.bit.admin.ch:8444/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: minio
+    ports:
+      - "8202:9000"
+      - "8201:8201" # open localhost:8201 for S3 UI
+    environment:
+      MINIO_ROOT_USER: dev
+      MINIO_ROOT_PASSWORD: devsecret
+      http_proxy: ''
+      https_proxy: ''
+      HTTP_PROXY: ''
+      HTTPS_PROXY: ''
+    command: 'server /data --console-address ":8201"'
+
+# not needed because the buckets are created by the app itself
+#  minio-create-buckets:
+#    image: repo.bit.admin.ch:8444/bit/aws-cli:latest
+#    container_name: minio-create-buckets
+#    depends_on:
+#      - minio
+#    environment:
+#      http_proxy: ''
+#      https_proxy: ''
+#      HTTP_PROXY: ''
+#      HTTPS_PROXY: ''
+#      AWS_ACCESS_KEY_ID: dev
+#      AWS_SECRET_ACCESS_KEY: devsecret
+#      # We need each bucket separately as they have different lifecycle rules
+#      BUCKET_NAMES: |
+#        partner-submissions
+#    entrypoint: >
+#      /bin/sh -c "
+#      echo BUCKETS=$$BUCKET_NAMES;
+#      for BUCKET in $${BUCKET_NAMES}; do
+#        $(which aws) s3api head-bucket --endpoint-url http://minio:9000 --bucket $$BUCKET ||
+#        $(which aws) s3api create-bucket --endpoint-url http://minio:9000 --bucket $$BUCKET;
+#      done
+#      "
+

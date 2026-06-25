@@ -1,0 +1,30 @@
+services:
+  core-db:
+    image: repo.bit.admin.ch:8444/postgres:17.8
+    container_name: bj_swiyu_ti_ctrl_core_db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=bj_swiyu_ti_ctrl_core_db
+  identifier-registry-db:
+    image: repo.bit.admin.ch:8444/postgres:17
+    container_name: identifier-registry-db
+    hostname: localhost
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=identifier-registry-db
+    ports:
+      - '5180:5432'
+  status-registry-db:
+    image: repo.bit.admin.ch:8444/postgres:17
+    container_name: status-registry-db
+    hostname: localhost
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=status-registry-db
+    ports:
+      - '5280:5432'

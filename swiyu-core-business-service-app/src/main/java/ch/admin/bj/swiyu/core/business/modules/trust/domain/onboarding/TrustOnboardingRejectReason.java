@@ -1,0 +1,14 @@
+package ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding;
+
+public enum TrustOnboardingRejectReason {
+    INCOMPLETE_INFORMATION,
+    INACCURATE_INFORMATION,
+    OUTDATED_INFORMATION,
+    IDENTITY_VERIFICATION_FAILURE,
+    LACK_OF_AUTHORIZATION,
+    TECHNICAL_ISSUES,
+    DUPLICATE_APPLICATION,
+    NO_RESPONSE_FROM_APPLICANT,
+    FRAUDULENT_ACTIVITY,
+    OTHER,
+}

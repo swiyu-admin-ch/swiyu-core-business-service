@@ -1,0 +1,1 @@
+ALTER TABLE trust_onboarding_submission ADD is_registered_in_commercial_register BOOLEAN DEFAULT FALSE;

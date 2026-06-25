@@ -1,0 +1,21 @@
+{
+  "httpRequest": {
+    "method": "GET",
+    "path": "/scan",
+    "queryStringParameters": [
+      {
+        "name": "url",
+        "values": [
+          ".+"
+        ]
+      }
+    ]
+  },
+  "httpResponseTemplate": {
+    "templateType": "VELOCITY",
+    "template": "{\n  \"statusCode\": 200,\n  \"headers\": {\n    \"Content-Type\": [\"application/json\"],\n    \"Date\": [\"$!date\"]\n  },\n  \"body\": \"[{\n    \\\"ClamavDatabaseVersion\\\": \\\"26.4\\\",\n    \\\"ClamavVersion\\\": \\\"1.0.1\\\",\n    \\\"Description\\\": \\\"#if($request.queryStringParameters.url[0].contains('virus'))EICAR-Test-File#else No virus found#end\\\",\n    \\\"url\\\": \\\"$!request.queryStringParameters.url[0]\\\",\n    \\\"RequestID\\\": \\\"123e4567-e89b-12d3-a456-426614174000\\\",\n    \\\"Result\\\": \\\"#if($request.queryStringParameters.url[0].contains('virus'))FOUND#else OK#end\\\"\n  }]\"\n}"
+  },
+  "times": {
+    "unlimited": true
+  }
+}

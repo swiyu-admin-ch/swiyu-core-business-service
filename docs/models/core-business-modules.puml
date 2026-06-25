@@ -1,0 +1,44 @@
+@startuml module-dependencies
+
+!pragma layout smetana
+
+skinparam componentStyle rectangle
+skinparam ComponentBackgroundColor White
+skinparam ComponentBorderColor Black
+skinparam ArrowColor Black
+skinparam defaultFontName Arial
+
+' ========================
+' MODULES
+' ========================
+
+component "Jobs" as jobs
+component "Management" as management #E8F5E9
+component "Status" as status #FFF3E0
+component "Identifier" as identifier #F3E5F5
+component "Documents" as documents #FCE4EC
+component "Trust" as trust #E0F7FA
+component "DataImport" as dataimport #F5F5F5
+
+' ========================
+' DEPENDENCIES
+' ========================
+
+management --> identifier
+management --> status
+
+status --> identifier
+
+trust --> management
+trust --> identifier
+trust --> documents
+
+dataimport --> documents
+dataimport --> identifier
+dataimport --> management
+dataimport --> trust
+
+jobs --> documents
+jobs --> trust
+
+@enduml

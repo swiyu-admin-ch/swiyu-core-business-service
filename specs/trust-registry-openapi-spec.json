@@ -1,0 +1,527 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Trust Registry Data Service",
+    "description": "IF-007 - APIs for the Trust Registry Data Services",
+    "version": "1.5.1-20260224104827-896c74b"
+  },
+  "servers": [
+    {
+      "url": "https://trust-data-service-d.apps.p-szb-ros-shrd-npr-01.cloud.admin.ch",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "name": "NonCompliantActor",
+      "description": "Returns most recent list of non compliant actors."
+    },
+    {
+      "name": "Trust Statement",
+      "description": "Returns Trust Statement VC entries from the datastore."
+    },
+    {
+      "name": "VC Schema",
+      "description": "Returns VC schema entries from the datastore."
+    }
+  ],
+  "paths": {
+    "/api/v1/vc-schema/{vcSchemaPath}": {
+      "get": {
+        "tags": [
+          "VC Schema"
+        ],
+        "summary": "IF-007.005 - Get vc schema by ID.",
+        "description": "Get vc schema by ID.",
+        "operationId": "getVcSchema",
+        "parameters": [
+          {
+            "name": "vcSchemaPath",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 2147483647,
+              "minLength": 2
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Returns a single vc schema.\n| Representation | Spec |\n|-|-|\n| SD-JWT | [VC Type Metadata](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-sd-jwt-vc-09#name-sd-jwt-vc-type-metadata)|\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/truststatements/{did}": {
+      "get": {
+        "tags": [
+          "Trust Statement"
+        ],
+        "summary": "IF-007.001 - Get vc entries for a given DID.",
+        "description": "Get vc entries for a given DID.",
+        "operationId": "getTrustStatementsForDid",
+        "parameters": [
+          {
+            "name": "did",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filterActive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Returns a list of encoded trust statement VCs",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/api/v1/truststatements/verification": {
+      "get": {
+        "tags": [
+          "Trust Statement"
+        ],
+        "summary": "IF-007.004 - Get verification trust statement entries for a given vc schema identifier.",
+        "description": "Get issuance trust statement entries for a given vc schema identifier.",
+        "operationId": "getTrustStatementsForVerificationVcSchema",
+        "parameters": [
+          {
+            "name": "vcSchemaId",
+            "in": "query",
+            "description": "The URL-encoded VC schema identifier.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "filterActive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Returns a list of encoded trust statement VCs",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/truststatements/issuance": {
+      "get": {
+        "tags": [
+          "Trust Statement"
+        ],
+        "summary": "IF-007.003 - Get issuance trust statement entries for a given vc schema identifier.",
+        "description": "Get issuance trust statement entries for a given vc schema identifier.",
+        "operationId": "getTrustStatementsForIssuanceVcSchema",
+        "parameters": [
+          {
+            "name": "vcSchemaId",
+            "in": "query",
+            "description": "The URL-encoded VC schema identifier.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "filterActive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Returns a list of encoded trust statement VCs",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/truststatements/identity/{did}": {
+      "get": {
+        "tags": [
+          "Trust Statement"
+        ],
+        "summary": "IF-007.002 - Get identity trust statement entries for a given DID.",
+        "description": "Get identity trust statement entries for a given DID.",
+        "operationId": "getIdentityTrustStatementsForDid",
+        "parameters": [
+          {
+            "name": "did",
+            "in": "path",
+            "description": "The URL-encoded DID.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filterActive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Returns a list of encoded trust statement VCs",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/non-compliant-actors": {
+      "get": {
+        "tags": [
+          "NonCompliantActor"
+        ],
+        "summary": "IF-007.006 - Get registered non-compliant actors.",
+        "description": "Get the DIDs of all non-compliant actors and their non-compliant reason.",
+        "operationId": "getNonCompliantActors",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/NonCompliantActors"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "100 CONTINUE",
+              "101 SWITCHING_PROTOCOLS",
+              "102 PROCESSING",
+              "103 EARLY_HINTS",
+              "103 CHECKPOINT",
+              "200 OK",
+              "201 CREATED",
+              "202 ACCEPTED",
+              "203 NON_AUTHORITATIVE_INFORMATION",
+              "204 NO_CONTENT",
+              "205 RESET_CONTENT",
+              "206 PARTIAL_CONTENT",
+              "207 MULTI_STATUS",
+              "208 ALREADY_REPORTED",
+              "226 IM_USED",
+              "300 MULTIPLE_CHOICES",
+              "301 MOVED_PERMANENTLY",
+              "302 FOUND",
+              "302 MOVED_TEMPORARILY",
+              "303 SEE_OTHER",
+              "304 NOT_MODIFIED",
+              "305 USE_PROXY",
+              "307 TEMPORARY_REDIRECT",
+              "308 PERMANENT_REDIRECT",
+              "400 BAD_REQUEST",
+              "401 UNAUTHORIZED",
+              "402 PAYMENT_REQUIRED",
+              "403 FORBIDDEN",
+              "404 NOT_FOUND",
+              "405 METHOD_NOT_ALLOWED",
+              "406 NOT_ACCEPTABLE",
+              "407 PROXY_AUTHENTICATION_REQUIRED",
+              "408 REQUEST_TIMEOUT",
+              "409 CONFLICT",
+              "410 GONE",
+              "411 LENGTH_REQUIRED",
+              "412 PRECONDITION_FAILED",
+              "413 PAYLOAD_TOO_LARGE",
+              "413 REQUEST_ENTITY_TOO_LARGE",
+              "414 URI_TOO_LONG",
+              "414 REQUEST_URI_TOO_LONG",
+              "415 UNSUPPORTED_MEDIA_TYPE",
+              "416 REQUESTED_RANGE_NOT_SATISFIABLE",
+              "417 EXPECTATION_FAILED",
+              "418 I_AM_A_TEAPOT",
+              "419 INSUFFICIENT_SPACE_ON_RESOURCE",
+              "420 METHOD_FAILURE",
+              "421 DESTINATION_LOCKED",
+              "422 UNPROCESSABLE_ENTITY",
+              "423 LOCKED",
+              "424 FAILED_DEPENDENCY",
+              "425 TOO_EARLY",
+              "426 UPGRADE_REQUIRED",
+              "428 PRECONDITION_REQUIRED",
+              "429 TOO_MANY_REQUESTS",
+              "431 REQUEST_HEADER_FIELDS_TOO_LARGE",
+              "451 UNAVAILABLE_FOR_LEGAL_REASONS",
+              "500 INTERNAL_SERVER_ERROR",
+              "501 NOT_IMPLEMENTED",
+              "502 BAD_GATEWAY",
+              "503 SERVICE_UNAVAILABLE",
+              "504 GATEWAY_TIMEOUT",
+              "505 HTTP_VERSION_NOT_SUPPORTED",
+              "506 VARIANT_ALSO_NEGOTIATES",
+              "507 INSUFFICIENT_STORAGE",
+              "508 LOOP_DETECTED",
+              "509 BANDWIDTH_LIMIT_EXCEEDED",
+              "510 NOT_EXTENDED",
+              "511 NETWORK_AUTHENTICATION_REQUIRED"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "NonCompliantActor": {
+        "type": "object",
+        "properties": {
+          "did": {
+            "type": "string"
+          },
+          "flaggedAsNonCompliantAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "NonCompliantActors": {
+        "type": "object",
+        "properties": {
+          "nonCompliantActors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NonCompliantActor"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "prometheus": {
+        "type": "http",
+        "scheme": "basic"
+      }
+    }
+  }
+}

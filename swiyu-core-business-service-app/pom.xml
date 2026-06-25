@@ -1,0 +1,747 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>ch.admin.bj.swiyu</groupId>
+        <artifactId>swiyu-core-business-service</artifactId>
+        <version>3.38.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>swiyu-core-business-service-app</artifactId>
+    <packaging>jar</packaging>
+
+    <properties>
+        <sonar.exclusions>
+            src/main/java/ch/admin/bj/swiyu/core/business/common/config/OpenApiConfig.java,
+            src/main/java/ch/admin/bj/swiyu/core/business/common/config/FeatureFlags.java,
+            **/*Exception.java,
+            **/*Dto.java
+        </sonar.exclusions>
+        <sonar.coverage.exclusions>
+            src/main/java/ch/admin/bj/swiyu/core/business/modules/dataimport/**/*
+        </sonar.coverage.exclusions>
+        <!-- dependency versions -->
+        <nimbus-jose-jwt.version>10.8</nimbus-jose-jwt.version>
+        <jackson-databind-nullable.version>0.2.9</jackson-databind-nullable.version>
+        <json-schema-validator.version>1.5.9</json-schema-validator.version>
+        <openapi-generator-maven-plugin.version>7.20.0</openapi-generator-maven-plugin.version>
+        <didresolver.version>2.8.2</didresolver.version>
+        <openfeign.querydsl.version>7.1</openfeign.querydsl.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu</groupId>
+            <artifactId>swiyu-core-business-service-registry-identifier</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu</groupId>
+            <artifactId>swiyu-core-business-service-registry-status</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-spring-boot-monitoring-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-spring-boot-swagger-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-spring-boot-security-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-spring-boot-db-migration-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-spring-boot-audit-starter-transactional-outbox</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-docker-compose</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-messaging-infrastructure-kafka-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-spring-boot-security-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>${archunit-junit5.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>minio</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+            <version>${nimbus-jose-jwt.version}</version>
+        </dependency>
+        <!-- We need bouncy castle to load pem files with nimbus -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+        </dependency>
+
+        <!-- jackson-databind-nullable is required as the code generator does require it.  -->
+        <dependency>
+            <groupId>org.openapitools</groupId>
+            <artifactId>jackson-databind-nullable</artifactId>
+            <version>${jackson-databind-nullable.version}</version>
+        </dependency>
+
+        <!-- JSON Schema validator -->
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>${json-schema-validator.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.dataformat</groupId>
+                    <artifactId>jackson-dataformat-yaml</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- storage -->
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-spring-boot-object-storage-starter</artifactId>
+        </dependency>
+        <!-- storage end -->
+
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-spring</artifactId>
+        </dependency>
+
+        <!-- eGov validation client -->
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-egov-validationclient-api</artifactId>
+            <version>2.1.5</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-egov-validationclient-sdk</artifactId>
+            <version>2.1.5</version>
+        </dependency>
+
+        <!-- Intarsys document / PDF stack -->
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-document-core</artifactId>
+            <version>1.15.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-processor-core</artifactId>
+            <version>1.15.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-pdf-kernel</artifactId>
+            <version>5.21.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-pdf-design</artifactId>
+            <version>5.21.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-license</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <!-- Intarsys security stack -->
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-security-asn1</artifactId>
+            <version>1.28.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-security-audit</artifactId>
+            <version>1.28.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-security-device-core</artifactId>
+            <version>1.28.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-security-method-cms</artifactId>
+            <version>1.28.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-security-method-pdf</artifactId>
+            <version>1.28.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-security-model-common</artifactId>
+            <version>1.28.3</version>
+        </dependency>
+
+        <!-- Intarsys tools stack -->
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-authentication</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-claptz</artifactId>
+            <version>4.29.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-commandline</artifactId>
+            <version>4.29.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-common</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-conversation</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-form</artifactId>
+            <version>4.29.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-google</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-http-component</artifactId>
+            <version>4.29.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-http-protocol</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-jaxrs</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-json</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-logback</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-manage</artifactId>
+            <version>4.29.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-observation</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-runtime</artifactId>
+            <version>4.29.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-security</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-servlet</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-ssl</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-table</artifactId>
+            <version>4.29.3</version>
+        </dependency>
+
+        <!-- Jersey client stack -->
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>3.1.10</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-common</artifactId>
+            <version>3.1.10</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
+            <version>3.1.10</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.connectors</groupId>
+            <artifactId>jersey-apache-connector</artifactId>
+            <version>3.1.10</version>
+        </dependency>
+
+        <!-- Jackson JAX-RS provider -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.jakarta.rs</groupId>
+            <artifactId>jackson-jakarta-rs-json-provider</artifactId>
+            <version>2.17.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.jakarta.rs</groupId>
+            <artifactId>jackson-jakarta-rs-base</artifactId>
+            <version>2.17.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-jakarta-xmlbind-annotations</artifactId>
+            <version>2.17.2</version>
+        </dependency>
+
+        <!-- Apache HTTP client used by jersey-apache-connector -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.14</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>4.4.16</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>4.5.14</version>
+        </dependency>
+
+        <!-- Crypto -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.81</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcutil-jdk18on</artifactId>
+            <version>1.81</version>
+        </dependency>
+
+        <!-- Jakarta APIs used by Jersey / SDK -->
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.activation</groupId>
+            <artifactId>jakarta.activation-api</artifactId>
+            <version>2.1.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.json</groupId>
+            <artifactId>jakarta.json-api</artifactId>
+            <version>2.1.2</version>
+        </dependency>
+
+        <!-- Commons -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.11</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.19.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.2</version>
+        </dependency>
+
+        <!-- File upload, only needed if the SDK actually uses multipart upload -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-fileupload2-core</artifactId>
+            <version>2.0.0-M4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-fileupload2-jakarta-servlet6</artifactId>
+            <version>2.0.0-M4</version>
+        </dependency>
+
+        <!-- didresolver libs https://mvnrepository.com/artifact/ch.admin.swiyu/didresolver -->
+        <dependency>
+            <groupId>ch.admin.swiyu</groupId>
+            <artifactId>didresolver</artifactId>
+            <version>${didresolver.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+            <version>2.2.21</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/net.java.dev.jna/jna -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>5.18.1</version>
+        </dependency>
+        <!-- Messaging -->
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-crypto-vault-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-spring-boot-vault-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-messaging-idempotence</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-messaging-infrastructure-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bit.jeap</groupId>
+            <artifactId>jeap-messaging-outbox</artifactId>
+        </dependency>
+        <!-- Messages -->
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-vc-schema-submission-accepted-event</artifactId>
+            <version>6.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-vc-schema-publication-failed-event</artifactId>
+            <version>7.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-vc-schema-publication-succeeded-event</artifactId>
+            <version>6.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-trust-onboarding-information-requested-event</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-trust-onboarding-rejected-event</artifactId>
+            <version>5.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-trust-onboarding-succeeded-event</artifactId>
+            <version>5.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-trust-onboarding-submission-accepted-event</artifactId>
+            <version>4.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-trust-add-did-submission-submitted-event</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-trust-add-did-submission-accepted-event</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-trust-add-did-submission-rejected-event</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-vqps-submission-accepted-event</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-vqps-publication-succeeded-event</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-vqps-publication-failed-event</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+        <!-- PDFBox -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>3.0.7</version>
+        </dependency>
+        <!-- Query DSL -->
+        <dependency>
+            <groupId>io.github.openfeign.querydsl</groupId>
+            <artifactId>querydsl-apt</artifactId>
+            <version>${openfeign.querydsl.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.openfeign.querydsl</groupId>
+            <artifactId>querydsl-jpa-spring</artifactId>
+            <version>${openfeign.querydsl.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>au.com.dius.pact.provider</groupId>
+            <artifactId>junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <!-- START CVE Overrides -->
+            <dependency>
+                <!-- Fixes CVE-2025-66566 -->
+                <groupId>at.yawk.lz4</groupId>
+                <artifactId>lz4-java</artifactId>
+                <version>1.10.1</version>
+            </dependency>
+            <!-- END CVE Overrides -->
+        </dependencies>
+    </dependencyManagement>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${openapi-generator-maven-plugin.version}</version>
+                <configuration>
+                    <configOptions>
+                        <inputSpecRootDirectory>${project.parent.basedir}/specs</inputSpecRootDirectory>
+                        <sourceFolder>main/java</sourceFolder>
+                        <interfaceOnly>true</interfaceOnly>
+                        <dateLibrary>java21</dateLibrary>
+                        <useJakartaEe>true</useJakartaEe>
+                    </configOptions>
+                    <output>${project.build.directory}/generated-sources</output>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>swiyu-antivirus-client-generator</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <generatorName>java</generatorName>
+                            <library>restclient</library>
+                            <modelPackage>ch.admin.bj.swiyu.antivirus.client.model</modelPackage>
+                            <apiPackage>ch.admin.bj.swiyu.antivirus.client.api</apiPackage>
+                            <invokerPackage>ch.admin.bj.swiyu.antivirus.client.invoker</invokerPackage>
+                            <groupId>ch.admin.bj.swiyu</groupId>
+                            <artifactId>swiyu-antivirus-api-client</artifactId>
+                            <artifactVersion>${project.version}</artifactVersion>
+                            <inputSpec>${project.parent.basedir}/specs/antivirus-openapi-spec.yml</inputSpec>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>swiyu-trust-registry-client-generator</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <generatorName>java</generatorName>
+                            <library>restclient</library>
+                            <modelPackage>ch.admin.bj.swiyu.trust.registry.client.model</modelPackage>
+                            <apiPackage>ch.admin.bj.swiyu.trust.registry.client.api</apiPackage>
+                            <invokerPackage>ch.admin.bj.swiyu.trust.registry.client.invoker</invokerPackage>
+                            <groupId>ch.admin.bj.swiyu</groupId>
+                            <artifactId>swiyu-trust-registry-api-client</artifactId>
+                            <artifactVersion>${project.version}</artifactVersion>
+                            <inputSpec>${project.parent.basedir}/specs/trust-registry-openapi-spec.json</inputSpec>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>eportal-pams-client-generator</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <generatorName>java</generatorName>
+                            <library>restclient</library>
+                            <modelPackage>ch.admin.eportal.pams.client.model</modelPackage>
+                            <apiPackage>ch.admin.eportal.pams.client.api</apiPackage>
+                            <invokerPackage>ch.admin.eportal.pams.client.invoker
+                            </invokerPackage>
+                            <groupId>ch.admin.eportal</groupId>
+                            <artifactId>eportal-pams-api-client</artifactId>
+                            <artifactVersion>${project.version}</artifactVersion>
+                            <inputSpec>${project.parent.basedir}/specs/eportal-pams-openapi-spec.yml
+                            </inputSpec>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+</project>

@@ -1,0 +1,210 @@
+server:
+  port: 8080
+  # Termporary increase of header size to be able to login and remove too many business partners
+  max-http-request-header-size: 20000
+
+app:
+  governmental-allowlist:
+    partner-id: ${GOVERNMENTAL_ALLOWLIST_PARTNER_ID:}
+  identifier-registry:
+    did-tdw-route-template: "${DID_AUTHORING_DID_TDW_ROUTE_TEMPLATE:}"
+    did-web-template: "${DID_AUTHORING_DID_WEB_TEMPLATE:}"
+    default-public-resolve-url-template: "${PUBLIC_IDENTIFIER_REGISTRY_DATA_SERVICE_RESOLVE_TEMPLATE:}"
+  status-registry:
+    data-url-template: ${STATUS_REGISTRY_DATA_URL_TEMPLATE:}
+  trust-registry:
+    data-service-base-url: ${TRUST_REGISTRY_DATA_SERVICE_BASE_URL:}
+  jobs:
+    trust-additional-dids-submission-cleanup-interval: 1m
+    trust-onboarding-submission-cleanup-interval: 1m
+    trust-onboarding-document-cleanup-interval: 1h
+  limits:
+    identifier:
+      default-max-count: ${LIMITS_IDENTIFIER_DEFAULT_MAX_COUNT:100}
+      did-log:
+        max-size: ${LIMITS_DIDLOG_MAX_SIZE:1MB}
+      did-doc:
+        max-size: ${LIMITS_DIDDOC_MAX_SIZE:1MB}
+    statuslists:
+      default-max-count: ${LIMITS_STATUSLISTS_DEFAULT_MAX_COUNT:100}
+      min-size: ${LIMITS_STATUS_LIST_MIN_SIZE:200B}
+      max-size: ${LIMITS_STATUS_LIST_MAX_SIZE:200KB}
+      max-age: ${LIMITS_STATUS_LIST_MAX_AGE:1d}
+    trust-additional-dids-submission:
+      max-age-in-unsubmitted: 90d
+    trust-onboarding-submission:
+      doi-validation:
+        discrete-validator-service:
+          url: ${DOI_VALIDATION_DISCRETE_VALIDATOR_SERVICE_URL:}
+          username: ${DOI_VALIDATION_DISCRETE_VALIDATOR_SERVICE_USERNAME:}
+          password: ${DOI_VALIDATION_DISCRETE_VALIDATOR_SERVICE_PASSWORD:}
+        mandant: ${DOI_VALIDATION_MANDANT:NONE}
+      max-age-in-unsubmitted: 90d
+      proof-of-possession:
+        issuance-to-validity-duration: 1d
+      documents:
+        default-max-count-per-business-partner: 50
+        default-max-count-per-submission: 10
+        max-file-size: 10MB
+        min-file-size: 1B
+        allowed-content-types:
+          - "application/pdf"
+  didresolver:
+    max-did-log-size: ${LIMITS_DIDLOG_MAX_SIZE:1MB}
+
+pams:
+  api:
+    token-ttl: "${MANAGEMENT_PAMS_API_TOKEN_TTL:PT4M}"
+    app-id: ${MANAGEMENT_PAMS_API_APP_ID:301346}
+    user-agent: "${MANAGEMENT_PAMS_API_USER_TOKEN:swiyu-core-business-service-pams-client}"
+    url: "${MANAGEMENT_PAMS_API_URL:https://pams-api.eportal-r.admin.ch}"
+    issued-by: ${MANAGEMENT_PAMS_API_ISSUED_BY:}
+    private-key: ${MANAGEMENT_PAMS_API_PRIVATE_KEY:}
+  auto-applied-profile-group-id: "${MANAGEMENT_PAMS_AUTO_APPLIED_PROFILE_GROUP_ID:PublicBetaEcosystem}"
+
+spring:
+  application:
+    name: swiyu-core-business-service
+  threads:
+    virtual:
+      enabled: true
+  http:
+    client:
+      connect-timeout: 10000 # 10 seconds
+      read-timeout: 30000 # 30 seconds
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        physical_naming_strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+        default_schema: data
+        hbm2ddl.auto: validate
+  datasource:
+    core-db:
+      type: com.zaxxer.hikari.HikariDataSource
+      driver-class-name: org.postgresql.Driver
+    identifier-registry-db:
+      type: com.zaxxer.hikari.HikariDataSource
+      driver-class-name: org.postgresql.Driver
+    status-registry-db:
+      type: com.zaxxer.hikari.HikariDataSource
+      driver-class-name: org.postgresql.Driver
+    hikari:
+      schema: ${spring.jpa.properties.hibernate.default_schema}
+  flyway:
+    # note for locations:
+    # - since we have 3 databases, the flyway migration scripts for each are hardcoded in their Config classes
+    # - here we only add the "extra" location for the bit specific afterMigrate script to fix the table ownership
+    locations: classpath:db/migration/extra
+    default-schema: ${spring.jpa.properties.hibernate.default_schema}
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: ${app.limits.trust-onboarding-submission.documents.max-file-size}
+      max-request-size: ${app.limits.trust-onboarding-submission.documents.max-file-size}
+
+jeap:
+  vault:
+    url: https://mav.bit.admin.ch
+  audit:
+    enabled: true
+    transactional-outbox:
+      topic: ti-create-audit-record
+  crypto:
+    vault:
+      default-secret-engine-path: "${JEAP_VAULT_TRANSIT_SECRET_ENGINE_PATH}"
+      keys:
+        messagingKey:
+          key-name: "${JEAP_VAULT_TRANSIT_MESSAGING_KEY_NAME:swiyu-messaging-key}"
+  health:
+    metric:
+      contributor-metrics:
+        enabled: true
+  logging:
+    platform: rhos
+  security:
+    oauth2:
+      resourceserver:
+        introspection:
+          mode: lightweight
+        resource-id: ${AUTH_RESOURCE_ID:bj-swiyu-ecosystem}
+        authorization-server:
+          issuer: ${AUTH_ISSUER_URI:}
+          jwk-set-uri: ${AUTH_JWK_SET_URI:}
+          claim-set-converter-name: unusedBusinessPartnerRoleRemovalConverter
+          introspection:
+            client-id: ${spring.application.name:} # client id for introspection is configured in keycloak with the spring application name
+            client-secret: ${AUTH_INTROSPECTION_CLIENT_SECRET:}
+        system-name: ti # trust-infrastructure
+  swagger:
+    status: open
+    # enable ant paths to also allow for yaml extraction of api-docs
+    antPathPatters:
+      - /swagger-ui.html
+      - /api-docs*/**
+      - /swagger-ui/**
+      - /webjars/swagger-ui/**
+  monitor:
+    prometheus:
+      user: "${PROMETHEUS_USER}"
+      password: "{noop}${PROMETHEUS_PASSWORD}"
+  rest:
+    tracing:
+      uri-filter-pattern: .*/actuator/.*
+  messaging:
+    kafka:
+      systemName: ${jeap.security.oauth2.resourceserver.system-name}
+      serviceName: ${spring.application.name}
+      errorTopicName: ti-messageprocessing-failed
+      securityProtocol: SASL_SSL
+      username: swiyu-kafka-system-user
+      schemaRegistryUsername: producer
+      messageTypeEncryptionDisabled: true # we disable message encryption for the moment until solution is found --> https://jira.bit.admin.ch/browse/EID-5856
+  s3:
+    client:
+      region: ${S3_CLIENT_REGION:us-east-1}
+      endpoint-url: ${S3_CLIENT_URL:}
+      access-key: ${S3_CLIENT_ACCESS_KEY_ID:}
+      secret-key: ${S3_CLIENT_SECRET_ACCESS_KEY:}
+  antivirus-service:
+    url: ${ AV_CLIENT_URL:}
+    username: ${AV_CLIENT_USERNAME:}
+    password: ${AV_CLIENT_PASSWORD:}
+
+springdoc:
+  swagger-ui:
+    oauth:
+      client-id: ${jeap.security.oauth2.resourceserver.resource-id}
+    operations-sorter: alpha # sort methods within an API in swagger ui by paths
+    tags-sorter: alpha
+  default-produces-media-type: application/json
+
+database-migration: # see https://confluence.bit.admin.ch/display/JEAP/RHOS+PostgreSQL
+  expected-count-of-flyway-migrations: 3
+  startup-migrate-mode-enabled: false
+  init-container: ${IS_INIT_CONTAINER_EXECUTION} # is set by bit application helm chart if run in init container
+
+logging:
+  level:
+    ch.admin.bit.jeap: INFO
+    ch.admin.bj.swiyu: INFO
+    ch.admin.bit.jeap.log.RestRequestTracer: DEBUG
+
+cors:
+  allowed-origins: "${CORS_ALLOWED_ORIGINS}"
+
+http:
+  max-redirects: 5
+
+s3:
+  # keep bucket-names in sync with docker-compose.s3.yml list of buckets for local development
+  trust-onboarding-submission-documents:
+    bucket-name: partner-submissions
+    expiry-of-pre-signed-link: 30s
+    document-group: "trust-onboarding-submissions"
+
+features:
+  EID_5540_UPDATE_IS_GOVERNMENT: ${FEATURES_EID_5540_UPDATE_IS_GOVERNMENT:false}
+  EIDARTFE_754_VC_SCHEMA: ${FEATURES_EIDARTFE_754_VC_SCHEMA:false}
+  EIDARTFE_1220_PROOF_OF_POSSESSION: ${FEATURES_EIDARTFE_1220_PROOF_OF_POSSESSION:false}
+  EIDARTFE_1204_TRUST_ADD_DIDS: ${FEATURES_EIDARTFE_1204_TRUST_ADD_DIDS:false}

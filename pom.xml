@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>ch.admin.bj.swiyu</groupId>
+    <artifactId>swiyu-core-business-service</artifactId>
+    <version>3.38.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <parent>
+        <groupId>ch.admin.bit.jeap</groupId>
+        <artifactId>jeap-spring-boot-parent</artifactId>
+        <!--
+            Attention: when ever you update this version, check whether we can remove a CVE-OVERRIDE
+            from the dependencyManagement section
+         -->
+        <version>33.11.0</version>
+        <relativePath /> <!-- lookup parent from repository -->
+    </parent>
+
+    <properties>
+        <java.version>25</java.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+        <archunit-junit5.version>1.4.1</archunit-junit5.version>
+        <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
+        <spotless-maven-plugin.version>3.2.1</spotless-maven-plugin.version>
+        <cleanthat.version>2.25</cleanthat.version>
+        <prettier.version>3.8.1</prettier.version>
+        <prettier-plugin-java.version>2.8.1</prettier-plugin-java.version>
+        <sonar.scm.disabled>true</sonar.scm.disabled>
+    </properties>
+
+
+    <name>swiyu-core-business-service</name>
+    <description>Parent aggregator for swiyu core business service and registry modules</description>
+
+    <modules>
+        <module>swiyu-core-business-service-app</module>
+        <module>swiyu-core-business-service-registry-identifier</module>
+        <module>swiyu-core-business-service-registry-status</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>ch.admin.bj.swiyu</groupId>
+                <artifactId>swiyu-core-business-service-registry-identifier</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.admin.bj.swiyu</groupId>
+                <artifactId>swiyu-core-business-service-registry-status</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- CVE-OVERRIDE start -->
+            <!-- CVE-OVERRIDE end -->
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <!-- Hotfix for archunit incompatibility: https://github.com/apache/maven-surefire/issues/839 -->
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.5.5</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <!-- See https://www.baeldung.com/checkstyle-java for more info -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${maven-checkstyle-plugin.version}</version>
+                <configuration>
+                    <!-- See https://checkstyle.sourceforge.io/config.html -->
+                    <configLocation>google_checks.xml</configLocation>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <upToDateChecking>
+                        <!--
+                            upToDateChecking creates a cache in the target directory to only reformat modified files — improves performance.
+                            Enabled by default since version 2.35.0, but explicitly set here so it can be temporarily disabled locally if merge issues occur.
+                        -->
+                        <enabled>true</enabled>
+                    </upToDateChecking>
+                    <java>
+                        <includes>
+                            <include>src/main/java/**/*.java</include>
+                            <include>src/test/java/**/*.java</include>
+                        </includes>
+                        <cleanthat>
+                            <version>${cleanthat.version}</version>
+                            <sourceJdk>${java.version}</sourceJdk>
+                            <mutators>
+                                <mutator>SafeAndConsensual</mutator>
+                                <mutator>SafeButNotConsensual</mutator>
+                            </mutators>
+                            <includeDraft>true</includeDraft>
+                            <excludedMutators>
+                                <excludedMutator>AvoidInlineConditionals</excludedMutator>
+                                <excludedMutator>ForEachAddToStreamCollectToCollection</excludedMutator>
+                                <excludedMutator>NullCheckToOptionalOfNullable</excludedMutator>
+                                <excludedMutator>GuavaMutators</excludedMutator>
+                                <excludedMutator>GuavaStringsIsNullOrEmpty</excludedMutator>
+                                <excludedMutator>LoopIntRangeToIntStreamForEach</excludedMutator>
+                                <excludedMutator>ForEachToIterableForEach</excludedMutator>
+                                <excludedMutator>StreamForEachNestingForLoopToFlatMap</excludedMutator>
+                                <excludedMutator>RemoveExplicitCallToSuper</excludedMutator>
+                            </excludedMutators>
+                        </cleanthat>
+                        <importOrder>
+                            <order>java,javax,com,de,lombok,net,org</order>
+                        </importOrder>
+                        <removeUnusedImports />
+                        <prettier>
+                            <devDependencies>
+                                <prettier>${prettier.version}</prettier>
+                                <prettier-plugin-java>${prettier-plugin-java.version}</prettier-plugin-java>
+                            </devDependencies>
+                            <config>
+                                <tabWidth>4</tabWidth>
+                                <parser>java</parser>
+                                <printWidth>120</printWidth>
+                                <plugins>prettier-plugin-java</plugins>
+                            </config>
+                        </prettier>
+                    </java>
+                </configuration>
+            </plugin>
+            <!-- Needed by RHOS Java Build Pipeline -->
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>5.5.0.6356</version>
+            </plugin>
+            <!-- Make Pact Maven plugin's publish goal run by default-->
+            <plugin>
+                <groupId>au.com.dius.pact.provider</groupId>
+                <artifactId>maven</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

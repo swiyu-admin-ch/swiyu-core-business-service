@@ -1,0 +1,2 @@
+DELETE
+FROM vc_schema_submission;

@@ -1,0 +1,183 @@
+server:
+  port: 1235
+spring:
+  autoconfigure:
+    exclude:
+      # metics not tested in integration tests, therefore excluded
+      - ch.admin.bit.jeap.monitor.metrics.health.HealthMetricsAutoConfig
+      - ch.admin.bit.jeap.monitor.metrics.rest.RestTracingMetricsAutoConfig
+      - ch.admin.bit.jeap.monitor.metrics.security.RestSecurityTracingMetricsAutoConfig
+      # vault config loggers require jeap.vault.* properties only available when vault is enabled
+      - ch.admin.bit.jeap.vault.config.JeapVaultKubernetesConfigLogger
+      - ch.admin.bit.jeap.vault.config.JeapVaultAppRoleConfigLogger
+  cloud:
+    vault:
+      enabled: false # encryption is disabled in tests via messageTypeEncryptionDisabled, no Vault needed
+  datasource:
+    core-db:
+      type: com.zaxxer.hikari.HikariDataSource
+      driver-class-name: org.postgresql.Driver
+      # url,user, pw are provided by PostgresSqlContainerInitializer
+    identifier-registry-db:
+      type: com.zaxxer.hikari.HikariDataSource
+      driver-class-name: org.postgresql.Driver
+      # url,user, pw are provided by PostgresSqlContainerInitializer
+    status-registry-db:
+      type: com.zaxxer.hikari.HikariDataSource
+      driver-class-name: org.postgresql.Driver
+      # url,user, pw are provided by PostgresSqlContainerInitializer
+    hikari:
+      maximum-pool-size: 2
+  flyway:
+    enabled: true # locations are defined in PersistenceConfig classes since we have multiple datasources
+    locations: [] # keep empty since on test we don't want the default afterMigrate scripts in "extra" folder
+
+jeap:
+  logging:
+    platform: none # just some value other than "rhos"
+  security:
+    oauth2:
+      resourceserver:
+        authorization-server:
+          # relevant for pact: this issuer name is needed for jeap based pact tests to validate jwt tokens
+          issuer: "http://localhost/auth"
+          # relevant for pact: jeap will provide a test jwks.json when running pact tests under that address
+          jwk-set-uri: "http://localhost:${server.port}/.well-known/jwks.json"
+          introspection:
+            client-id: dummy-client-id
+            client-secret: dummy-client-secret
+  messaging:
+    kafka:
+      bootstrapServers: "http://localhost:9092"
+      schemaRegistryUrl: "http://localhost:7781"
+      username: user
+      password: user-secret
+      securityProtocol: SASL_PLAINTEXT
+      publishWithoutContractAllowed: true
+      consumeWithoutContractAllowed: true
+      messageTypeEncryptionDisabled: true
+  # s3:
+  #   client: # set by S3ContainerInitializer
+  antivirus-service:
+    username: "dev"
+    password: "devsecret"
+    url: "http://not.required.local"
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+database-migration: # under local development we want to run the migrations on startup
+  startup-migrate-mode-enabled: true
+  init-container: false
+
+app:
+  governmental-allowlist:
+    partner-id: 40f377d5-cd11-458a-944b-0c4f73f2ddaa # DEV/REF
+  status-registry:
+    data-url-template: "TEST.DATAURL/{0}.{1}"
+  identifier-registry:
+    did-tdw-route-template: "HTTP:TESTROUTE:{0}"
+    did-web-template: "DID:TESTROUTE/{0}"
+    default-public-resolve-url-template: https://identifier-reg-d.trust-infra.swiyu.admin.ch/api/v1/did/ # We ignore the actual identifier value for test, so no suffix %s
+    additional-public-resolve-url-templates:
+      - https://identifier-reg-d.trust-infra.swiyu.admin.ch/api/v1/did/ # We ignore the actual identifier value for test, so no suffix %s
+      - https://identifier-reg-r.trust-infra.swiyu.admin.ch/api/v1/did/ # We ignore the actual identifier value for test, so no suffix %s
+      - https://identifier-reg.trust-infra.swiyu-int.admin.ch/api/v1/did/ # We ignore the actual identifier value for test, so no suffix %s
+  trust-registry:
+    data-service-base-url: https://trust-data-service-d.apps.p-szb-ros-shrd-npr-01.cloud.admin.ch/
+  jobs:
+    trust-additional-dids-submission-cleanup-interval: 10m
+    trust-onboarding-submission-cleanup-interval: 10m
+  limits:
+    identifier:
+      default-max-count: 100
+      did-doc:
+        max-size: 1MB
+      did-log:
+        max-size: 1MB
+    statuslists:
+      default-max-count: 100
+      min-size: 200B
+      max-size: 200KB
+      max-age: 1000d
+    trust-additional-dids-submission:
+      max-age-in-unsubmitted: 1m
+    trust-onboarding-submission:
+      proof-of-possession:
+        issuance-to-validity-duration: 1d
+      documents:
+        allowed-content-types:
+          - "application/pdf"
+        min-file-size: 1B
+        max-file-size: 1MB
+        default-max-count-per-submission: 10
+        default-max-count-per-business-partner: 10
+      max-age-in-unsubmitted: 1m
+
+pams:
+  api:
+    token-ttl: "PT4M"
+    app-id: 301346
+    issued-by: "maven-tests"
+    private-key: |
+      -----BEGIN PRIVATE KEY-----
+      MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC0xCNSbpn89hBW
+      kZSi8sik7NpdfWTVDB9x3FS80LTpDZqIhSB/srJ3IOSah6RHXU2Av6Ba5SsCpkus
+      6eDqH8Dtd8uqo268zbfWGeLpROOPaXrq0U5MzzseRbeVcIZxgg8nqU6ksff8Bt21
+      SSp12iq3juaOGTAYRveQvuEgL0rXf7f0MVitSus/1OOk3eYTtKmYHDa4lfSUlBmC
+      GBwmzMYXnx7dDBqo//eZOpMFPAZbTGZQY2c7xfokcdz/p4/qhyVFjuxgyV6fUFV9
+      dmPa9EZeQ5ZspN13bkfwK/ozc7SNeHhmMdXalwjF4+mSKOVd5yDbpoggkOB4hiis
+      0ew19pJlAgMBAAECggEAUS1vy1n97zq1dZrlDBRJhL8VBT0FpiNOj7xplW2IgMxq
+      JHrccFxYhuUPpFHbtWyyHGpx4b/eg88YVuuk5J8j7cCJhvTkCwe7UfvICge0xbeR
+      ypf6OMYrf1nBquughKLqmV4QAigl/Fk9AWd9GPXDjzEuWov3LD/ad3cw9FoomwNu
+      5cyreW+Kb3NODmylzevd7uUuMuzTukty8sL4XGy3yC9tuo+p4G+GZG0gADud2RaX
+      5ID6x1qNDa1CpdVy39a0DVNobYHYACIBQ8GH3lLhSEykUW+XWO4EMM3XPzs6A0hX
+      trc0/EYyhF2Sg3vYuvfR8mveQBTYA3JmZpvGFbBSdQKBgQDCGJfhm2iTPeVZ1mPD
+      S9chm/DiIwRn4E5T329JJhXfqLBAeFAvAsZKDJIj50rWUymmP3Yfwbbl4hk1fCiA
+      hXFMBQneHKxo63MzGdWeTlefpVQv7sHpUPlt7/AwFjm7dLkn9E3IxrXAAyW2N28W
+      NofulWha0raf43Ug+eUmmDmj8wKBgQDuazHoymj1wGMyAhY1Kfwz5E8NtaFbg6FL
+      JNkJs/ouBXJjT/5uxEzyORjzofN3Q8sqyOxhfZQvlB3MewynXofOYP7IM7A3v8NX
+      I0eZkCv1mN15+axJZdi5er++EP4VQeMiSE4NImVaPUruf4IB9lWuYToFo+d0mreC
+      JR1jtDX+RwKBgQCBKBBZJiruX++wWkNEf8EGMliWgiq6XL6CfVn2WQuRKxUtsWHa
+      BoSgXcEZdx2LhQdgAza9ZxAn5M5Vkur4qtN7fJbWYEox/wtHY9eMYiFYsJFW3A/Z
+      C/MOvu0bco60OLXE6oKgKepjfTSpDjYzl9HYZz9rwG+Z8afNa7yadA1XFQKBgQDX
+      TpbT03bV99ec4aWMfU30zslVaCE/s6+FXNFjodTcmq6iYSs0fLHATS/rVOW5Xs+q
+      46gUooOgM/J1JupWe1fJWG69/W+16MdPedy/ISORt2rLLF4aKo99cQyXaGEMcWPd
+      Ic7araU5yQBSQXP2sa7Ou57aWRo8gzwVm87eq2/XIQKBgEyfE81Vxq+MINEgX829
+      /UBqQPSJqokrVP5JYBEX4Mr6teJ5qT1az3ktlZdYZYbFmJtAaxfaU+DwGsftfSkf
+      C7qiomlxK7qghkZtyMpVdvsBQDuZThcSaiPKLbXNyd2KYbDH4JvUboK/eQbZgn3F
+      k16fJkSl/iVeNSh9uwQY5gbR
+      -----END PRIVATE KEY-----
+    url: "https://pams-api.example.com"
+    user-agent: "Test"
+http:
+  max-redirects: 5
+
+logging:
+  level:
+    root: WARN # don't pollute ci log
+    ch.admin.bit.jeap: WARN
+    ch.admin.bj.swiyu: WARN
+    # disable kafka warnings on tests (a lot of noise)
+    io.confluent.kafka: ERROR
+    org.springframework.kafka: ERROR
+    ch.admin.bit.jeap.messaging.kafka: ERROR
+    org.apache.kafka: ERROR
+    org.apache.zookeeper: ERROR
+    # for pact issue debugging
+    au.com.dius.pact: WARN
+    au.com.dius.pact.core.matchers: WARN
+    # for transaction/sql logs set to TRACE / DEBUG
+    org.hibernate: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.springframework.transaction: WARN
+
+features:
+  EID_5540_UPDATE_IS_GOVERNMENT: true
+  EIDARTFE_754_VC_SCHEMA: true
+  EIDARTFE_1220_PROOF_OF_POSSESSION: true
+

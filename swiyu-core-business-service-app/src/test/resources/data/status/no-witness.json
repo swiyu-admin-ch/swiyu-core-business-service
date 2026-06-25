@@ -1,0 +1,11 @@
+[
+  "v1",
+  "2025-05-27T12:00:00Z",
+  {
+    "method": "did:tdw:0.3",
+    "portable": false,
+    "witness": ["someWitness"]
+  },
+  {},
+  {}
+]

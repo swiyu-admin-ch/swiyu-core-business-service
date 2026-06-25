@@ -1,0 +1,368 @@
+@startuml core-business
+
+!pragma layout smetana
+
+skinparam groupInheritance 2
+skinparam ClassBackgroundColor White
+skinparam ClassBorderColor Black
+skinparam ArrowColor Black
+skinparam packageStyle rectangle
+
+' ========================
+' APP MODULE - MANAGEMENT
+' ========================
+
+package "Management" #E8F5E9 {
+
+    enum BusinessPartnerType {
+        BUSINESS
+        PRIVATE_PERSON
+        GOVERNMENTAL_INSTITUTION
+        UNKNOWN
+    }
+
+    enum BusinessEntityTrustStatus {
+        NOT_VERIFIED
+        VERIFICATION_STARTED
+        VERIFICATION_IN_PROGRESS
+        INFORMATION_REQUESTED
+        VERIFIED
+        RE_VERIFICATION_STARTED
+        RE_VERIFICATION_IN_PROGRESS
+    }
+
+    entity BusinessEntity <<entity>> {
+        + id : UUID <<PK>>
+        + name : String
+        + contactEmail : String
+        + type : BusinessPartnerType
+        + version : Long
+        + payedForDidSlots : int
+        + payedForTrustVerification : boolean
+        + trustVerificationStatus : BusinessEntityTrustStatus
+        + maxDateForTrustVerificationStatus : Instant
+        + uid : String
+        + contactPhone : String
+        -- embedded --
+        + address : Address
+        + auditMetadata : AuditMetadata
+    }
+
+    BusinessEntity --> BusinessPartnerType : type
+    BusinessEntity --> BusinessEntityTrustStatus : trustVerificationStatus
+}
+
+' ========================
+' APP MODULE - STATUS
+' ========================
+
+package "Status" #FFF3E0 {
+
+    entity StatusListEntry <<entity>> {
+        + statusRegistryEntryId : UUID <<PK>>
+        + businessEntityId : UUID <<FK>>
+        + uploadCount : int
+        -- embedded --
+        + auditMetadata : AuditMetadata
+    }
+}
+
+' ========================
+' APP MODULE - IDENTIFIER
+' ========================
+
+package "Identifier" #F3E5F5 {
+
+    enum IdentifierStatus {
+        NOT_INITIALIZED
+        INITIALIZED
+        USER_DEACTIVATED
+        DEACTIVATED_BY_MIGRATION_BECAUSE_OF_UNSUPPORTED_FORMAT
+    }
+
+    entity IdentifierEntry <<entity>> {
+        + id : UUID <<PK>>
+        + businessEntityId : UUID <<FK>>
+        + uploadCount : int
+        + did : String
+        + description : String
+        + status : IdentifierStatus
+        -- embedded --
+        + auditMetadata : AuditMetadata
+    }
+
+    IdentifierEntry --> IdentifierStatus : status
+}
+
+' ========================
+' APP MODULE - DOCUMENTS
+' ========================
+
+package "Documents" #FCE4EC {
+
+    enum PartnerDocumentType {
+        TRUST_ONBOARDING_OTHER
+        TRUST_ONBOARDING_DECLARATION_OF_INTENT
+    }
+
+    entity PartnerDocument <<entity>> {
+        + id : UUID <<PK>>
+        + partnerId : UUID <<FK>>
+        + trustOnboardingSubmissionId : UUID <<FK>>
+        + virusScanId : String
+        + version : Long
+        + type : PartnerDocumentType
+        + fileName : String
+        + storageObjectKey : String
+        + mediaType : MediaType
+        + submittedAt : Instant
+        -- embedded --
+        + auditMetadata : AuditMetadata
+    }
+
+    PartnerDocument --> PartnerDocumentType : type
+}
+
+' ========================
+' APP MODULE - TRUST
+' ========================
+
+package "Trust" #E0F7FA {
+
+    enum TrustOnboardingSubmissionStatus {
+        UNSUBMITTED
+        UNSUBMITTED_TIMEOUT
+        SUBMITTED
+        INFORMATION_REQUESTED
+        REJECTED
+        SUCCEEDED
+    }
+
+    enum TrustOnboardingRejectReason {
+        INCOMPLETE_INFORMATION
+        INACCURATE_INFORMATION
+        OUTDATED_INFORMATION
+        IDENTITY_VERIFICATION_FAILURE
+        LACK_OF_AUTHORIZATION
+        TECHNICAL_ISSUES
+        DUPLICATE_APPLICATION
+        NO_RESPONSE_FROM_APPLICANT
+        FRAUDULENT_ACTIVITY
+        OTHER
+    }
+
+    enum TrustOnboardingDeclineReason {
+        MISSING_DOCUMENTS
+        UNAUTHORIZED_SIGNATORIES
+        INCORRECT_COMPANY_INFORMATION
+        INCORRECT_DECLARATION_OF_INTENT
+        OTHER
+    }
+
+    enum Language {
+        DE
+        FR
+        IT
+        EN
+        RM
+    }
+
+    enum TrustAdditionalDidsSubmissionStatus {
+        UNSUBMITTED
+        UNSUBMITTED_TIMEOUT
+        SUBMITTED
+        REJECTED
+        SUCCEEDED
+    }
+
+    enum TrustAdditionalDidsRejectReason {
+        UNKNOWN
+    }
+
+    enum ProofOfPossessionStatus {
+        VALID
+        NOT_SUPPLIED
+    }
+
+    enum VcSchemaSubmissionStatus {
+        ACCEPTED
+        SUCCEEDED
+        FAILED
+    }
+
+    enum VqpsSubmissionStatus {
+        ACCEPTED
+        PUBLICATION_SUCCEEDED
+        PUBLICATION_FAILED
+    }
+
+    enum VqpsPublicationFailureReason {
+        UNKNOWN
+    }
+
+    enum SigningRule {
+        SINGLE_SIGNATURE
+        JOINT_SIGNATURE_TWO
+        JOINT_SIGNATURE_THREE
+    }
+
+    entity TrustOnboardingSubmission <<entity>> {
+        + id : UUID <<PK>>
+        + partnerId : UUID <<FK>>
+        + version : Long
+        + initiatedAt : Instant
+        + submittedAt : Instant
+        + entityEmail : String
+        + uid : String
+        + isRegisteredInCommercialRegister : Boolean
+        + correspondingLanguage : Language
+        + status : TrustOnboardingSubmissionStatus
+        + rejectReason : TrustOnboardingRejectReason
+        + declineReason : TrustOnboardingDeclineReason
+        + partnerNote : String
+        + requestedPartnerType : BusinessPartnerType
+        + signingRule : SigningRule
+        -- jsonb --
+        + proofOfPossessions : List<ProofOfPossession>
+        + signatories : List<Signatory>
+        + declarationOfIntent : DeclarationOfIntent
+        -- embedded --
+        + entityName : MultiLanguageText
+        + entityAddress : Address
+        + contactPerson : Contact
+        + auditMetadata : AuditMetadata
+    }
+
+    entity TrustAdditionalDidsSubmission <<entity>> {
+        + id : UUID <<PK>>
+        + partnerId : UUID <<FK>>
+        + version : Long
+        + status : TrustAdditionalDidsSubmissionStatus
+        + rejectReason : TrustAdditionalDidsRejectReason
+        -- jsonb --
+        + permissionDid : ProofOfPossession
+        + didsToAdd : List<ProofOfPossession>
+        -- embedded --
+        + auditMetadata : AuditMetadata
+    }
+
+    entity VcSchemaSubmission <<entity>> {
+        + id : UUID <<PK>>
+        + partnerId : UUID <<FK>>
+        + version : Long
+        + status : VcSchemaSubmissionStatus
+        + file : String
+        + failureReason : String
+        -- embedded --
+        + auditMetadata : AuditMetadata
+    }
+
+    entity VqpsSubmission <<entity>> {
+        + id : UUID <<PK>>
+        + partnerId : UUID <<FK>>
+        + version : Long
+        + status : VqpsSubmissionStatus
+        + sub : String
+        + scope : String
+        -- jsonb --
+        + purposeName : Map<String, String>
+        + purposeDescription : Map<String, String>
+        + query : JsonNode
+        -- embedded --
+        + publicationResult : VqpsPublicationResult
+        + auditMetadata : AuditMetadata
+        -- optional --
+        + publicationFailureReason : VqpsPublicationFailureReason
+    }
+
+    TrustOnboardingSubmission --> TrustOnboardingSubmissionStatus : status
+    TrustOnboardingSubmission --> TrustOnboardingRejectReason : rejectReason
+    TrustOnboardingSubmission --> TrustOnboardingDeclineReason : declineReason
+    TrustOnboardingSubmission --> Language : correspondingLanguage
+    TrustOnboardingSubmission --> SigningRule : signingRule
+    TrustAdditionalDidsSubmission --> TrustAdditionalDidsSubmissionStatus : status
+    TrustAdditionalDidsSubmission --> TrustAdditionalDidsRejectReason : rejectReason
+    TrustAdditionalDidsSubmission --> ProofOfPossessionStatus
+    VcSchemaSubmission --> VcSchemaSubmissionStatus : status
+    VqpsSubmission --> VqpsSubmissionStatus : status
+    VqpsSubmission --> VqpsPublicationFailureReason : publicationFailureReason
+}
+
+' ========================
+' CROSS-MODULE RELATIONSHIPS
+' ========================
+
+BusinessEntity ||--o{ StatusListEntry : "businessEntityId"
+BusinessEntity ||--o{ IdentifierEntry : "businessEntityId"
+BusinessEntity ||--o{ TrustOnboardingSubmission : "partnerId"
+BusinessEntity ||--o{ TrustAdditionalDidsSubmission : "partnerId"
+BusinessEntity ||--o{ VcSchemaSubmission : "partnerId"
+BusinessEntity ||--o{ VqpsSubmission : "partnerId"
+BusinessEntity ||--o{ PartnerDocument : "partnerId"
+TrustOnboardingSubmission ||--o{ PartnerDocument : "trustOnboardingSubmissionId"
+
+' ========================
+' VALUE OBJECTS (secondary)
+' ========================
+
+package "Common Value Objects" #EEEEFF {
+
+    class AuditMetadata <<embeddable>> {
+        + lastModifiedAt : Instant
+        + lastModifiedBy : String
+        + createdAt : Instant
+        + createdBy : String
+    }
+
+    class Address <<embeddable>> {
+        + street : String
+        + city : String
+        + postalCode : String
+        + country : String
+        + region : String
+    }
+
+    class MultiLanguageText <<embeddable>> {
+        + de : String
+        + fr : String
+        + it : String
+        + en : String
+        + rm : String
+    }
+
+    class Contact <<embeddable>> {
+        + firstName : String
+        + lastName : String
+        + email : String
+        + phone : String
+        + address : Address
+    }
+
+    class ProofOfPossession <<json>> {
+        + did : String
+        + nonce : String
+        + status : ProofOfPossessionStatus
+        + verifiedAt : Instant
+    }
+
+    class Signatory <<json>> {
+        + firstName : String
+        + lastName : String
+        + phone : String
+        + email : String
+    }
+
+    class DeclarationOfIntent <<json>> {
+        + fullySignedDocumentId : String
+        + validationReport : FileReport
+    }
+
+    class VqpsPublicationResult <<embeddable>> {
+        + jti : UUID
+        + jwt : String
+        + expiresAt : Instant
+    }
+}
+
+@enduml
+

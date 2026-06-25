@@ -1,0 +1,50 @@
+@startuml registry-status
+
+!pragma layout smetana
+
+skinparam ClassBackgroundColor White
+skinparam ClassBorderColor Black
+skinparam ArrowColor Black
+skinparam packageStyle rectangle
+
+package "Registry Status" #EFEBE9 {
+
+    enum DatastoreStatus {
+        SETUP
+        ACTIVE
+    }
+
+    enum VcType {
+        TokenStatusListJWT
+    }
+
+    entity StatusListDatastoreEntity <<entity, table=datastore_entity>> {
+        + id : UUID <<PK>>
+        + status : DatastoreStatus
+        -- embedded --
+        + createdAt : Instant
+        + createdBy : String
+        + lastModifiedAt : Instant
+        + lastModifiedBy : String
+    }
+
+    entity VcEntity <<entity, table=vc_entity>> {
+        + id : Long <<PK>>
+        + vcType : VcType
+        + rawVc : String
+        + vcPayload : String
+        + readUri : String
+        -- embedded --
+        + createdAt : Instant
+        + createdBy : String
+        + lastModifiedAt : Instant
+        + lastModifiedBy : String
+    }
+
+    VcEntity }o--|| StatusListDatastoreEntity : "base_id"
+    StatusListDatastoreEntity --> DatastoreStatus : status
+    VcEntity --> VcType : vcType
+}
+
+@enduml
+

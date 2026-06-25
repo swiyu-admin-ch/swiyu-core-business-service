@@ -1,0 +1,16 @@
+# IntelliJ
+*.iml
+.idea/*
+!.idea/runConfigurations
+!.idea/runConfigurations/*.xml
+!.idea/codeStyles
+!.idea/codeStyles/*.xml
+
+# Maven
+target/
+*.versionsBackup
+
+*.log
+
+# VSCode
+.vscode/*

@@ -1,0 +1,45 @@
+#!/bin/bash
+
+set -e
+
+# Enforces that every push:
+#   1. Declares a version in pom.xml (outside the <parent> block) that has a matching
+#      "## {version}" section heading in CHANGELOG.md.
+#   2. Has no unresolved TODO placeholders in CHANGELOG.md.
+# Both files are read from the working tree.
+(
+  echo "Checking CHANGELOG.md version entry..."
+  REPO_ROOT=$(git rev-parse --show-toplevel)
+  cd "$REPO_ROOT"
+
+  POM_CONTENT=$(cat pom.xml)
+  CHANGELOG_CONTENT=$(cat CHANGELOG.md)
+
+  CURRENT_VERSION=$(printf '%s\n' "$POM_CONTENT" | awk '
+    /<parent>/ { in_parent=1 }
+    /<\/parent>/ { in_parent=0 }
+    !in_parent && /<version>/ {
+      if (match($0, /[0-9]+\.[0-9]+\.[0-9]+(-SNAPSHOT)?/)) {
+        v = substr($0, RSTART, RLENGTH)
+        gsub(/-SNAPSHOT/, "", v)
+        print v
+        exit
+      }
+    }
+  ')
+
+  if [ -z "$CURRENT_VERSION" ]; then
+    echo "Error: Could not determine current version from pom.xml."
+    exit 1
+  fi
+
+  if ! printf '%s\n' "$CHANGELOG_CONTENT" | grep -Fxq "## ${CURRENT_VERSION}"; then
+    echo "Error: No CHANGELOG.md entry found for current version ${CURRENT_VERSION}. Add one before pushing."
+    exit 1
+  fi
+
+  if printf '%s\n' "$CHANGELOG_CONTENT" | grep -q "TODO"; then
+    echo "Error: CHANGELOG.md contains unresolved TODO entries. Please fill them in before pushing."
+    exit 1
+  fi
+)

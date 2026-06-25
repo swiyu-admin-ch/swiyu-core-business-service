@@ -1,0 +1,12 @@
+{
+  "extends": "",
+  "extendsIntegrity": "",
+  "schemaUri": "https://example.com/schema",
+  "schemaUriIntegrity": "",
+  "display": [
+    {}
+  ],
+  "claims": [
+    {}
+  ]
+}

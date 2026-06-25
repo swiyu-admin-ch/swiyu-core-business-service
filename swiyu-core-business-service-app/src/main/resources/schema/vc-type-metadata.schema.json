@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "vct",
+    "name",
+    "description"
+  ],
+  "properties": {
+    "vct": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "extends": {
+      "type": "string"
+    },
+    "extendsIntegrity": {
+      "type": "string"
+    },
+    "schemaUri": {
+      "type": "string",
+      "format": "uri"
+    },
+    "schemaUriIntegrity": {
+      "type": "string"
+    },
+    "display": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  }
+}

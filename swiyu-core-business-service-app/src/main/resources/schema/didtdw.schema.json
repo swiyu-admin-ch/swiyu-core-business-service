@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://business.core.swiyu.bj.admin.ch/didtdw.schema.json",
+  "type": "array",
+  "title": "DID Log Entry",
+  "items": false,
+  "prefixItems": [
+    {
+      "$id": "versionId",
+      "type": "string"
+    },
+    {
+      "$id": "versionTime",
+      "type": "string",
+      "format": "date-time"
+    },
+    {
+      "$id": "parameters",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "method": {
+          "type": "string",
+          "const": "did:tdw:0.3"
+        },
+        "portable": {
+          "type": "boolean",
+          "const": false
+        }
+      },
+      "not": {
+        "required": [
+          "witness"
+        ]
+      }
+    },
+    {
+      "$id": "diddoc_state",
+      "type": "object",
+      "additionalProperties": true
+    },
+    {
+      "$id": "data_integrity_proof",
+      "additionalProperties": true,
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "array"
+        }
+      ]
+    }
+  ]
+}

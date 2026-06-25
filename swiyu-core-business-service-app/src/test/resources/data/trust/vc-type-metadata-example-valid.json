@@ -1,0 +1,15 @@
+{
+  "vct": "https://test-url.ch/asdf",
+  "name": "Test Metadata",
+  "description": "This is a test metadata",
+  "extends": "",
+  "extendsIntegrity": "",
+  "schemaUri": "https://example.com/schema",
+  "schemaUriIntegrity": "",
+  "display": [
+    {}
+  ],
+  "claims": [
+    {}
+  ]
+}

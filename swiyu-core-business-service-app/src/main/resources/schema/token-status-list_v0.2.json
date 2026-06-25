@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Status List",
+  "type": "object",
+  "properties": {
+    "iss": {
+      "type": "string",
+      "description": "Issuer of the status list."
+    },
+    "sub": {
+      "type": "string",
+      "description": "Subject of the status list."
+    },
+    "iat": {
+      "type": "integer",
+      "description": "Time at which the status list was issued."
+    },
+    "status_list": {
+      "type": "object",
+      "properties": {
+        "lst": {
+          "type": "string",
+          "description": "Base64url-encoded bit string representing the status of tokens."
+        },
+        "bits": {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            4,
+            8
+          ],
+          "description": "Number of bits used to represent each token's status."
+        }
+      },
+      "required": [
+        "bits",
+        "lst"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "status_list",
+    "iat",
+    "sub"
+  ],
+  "additionalProperties": true
+}

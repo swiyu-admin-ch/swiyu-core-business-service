@@ -1,0 +1,16 @@
+#
+# Profile for activating the Keycloak from API GW as second Identity Provider.
+# Not needed on every stage.
+#
+jeap:
+  security:
+    oauth2:
+      resourceserver:
+        b2-b-gateway:
+          issuer: "${AUTH_B2B_ISSUER_URI}"
+          jwk-set-uri: "${AUTH_B2B_JWK_SET_URI}"
+          # jEAP requires client-id and client-secret to be set for all clients,
+          # but the keymanager should never send lightweight tokens.
+          introspection:
+            client-id: "unset"
+            client-secret: "unset"

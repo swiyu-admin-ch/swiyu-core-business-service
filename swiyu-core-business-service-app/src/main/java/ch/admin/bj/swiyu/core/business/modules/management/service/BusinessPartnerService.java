@@ -7,12 +7,14 @@ import static ch.admin.bj.swiyu.core.business.modules.management.service.mapper.
 import static org.springframework.util.StringUtils.hasText;
 
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
+import ch.admin.bj.swiyu.core.business.common.api.ListItemDto;
 import ch.admin.bj.swiyu.core.business.common.api.utils.PageableUtils;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditMapper;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
+import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
 import ch.admin.bj.swiyu.core.business.modules.management.api.*;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
@@ -23,6 +25,7 @@ import ch.admin.bj.swiyu.core.business.modules.status.service.StatusListEntrySer
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -40,6 +43,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class BusinessPartnerService {
 
     private static final String BUSINESS_PARTNER_WITH_ID_S_NOT_FOUND = "Business partner with id '%s' not found.";
+    private static final Map<String, String> BUSINESS_PARTNER_SORT_FIELDS = Map.of(
+        "name",
+        "defaultEntityName",
+        "entityName",
+        "defaultEntityName"
+    );
     private final BusinessPartnerRepository businessPartnerRepository;
     private final PamsClient pamsClient;
     private final IdentifierEntryService identifierEntryService;
@@ -49,10 +58,7 @@ public class BusinessPartnerService {
     @Transactional(readOnly = true)
     public Page<BusinessEntityDto> getAllEntities(List<UUID> businessEntityIds, Pageable pageable) {
         return businessPartnerRepository
-            .findAllByIdIn(
-                businessEntityIds,
-                PageableUtils.toDbPageableFromUserPageable(BusinessEntityDto.class, BusinessEntity.class, pageable)
-            )
+            .findAllByIdIn(businessEntityIds, toBusinessPartnerPageable(BusinessEntityDto.class, pageable))
             .map(this::toBusinessEntityDto);
     }
 
@@ -102,7 +108,7 @@ public class BusinessPartnerService {
         }
         var businessPartner = new BusinessEntity(
             UUID.randomUUID(),
-            request.name(),
+            LocalizedMapUtil.fromSingleName(request.name()),
             request.contactEmail(),
             toBusinessPartnerType(request.partnerType()),
             toAddress(request),
@@ -134,7 +140,7 @@ public class BusinessPartnerService {
             .findById(businessEntityId)
             .orElseThrow(throwNotFoundException(businessEntityId));
         businessPartner.update(
-            businessPartner.getName(),
+            businessPartner.getEntityName(),
             updateBusinessEntityDto.contactEmailAddress(),
             businessPartner.getAddress(),
             businessPartner.getUid(),
@@ -142,8 +148,10 @@ public class BusinessPartnerService {
         );
 
         // Only update PAMS if relevant data changed
-        if (businessPartner.getName().compareTo(updateBusinessEntityDto.name()) != 0) {
-            businessPartner.setName(updateBusinessEntityDto.name());
+        var previousDefaultName = LocalizedMapUtil.getDefaultValue(businessPartner.getEntityName());
+        var newDefaultName = updateBusinessEntityDto.name();
+        if (!previousDefaultName.equals(newDefaultName)) {
+            businessPartner.setName(LocalizedMapUtil.fromSingleName(updateBusinessEntityDto.name()));
             pamsClient.updateBusinessPartner(businessPartner);
         }
         businessPartner = businessPartnerRepository.saveAndFlush(businessPartner);
@@ -158,7 +166,7 @@ public class BusinessPartnerService {
     @Transactional
     public void updateBusinessPartner(
         UUID businessPartnerId,
-        String name,
+        Map<String, String> entityName,
         Address address,
         String email,
         String uid,
@@ -170,10 +178,11 @@ public class BusinessPartnerService {
             .findById(businessPartnerId)
             .orElseThrow(throwNotFoundException(businessPartnerId));
 
-        var nameChanged = !businessPartner.getName().equals(name);
+        var previousDefaultName = LocalizedMapUtil.getDefaultValue(businessPartner.getEntityName());
+        var newDefaultName = LocalizedMapUtil.getDefaultValue(entityName);
+        var nameChanged = !previousDefaultName.equals(newDefaultName);
 
-        businessPartner.setName(name);
-        businessPartner.update(name, email, address, uid, phone);
+        businessPartner.update(entityName, email, address, uid, phone);
         businessPartner.setType(type);
 
         if (nameChanged) {
@@ -241,20 +250,15 @@ public class BusinessPartnerService {
     @Transactional(readOnly = true)
     public Page<BusinessPartnerListItemDto> getAllPartnersById(List<UUID> businessPartnerIds, Pageable pageable) {
         return businessPartnerRepository
-            .findAllByIdIn(
-                businessPartnerIds,
-                PageableUtils.toDbPageableFromUserPageable(
-                    BusinessPartnerListItemDto.class,
-                    BusinessEntity.class,
-                    pageable
-                )
-            )
+            .findAllByIdIn(businessPartnerIds, toBusinessPartnerPageable(BusinessPartnerListItemDto.class, pageable))
             .map(this::getBusinessPartnerListItemDto);
     }
 
     @Transactional(readOnly = true)
     public Page<BusinessPartnerListItemDto> getAllPartners(Pageable pageable) {
-        return businessPartnerRepository.findAll(pageable).map(this::getBusinessPartnerListItemDto);
+        return businessPartnerRepository
+            .findAll(toBusinessPartnerPageable(BusinessPartnerListItemDto.class, pageable))
+            .map(this::getBusinessPartnerListItemDto);
     }
 
     @Transactional(readOnly = true)
@@ -314,6 +318,15 @@ public class BusinessPartnerService {
                 statusListEntryService.getCurrentLimits(businessPartner.getId()),
                 identifierEntryService.getCurrentLimits(businessPartner.getId())
             )
+        );
+    }
+
+    private Pageable toBusinessPartnerPageable(Class<? extends ListItemDto> dtoClass, Pageable pageable) {
+        return PageableUtils.toDbPageableFromUserPageable(
+            dtoClass,
+            BusinessEntity.class,
+            pageable,
+            BUSINESS_PARTNER_SORT_FIELDS
         );
     }
 

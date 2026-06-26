@@ -13,6 +13,7 @@ import ch.admin.bj.swiyu.core.business.common.api.ApiObjectDto;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
 import ch.admin.bj.swiyu.core.business.common.api.ObjectLimitsDto;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
+import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
 import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerDto;
 import ch.admin.bj.swiyu.core.business.modules.management.api.CreatePartnerDto;
@@ -306,6 +307,9 @@ class BusinessPartnerInternalV2ControllerIT {
         var dbInsertedBusinessPartner = businessEntities.getContent().get(0);
         assertThat(dbInsertedBusinessPartner.id()).isEqualTo(UUID.fromString("deadbeef-0000-0000-0000-000000000000"));
         assertThat(dbInsertedBusinessPartner.name()).isEqualTo("Hello World AG");
+        assertThat(LocalizedMapUtil.getDefaultValue(dbInsertedBusinessPartner.entityName())).isEqualTo(
+            "Hello World AG"
+        );
     }
 
     @Test
@@ -409,6 +413,7 @@ class BusinessPartnerInternalV2ControllerIT {
         );
         assertThat(businessPartnerDto.id()).isEqualTo(UUID.fromString(BusinessEntityTestData.ENTITY_A_S));
         assertThat(businessPartnerDto.name()).isEqualTo("Hello World AG");
+        assertThat(LocalizedMapUtil.getDefaultValue(businessPartnerDto.entityName())).isEqualTo("Hello World AG");
     }
 
     @Test

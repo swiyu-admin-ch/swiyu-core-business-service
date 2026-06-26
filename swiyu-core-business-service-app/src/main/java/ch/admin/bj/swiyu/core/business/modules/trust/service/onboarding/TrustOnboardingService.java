@@ -16,14 +16,12 @@ import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocument
 import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerTrustStatusDto;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.*;
-import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionDoiValidationProperties;
 import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionLimitProperties;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.publisher.DomainEventPublisher;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.EventMapper;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.TrustOnboardingMapper;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.*;
-import ch.admin.suis.client.core.service.IValidationServiceClient;
 import com.querydsl.core.BooleanBuilder;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.constraints.NotNull;
@@ -60,8 +58,6 @@ public class TrustOnboardingService {
     private final TrustOnboardingSubmissionDocumentValidator trustOnboardingSubmissionDocumentValidator;
     private final TrustOnboardingSubmissionValidator trustOnboardingSubmissionValidator;
     private final TrustOnboardingSubmissionLimitProperties limitProperties;
-    private final TrustOnboardingSubmissionDoiValidationProperties doiValidationProperties;
-    private final IValidationServiceClient validationServiceClient;
     private final DeclarationOfIntentValidator declarationOfIntentValidator;
     private final AuditPublisher auditPublisher;
 
@@ -167,7 +163,7 @@ public class TrustOnboardingService {
             )
         );
         if (inProgressEntry != null) {
-            return toTrustOnboardingsSubmissionDto(inProgressEntry);
+            return toTrustOnboardingSubmissionDto(inProgressEntry);
         }
 
         String uid = null;
@@ -178,7 +174,7 @@ public class TrustOnboardingService {
         TrustOnboardingSubmission trustOnboardingSubmission = trustOnboardingSubmissionRepository.save(
             new TrustOnboardingSubmission(
                 dto.partnerId(),
-                toMultiLanguageTextEntity(dto.getEntityName()),
+                dto.getEntityName(),
                 AddressMapper.toAddressEntity(dto.entityAddress()),
                 dto.getEntityEmail(),
                 toContactEntity(dto.getContactPerson()),
@@ -191,7 +187,7 @@ public class TrustOnboardingService {
                 toSignatories(dto.signatories())
             )
         );
-        return toTrustOnboardingsSubmissionDto(trustOnboardingSubmission);
+        return toTrustOnboardingSubmissionDto(trustOnboardingSubmission);
     }
 
     @Transactional(readOnly = true)
@@ -231,7 +227,7 @@ public class TrustOnboardingService {
         }
 
         trustOnboardingSubmission.update(
-            toMultiLanguageTextEntity(dto.getEntityName()),
+            dto.getEntityName(),
             AddressMapper.toAddressEntity(dto.entityAddress()),
             dto.getEntityEmail(),
             toContactEntity(dto.getContactPerson()),
@@ -277,10 +273,7 @@ public class TrustOnboardingService {
     ) {
         return (
             !Objects.equals(current.getUid(), newUid) ||
-            !Objects.equals(
-                TrustOnboardingMapper.toMultiLanguageTextDto(current.getEntityName()),
-                dto.getEntityName()
-            ) ||
+            !Objects.equals(current.getEntityName(), dto.getEntityName()) ||
             !Objects.equals(AddressMapper.toAddressDto(current.getEntityAddress()), dto.entityAddress()) ||
             !proofOfPossessionValidator.isDidSelectionEqual(current.getProofOfPossessions(), dto.dids()) ||
             !Objects.equals(current.getSigningRule(), toSigningRule(dto.signingRule())) ||
@@ -426,20 +419,10 @@ public class TrustOnboardingService {
     }
 
     private void updateBusinessPartnerWithSubmissionDetails(TrustOnboardingSubmission trustOnboardingSubmission) {
-        var name = trustOnboardingSubmission.getEntityName().getDe();
-        if (name == null) {
-            name = trustOnboardingSubmission.getEntityName().getFr();
-        }
-        if (name == null) {
-            name = trustOnboardingSubmission.getEntityName().getIt();
-        }
-        if (name == null) {
-            name = trustOnboardingSubmission.getEntityName().getEn();
-        }
-
+        var entityName = trustOnboardingSubmission.getEntityName();
         businessPartnerService.updateBusinessPartner(
             trustOnboardingSubmission.getPartnerId(),
-            name,
+            entityName,
             trustOnboardingSubmission.getEntityAddress(),
             trustOnboardingSubmission.getEntityEmail(),
             trustOnboardingSubmission.getUid(),

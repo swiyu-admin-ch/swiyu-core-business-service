@@ -4,7 +4,7 @@ import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
-import ch.admin.bj.swiyu.core.business.common.domain.MultiLanguageText;
+import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.CoreDemoData;
 import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.MockMultipartFile;
 import ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocumentsRepository;
@@ -19,6 +19,7 @@ import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.TrustOnboardingService;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +48,7 @@ public class DemoDataImportService {
         var data = List.of(
             new BusinessEntity(
                 CoreDemoData.CORE_ID_BP_BASE_ONBOARDING_ONLY,
-                CoreDemoData.CORE_ID_BP_BASE_ONBOARDING_ONLY_NAMES.getDe(),
+                LocalizedMapUtil.getDefaultValue(CoreDemoData.CORE_ID_BP_BASE_ONBOARDING_ONLY_NAMES),
                 CoreDemoData.CORE_ID_BP_BASE_ONBOARDING_ONLY_EMAIL,
                 BusinessPartnerType.INDIVIDUAL,
                 CoreDemoData.CORE_ID_BP_BASE_ONBOARDING_ONLY_ADDRESS,
@@ -56,7 +57,7 @@ public class DemoDataImportService {
             ),
             new BusinessEntity(
                 CoreDemoData.CORE_ID_BP_DEFAULT,
-                CoreDemoData.CORE_ID_BP_DEFAULT_NAMES.getDe(),
+                LocalizedMapUtil.getDefaultValue(CoreDemoData.CORE_ID_BP_DEFAULT_NAMES),
                 CoreDemoData.CORE_ID_BP_DEFAULT_EMAIL,
                 BusinessPartnerType.INDIVIDUAL,
                 null,
@@ -65,7 +66,7 @@ public class DemoDataImportService {
             ),
             new BusinessEntity(
                 CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED,
-                CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_NAMES.getDe(),
+                LocalizedMapUtil.getDefaultValue(CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_NAMES),
                 CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_EMAIL,
                 BusinessPartnerType.INDIVIDUAL,
                 null,
@@ -74,7 +75,7 @@ public class DemoDataImportService {
             ),
             new BusinessEntity(
                 CoreDemoData.CORE_ID_BP_GOV,
-                CoreDemoData.CORE_ID_BP_GOV_NAMES.getDe(),
+                LocalizedMapUtil.getDefaultValue(CoreDemoData.CORE_ID_BP_GOV_NAMES),
                 CoreDemoData.CORE_ID_BP_GOV_EMAIL,
                 BusinessPartnerType.GOVERNMENTAL_INSTITUTION
             )
@@ -249,7 +250,7 @@ public class DemoDataImportService {
     private TrustOnboardingSubmission generateTrustOnboardingSubmission( // NOSONAR
         UUID tosId,
         UUID partnerId,
-        MultiLanguageText names,
+        Map<String, String> entityName,
         Address address,
         Contact contact,
         String email,
@@ -263,7 +264,7 @@ public class DemoDataImportService {
             new TrustOnboardingSubmission(
                 tosId,
                 partnerId,
-                names,
+                entityName,
                 address,
                 email,
                 contact,

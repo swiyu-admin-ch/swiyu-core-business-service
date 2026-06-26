@@ -2,13 +2,17 @@ package ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding;
 
 import ch.admin.bj.swiyu.core.business.common.domain.*;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
+import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
 import com.google.common.annotations.VisibleForTesting;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -49,14 +53,10 @@ public class TrustOnboardingSubmission {
     private Long version;
 
     @Getter
-    @Embedded
-    @AttributeOverride(name = "de", column = @Column(name = "entity_name_de"))
-    @AttributeOverride(name = "fr", column = @Column(name = "entity_name_fr"))
-    @AttributeOverride(name = "it", column = @Column(name = "entity_name_it"))
-    @AttributeOverride(name = "en", column = @Column(name = "entity_name_en"))
-    @AttributeOverride(name = "rm", column = @Column(name = "entity_name_rm"))
-    @Valid
-    private MultiLanguageText entityName;
+    @ValidLocalizedMap
+    @Column(columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, @NotBlank @Size(max = 255) String> entityName;
 
     @Getter
     @Embedded
@@ -135,7 +135,7 @@ public class TrustOnboardingSubmission {
     @VisibleForTesting
     public TrustOnboardingSubmission(
         UUID partnerId,
-        MultiLanguageText entityName,
+        Map<String, String> entityName,
         TrustOnboardingSubmissionStatus status
     ) {
         this.id = UUID.randomUUID();
@@ -147,7 +147,7 @@ public class TrustOnboardingSubmission {
 
     public TrustOnboardingSubmission( // NOSONAR
         UUID partnerId,
-        MultiLanguageText entityName,
+        Map<String, String> entityName,
         Address entityAddress,
         String entityEmail,
         Contact contactPerson,
@@ -181,7 +181,7 @@ public class TrustOnboardingSubmission {
     public TrustOnboardingSubmission( // NOSONAR
         UUID id,
         UUID partnerId,
-        MultiLanguageText entityName,
+        Map<String, String> entityName,
         Address entityAddress,
         String entityEmail,
         Contact contactPerson,
@@ -258,7 +258,7 @@ public class TrustOnboardingSubmission {
     }
 
     public void update( // NOSONAR
-        MultiLanguageText entityName,
+        Map<String, String> entityName,
         Address entityAddress,
         String entityEmail,
         Contact contactPerson,

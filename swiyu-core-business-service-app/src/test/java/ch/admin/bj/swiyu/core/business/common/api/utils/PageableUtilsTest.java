@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import ch.admin.bj.swiyu.core.business.common.exceptions.InvalidPaginationApiException;
 import ch.admin.bj.swiyu.core.business.modules.status.api.StatusListEntryDto;
 import ch.admin.bj.swiyu.core.business.modules.status.domain.StatusListEntry;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -27,6 +28,21 @@ class PageableUtilsTest {
         assertThat(result.getPageNumber()).isEqualTo(pageable.getPageNumber());
         assertThat(result.getPageSize()).isEqualTo(pageable.getPageSize());
         assertThat(result.getSort().getOrderFor("id")).isNotNull();
+    }
+
+    @Test
+    void toDbPageable_whenSortFieldRemappingProvided_thenMapsProperty() {
+        var pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "id"));
+
+        var result = PageableUtils.toDbPageableFromUserPageable(
+            testListItemDtoClass,
+            testListItemClass,
+            pageable,
+            Map.of("id", "remappedId")
+        );
+
+        assertThat(result.getSort().getOrderFor("remappedId")).isNotNull();
+        assertThat(result.getSort().getOrderFor("id")).isNull();
     }
 
     @Test

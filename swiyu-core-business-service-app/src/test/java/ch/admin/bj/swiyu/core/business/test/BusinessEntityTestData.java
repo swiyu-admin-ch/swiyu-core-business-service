@@ -1,11 +1,13 @@
 package ch.admin.bj.swiyu.core.business.test;
 
-import ch.admin.bj.swiyu.core.business.common.api.MultiLanguageTextDto;
+import static ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil.fromLanguages;
+
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntityTrustStatus;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
+import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -126,8 +128,9 @@ public class BusinessEntityTestData {
         return new Address("Musterstrasse 1", "Bern", "3000", "Switzerland", "BE");
     }
 
-    public static MultiLanguageTextDto multiLanguageTextDtoEntityName() {
-        return new MultiLanguageTextDto(
+    public static Map<String, String> entityNameLocalizedMap() {
+        return fromLanguages(
+            "Test Entity Name DE",
             "Test Entity Name DE",
             "Test Entity Name FR",
             "Test Entity Name IT",

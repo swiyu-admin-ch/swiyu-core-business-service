@@ -18,7 +18,6 @@ import ch.admin.bj.swiyu.antivirus.client.api.ScanApi;
 import ch.admin.bj.swiyu.antivirus.client.model.ScanResult;
 import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
-import ch.admin.bj.swiyu.core.business.common.api.MultiLanguageTextDto;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.did.DidPublicKeyLoader;
 import ch.admin.bj.swiyu.core.business.common.domain.*;
@@ -138,7 +137,7 @@ class TrustOnboardingServiceIT {
         assertNotNull(resultDto);
         assertNotNull(resultDto.id());
         assertEquals(request.partnerId(), resultDto.partnerId());
-        assertEquals(request.getEntityName(), resultDto.entityName());
+        assertEquals(request.getEntityName(), resultDto.name());
         assertEquals(request.entityEmail(), resultDto.entityEmail());
         assertEquals(request.getContactPerson(), resultDto.contactPerson());
         assertEquals(request.getRegistryIds().get("UID"), resultDto.registryIds().get("UID"));
@@ -151,7 +150,7 @@ class TrustOnboardingServiceIT {
         var submission = persistedEntity.get();
         assertEquals(request.partnerId(), submission.getPartnerId());
         assertEquals(TrustOnboardingSubmissionStatus.UNSUBMITTED, submission.getStatus());
-        assertEquals(request.getEntityName().de(), submission.getEntityName().getDe());
+        assertEquals(request.getEntityName(), submission.getEntityName());
         assertNotNull(submission.getProofOfPossessions());
         assertEquals(2, submission.getProofOfPossessions().size());
         assertEquals(request.dids().getFirst(), submission.getProofOfPossessions().getFirst().getDid());
@@ -227,7 +226,7 @@ class TrustOnboardingServiceIT {
 
         assertNotNull(submission);
         assertEquals(updateDto.partnerId(), submission.partnerId());
-        assertEquals(updateDto.getEntityName(), submission.entityName());
+        assertEquals(updateDto.getEntityName(), submission.name());
         assertEquals(updateDto.entityAddress(), submission.address());
         assertEquals(updateDto.entityEmail(), submission.entityEmail());
         assertEquals(updateDto.getContactPerson(), submission.contactPerson());
@@ -257,7 +256,7 @@ class TrustOnboardingServiceIT {
         // WHEN Resubmitting with identical dids
         TrustOnboardingSubmissionRequestDto requestDto = TrustOnboardingSubmissionRequestDto.builder()
             .partnerId(resultDto.partnerId())
-            .entityName(resultDto.entityName())
+            .entityName(resultDto.name())
             .entityEmail(resultDto.entityEmail())
             .entityAddress(resultDto.address())
             .contactPerson(resultDto.contactPerson())
@@ -355,7 +354,7 @@ class TrustOnboardingServiceIT {
         // WHEN Resubmitting with one additional did
         TrustOnboardingSubmissionRequestDto requestDto = TrustOnboardingSubmissionRequestDto.builder()
             .partnerId(resultDto.partnerId())
-            .entityName(resultDto.entityName())
+            .entityName(resultDto.name())
             .entityEmail(resultDto.entityEmail())
             .entityAddress(resultDto.address())
             .contactPerson(resultDto.contactPerson())
@@ -484,7 +483,7 @@ class TrustOnboardingServiceIT {
         var s = repos.trustOnboardingSubmission.save(
             new TrustOnboardingSubmission(
                 BusinessEntityTestData.DEFAULT_ENTITY,
-                new MultiLanguageText(),
+                Map.of("default", "Entity"),
                 TrustOnboardingSubmissionStatus.UNSUBMITTED
             )
         ); // intentionally incomplete
@@ -499,7 +498,7 @@ class TrustOnboardingServiceIT {
     void submit_fails_when_declarationOfIntent_is_missing() {
         var s = TrustOnboardingSubmissionTestData.trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText("de", "fr", "it", "en", "rm"),
+            Map.of("default", "de", "de-CH", "de", "fr-CH", "fr", "it-CH", "it", "en-CH", "en", "rm-CH", "rm"),
             new Address("street", "city", "postal", "country", "region"),
             "valid@example.org",
             new Contact(
@@ -533,7 +532,7 @@ class TrustOnboardingServiceIT {
         var s = TrustOnboardingSubmissionTestData.trustOnboardingSubmissionEmpty();
         // populate required fields
         s.update(
-            new MultiLanguageText("de", "fr", "it", "en", "rm"),
+            Map.of("default", "de", "de-CH", "de", "fr-CH", "fr", "it-CH", "it", "en-CH", "en", "rm-CH", "rm"),
             new Address("street", "city", "postal", "country", "region"),
             "valid@example.org",
             new Contact(
@@ -649,7 +648,7 @@ class TrustOnboardingServiceIT {
         var partnerId = businessEntity.id();
 
         var submission = TrustOnboardingSubmissionTestData.trustOnboardingSubmission(UUID.randomUUID(), partnerId);
-        var newName = new MultiLanguageText("New Name DE", "New Name FR", "New Name IT", "New Name EN", "New Name RM");
+        var newNameLocalizedMap = Map.of("default", "New Name default", "de-CH", "New Name DE", "fr-CH", "New Name FR");
         var newAddress = new Address("New Street", "New City", "1234", "CH", "Region");
         var newEmail = "new@example.com";
         var newUid = "CHE-123.456.789";
@@ -657,7 +656,7 @@ class TrustOnboardingServiceIT {
         var newType = BusinessPartnerType.BUSINESS;
 
         submission.update(
-            newName,
+            newNameLocalizedMap,
             newAddress,
             newEmail,
             new Contact("First", "Last", "contact@example.com", newPhone, newAddress),
@@ -676,7 +675,12 @@ class TrustOnboardingServiceIT {
 
         // THEN
         var updatedPartner = businessPartnerService.getBusinessPartner(partnerId);
-        assertEquals("New Name DE", updatedPartner.name());
+        assertEquals("New Name default", updatedPartner.name());
+        assertEquals("New Name DE", updatedPartner.entityName().get("de-CH"));
+        assertEquals("New Name FR", updatedPartner.entityName().get("fr-CH"));
+        assertNull(updatedPartner.entityName().get("it-CH"));
+        assertNull(updatedPartner.entityName().get("en-CH"));
+        assertNull(updatedPartner.entityName().get("rm-CH"));
         assertEquals(newEmail, updatedPartner.contactEmailAddress());
         assertEquals(newUid, updatedPartner.uid());
         assertEquals(newPhone, updatedPartner.contactPhone());
@@ -822,7 +826,7 @@ class TrustOnboardingServiceIT {
 
         var updateDto = TrustOnboardingSubmissionRequestDto.builder()
             .partnerId(submission.getPartnerId())
-            .entityName(new MultiLanguageTextDto("CHANGED", null, null, null, null)) // changed name
+            .entityName(Map.of("default", "CHANGED", "de-CH", "CHANGED")) // changed name
             .entityAddress(trustOnboardingSubmissionRequestDto().entityAddress())
             .entityEmail(trustOnboardingSubmissionRequestDto().entityEmail())
             .contactPerson(trustOnboardingSubmissionRequestDto().getContactPerson())

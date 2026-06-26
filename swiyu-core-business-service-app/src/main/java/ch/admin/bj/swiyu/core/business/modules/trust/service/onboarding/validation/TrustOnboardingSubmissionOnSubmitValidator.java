@@ -34,20 +34,32 @@ public class TrustOnboardingSubmissionOnSubmitValidator {
      */
     private static final Map<String, Function<TrustOnboardingSubmission, Object>> REQUIRED_ACCESSORS =
         new LinkedHashMap<>();
-    // sonar complains about duplicate usage of string literals
-    private static final String ENTITY_EMAIL = "entityEmail";
-    private static final String ENTITY_PROOFS = "proofOfPossessions";
 
-    static {
-        REQUIRED_ACCESSORS.put("entityName", TrustOnboardingSubmission::getEntityName); // String
-        REQUIRED_ACCESSORS.put("entityAddress", TrustOnboardingSubmission::getEntityAddress); // Object
-        REQUIRED_ACCESSORS.put(ENTITY_EMAIL, TrustOnboardingSubmission::getEntityEmail); // String
-        REQUIRED_ACCESSORS.put("contactPerson", TrustOnboardingSubmission::getContactPerson); // Object
-        REQUIRED_ACCESSORS.put(ENTITY_PROOFS, TrustOnboardingSubmission::getProofOfPossessions);
+    private static class Field {
+
+        private static final String ENTITY_NAME = "entityName";
+        private static final String ENTITY_EMAIL = "entityEmail";
+        private static final String ENTITY_PROOFS = "proofOfPossessions";
+        private static final String ENTITY_ADDRESS = "entityAddress";
+        private static final String CONTACT_PERSON = "contactPerson";
+        public static final String SIGNATORIES = "signatories";
+        public static final String SIGNING_RULE = "signingRule";
     }
 
-    private static final String INVALID_ERROR_CODE = "INVALID";
-    private static final String REQUIRED_ERROR_CODE = "REQUIRED";
+    static {
+        REQUIRED_ACCESSORS.put(Field.ENTITY_NAME, TrustOnboardingSubmission::getEntityName); // Map
+        REQUIRED_ACCESSORS.put(Field.ENTITY_ADDRESS, TrustOnboardingSubmission::getEntityAddress); // Object
+        REQUIRED_ACCESSORS.put(Field.ENTITY_EMAIL, TrustOnboardingSubmission::getEntityEmail); // String
+        REQUIRED_ACCESSORS.put(Field.CONTACT_PERSON, TrustOnboardingSubmission::getContactPerson); // Object
+        REQUIRED_ACCESSORS.put(Field.ENTITY_PROOFS, TrustOnboardingSubmission::getProofOfPossessions);
+    }
+
+    private static class ErrorCode {
+
+        public static final String INVALID = "INVALID";
+        public static final String REQUIRED = "REQUIRED";
+        public static final String BLANK = "BLANK";
+    }
 
     private final TrustOnboardingSubmissionValidator trustOnboardingSubmissionValidator;
 
@@ -58,6 +70,7 @@ public class TrustOnboardingSubmissionOnSubmitValidator {
 
         // Generic required checks
         validateRequiredFields(s, errors);
+        validateEntityNameDefaultTranslation(s, errors);
 
         validateSigningRule(s, errors);
 
@@ -82,10 +95,10 @@ public class TrustOnboardingSubmissionOnSubmitValidator {
     }
 
     private static void validateEmailFormat(TrustOnboardingSubmission s, Errors errors) {
-        if (!errors.hasFieldErrors(ENTITY_EMAIL)) {
+        if (!errors.hasFieldErrors(Field.ENTITY_EMAIL)) {
             String email = s.getEntityEmail();
             if (email != null && !EMAIL_PATTERN.matcher(email.trim()).matches()) {
-                errors.rejectValue(ENTITY_EMAIL, "INVALID_FORMAT");
+                errors.rejectValue(Field.ENTITY_EMAIL, "INVALID_FORMAT");
             }
         }
     }
@@ -99,7 +112,7 @@ public class TrustOnboardingSubmissionOnSubmitValidator {
             requestedBusinessPartnerType == BusinessPartnerType.GOVERNMENTAL_INSTITUTION &&
             partnerType != BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION
         ) {
-            errors.rejectValue("requestedPartnerType", INVALID_ERROR_CODE);
+            errors.rejectValue("requestedPartnerType", ErrorCode.INVALID);
         }
     }
 
@@ -109,20 +122,29 @@ public class TrustOnboardingSubmissionOnSubmitValidator {
             Object value = entry.getValue().apply(s);
 
             if (value == null) {
-                errors.rejectValue(path, REQUIRED_ERROR_CODE);
+                errors.rejectValue(path, ErrorCode.REQUIRED);
                 continue;
             }
             if (value instanceof String str && str.trim().isEmpty()) {
-                errors.rejectValue(path, "BLANK");
+                errors.rejectValue(path, ErrorCode.BLANK);
             }
         }
     }
 
+    private void validateEntityNameDefaultTranslation(TrustOnboardingSubmission s, Errors errors) {
+        var nameErrors = validator.validateProperty(s, Field.ENTITY_NAME);
+        if (nameErrors.isEmpty()) {
+            return;
+        }
+
+        nameErrors.forEach(err -> errors.rejectValue(Field.ENTITY_NAME, ErrorCode.INVALID, err.getMessage()));
+    }
+
     private static void validateProofs(TrustOnboardingSubmission s, Errors errors) {
-        if (!errors.hasFieldErrors(ENTITY_PROOFS)) {
+        if (!errors.hasFieldErrors(Field.ENTITY_PROOFS)) {
             for (var entry : s.getProofOfPossessions()) {
                 if (entry.getStatus() != ProofOfPossessionStatus.VALID) {
-                    errors.rejectValue(ENTITY_PROOFS, INVALID_ERROR_CODE);
+                    errors.rejectValue(Field.ENTITY_PROOFS, ErrorCode.INVALID);
                 }
             }
         }
@@ -132,15 +154,15 @@ public class TrustOnboardingSubmissionOnSubmitValidator {
         if (s.getRequestedPartnerType() == BusinessPartnerType.INDIVIDUAL) {
             if (s.getSigningRule() != null) {
                 errors.rejectValue(
-                    "signingRule",
-                    INVALID_ERROR_CODE,
+                    Field.SIGNING_RULE,
+                    ErrorCode.INVALID,
                     "Signing rule must be null for INDIVIDUAL business partner type"
                 );
             }
             if (s.getSignatories() != null && !s.getSignatories().isEmpty()) {
                 errors.rejectValue(
-                    "signatories",
-                    INVALID_ERROR_CODE,
+                    Field.SIGNATORIES,
+                    ErrorCode.INVALID,
                     "Signatories must be empty for INDIVIDUAL business partner type"
                 );
             }
@@ -148,7 +170,7 @@ public class TrustOnboardingSubmissionOnSubmitValidator {
         }
 
         if (s.getSigningRule() == null) {
-            errors.rejectValue("signingRule", REQUIRED_ERROR_CODE);
+            errors.rejectValue(Field.SIGNING_RULE, ErrorCode.REQUIRED);
             return;
         }
 
@@ -172,7 +194,7 @@ public class TrustOnboardingSubmissionOnSubmitValidator {
             for (var signatory : s.getSignatories()) {
                 var violations = validator.validate(signatory);
                 violations.forEach(violation ->
-                    errors.rejectValue("signatories", INVALID_ERROR_CODE, violation.getMessage())
+                    errors.rejectValue(Field.SIGNATORIES, ErrorCode.INVALID, violation.getMessage())
                 );
             }
         }
@@ -182,7 +204,7 @@ public class TrustOnboardingSubmissionOnSubmitValidator {
         if (s.getContactPerson() != null) {
             var violations = validator.validate(s.getContactPerson());
             violations.forEach(violation ->
-                errors.rejectValue("contactPerson", INVALID_ERROR_CODE, violation.getMessage())
+                errors.rejectValue(Field.CONTACT_PERSON, ErrorCode.INVALID, violation.getMessage())
             );
         }
     }
@@ -191,7 +213,7 @@ public class TrustOnboardingSubmissionOnSubmitValidator {
         if (s.getDeclarationOfIntent() == null) {
             errors.rejectValue(
                 "declarationOfIntent",
-                REQUIRED_ERROR_CODE,
+                ErrorCode.REQUIRED,
                 "Declaration of intent must be uploaded before submitting."
             );
         }

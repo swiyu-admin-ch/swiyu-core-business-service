@@ -37,8 +37,12 @@ public class ValidLocalizedMapValidator implements ConstraintValidator<ValidLoca
     }
 
     public static void validateLocalizedMap(Map<String, String> map) {
-        if (map == null || map.isEmpty()) {
-            throw new ValidationException("Map cannot be null or empty");
+        if (map == null) {
+            return;
+        }
+
+        if (map.isEmpty()) {
+            throw new ValidationException("Map cannot be empty");
         }
         validateContainsDefault(map);
         validateLocaleKeys(map);

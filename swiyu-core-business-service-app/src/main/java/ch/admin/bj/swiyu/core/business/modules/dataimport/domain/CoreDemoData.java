@@ -1,11 +1,13 @@
 package ch.admin.bj.swiyu.core.business.modules.dataimport.domain;
 
+import static ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil.fromLanguages;
+
 import ch.admin.bj.swiyu.core.business.common.demodata.DemoDataConstants;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
-import ch.admin.bj.swiyu.core.business.common.domain.MultiLanguageText;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.Signatory;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.experimental.UtilityClass;
 
@@ -33,7 +35,8 @@ public class CoreDemoData {
     public static final String CORE_ID_BP_DEFAULT_PHONE = "+41791234567";
 
     // CORE_ID_BP_DEFAULT
-    public static final MultiLanguageText CORE_ID_BP_DEFAULT_NAMES = new MultiLanguageText(
+    public static final Map<String, String> CORE_ID_BP_DEFAULT_NAMES = fromLanguages(
+        "Vertrau mir Beratung GmbH",
         "Vertrau mir Beratung GmbH (DE)",
         "Confiance Conseil GmbH (FR)",
         "Trusty Consulting S.r.l. (IT)",
@@ -61,7 +64,8 @@ public class CoreDemoData {
     );
 
     // CORE_ID_BP_WANTS_TO_BE_TRUSTED
-    public static final MultiLanguageText CORE_ID_BP_WANTS_TO_BE_TRUSTED_NAMES = new MultiLanguageText(
+    public static final Map<String, String> CORE_ID_BP_WANTS_TO_BE_TRUSTED_NAMES = fromLanguages(
+        "Böswilliges Umzugsunternehmen GmbH",
         "Böswilliges Umzugsunternehmen GmbH",
         "Déménageurs malveillants GmbH",
         "Traslocatori malintenzionati S.r.l.",
@@ -85,7 +89,8 @@ public class CoreDemoData {
     );
 
     // CORE_ID_BP_GOV
-    public static final MultiLanguageText CORE_ID_BP_GOV_NAMES = new MultiLanguageText(
+    public static final Map<String, String> CORE_ID_BP_GOV_NAMES = fromLanguages(
+        "Demo Kanton",
         "Demo Kanton",
         "Demo Canton",
         "Demo Cantone",
@@ -116,7 +121,8 @@ public class CoreDemoData {
     );
 
     // CORE_ID_BP_BASE_ONBOARDING_ONLY
-    public static final MultiLanguageText CORE_ID_BP_BASE_ONBOARDING_ONLY_NAMES = new MultiLanguageText(
+    public static final Map<String, String> CORE_ID_BP_BASE_ONBOARDING_ONLY_NAMES = fromLanguages(
+        "Demo Unternehmen",
         "Demo Unternehmen",
         "Démonstration Entreprise",
         "Demo Azienda",

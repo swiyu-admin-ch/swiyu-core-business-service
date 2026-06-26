@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.mapper;
 
+import static ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil.getByLanguageOrDefault;
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerTypeDto;
 import static java.util.Collections.emptyList;
 import static org.springframework.util.CollectionUtils.isEmpty;
@@ -19,6 +20,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -36,12 +38,12 @@ public class TrustOnboardingMapper {
         };
     }
 
-    @SuppressWarnings({ "java:S2637" })
     public static TrustOnboardingSubmissionDto toTrustOnboardingSubmissionDto(TrustOnboardingSubmission source) {
         return new TrustOnboardingSubmissionDto(
             source.getId(),
             source.getPartnerId(),
-            toMultiLanguageTextDto(source.getEntityName()),
+            source.getEntityName(),
+            toMultiLanguageDto(source.getEntityName()),
             source.getEntityEmail(),
             AddressMapper.toAddressDto(source.getEntityAddress()),
             toContactDto(source.getContactPerson()),
@@ -165,21 +167,6 @@ public class TrustOnboardingMapper {
             .phone(dto.phone())
             .address(address)
             .build();
-    }
-
-    // MultilanguageText
-    public static MultiLanguageTextDto toMultiLanguageTextDto(MultiLanguageText text) {
-        if (text == null) {
-            return null;
-        }
-        return new MultiLanguageTextDto(text.getDe(), text.getFr(), text.getIt(), text.getEn(), text.getRm());
-    }
-
-    public static MultiLanguageText toMultiLanguageTextEntity(MultiLanguageTextDto dto) {
-        if (dto == null) {
-            return null;
-        }
-        return MultiLanguageText.builder().de(dto.de()).fr(dto.fr()).it(dto.it()).en(dto.en()).rm(dto.rm()).build();
     }
 
     public static List<ProofOfPossession> toProofOfPossession(List<String> dids) {
@@ -310,5 +297,18 @@ public class TrustOnboardingMapper {
             return null;
         }
         return source.truncatedTo(ChronoUnit.MICROS);
+    }
+
+    private static MultiLanguageTextDto toMultiLanguageDto(Map<String, String> map) {
+        if (map == null) {
+            return null;
+        }
+        return new MultiLanguageTextDto(
+            getByLanguageOrDefault(map, Language.DE),
+            getByLanguageOrDefault(map, Language.FR),
+            getByLanguageOrDefault(map, Language.IT),
+            getByLanguageOrDefault(map, Language.EN),
+            getByLanguageOrDefault(map, Language.RM)
+        );
     }
 }

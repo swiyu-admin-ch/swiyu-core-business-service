@@ -13,6 +13,6 @@ public record ContactDto(
     @NotBlank String email,
     @NotBlank @ValidPhone String phone,
 
-    // To be removed with EID-6270
+    // To be removed with EID-6303
     AddressDto address
 ) {}

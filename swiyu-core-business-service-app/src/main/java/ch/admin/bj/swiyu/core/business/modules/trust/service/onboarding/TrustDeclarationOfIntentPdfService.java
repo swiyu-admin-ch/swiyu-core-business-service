@@ -4,8 +4,8 @@ import static java.util.Map.entry;
 
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
-import ch.admin.bj.swiyu.core.business.common.domain.MultiLanguageText;
 import ch.admin.bj.swiyu.core.business.common.exceptions.InternalStorageException;
+import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.ProofOfPossession;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionDomainService;
@@ -36,7 +36,8 @@ public class TrustDeclarationOfIntentPdfService {
     private static final String DOI_TEMPLATES_INDIVIDUAL_BUSINESS_PREFIX = "individual-business";
     private static final String DOI_TEMPLATES_INDIVIDUAL_PRIVATE_PREFIX = "individual-private";
 
-    private static final MultiLanguageText DOI_DATE_HEADER_PREFIX = new MultiLanguageText(
+    private static final Map<String, String> DOI_DATE_HEADER_PREFIX = LocalizedMapUtil.fromLanguages(
+        "Bern, ",
         "Bern, ",
         "Berne, ",
         "Berna, ",
@@ -153,7 +154,10 @@ public class TrustDeclarationOfIntentPdfService {
             Boolean.TRUE.equals(trustOnboardingSubmission.getIsRegisteredInCommercialRegister())
         ) {
             fieldMapping.put(FIELD_UID_TEXTBOX, trustOnboardingSubmission.getUid());
-            fieldMapping.put(FIELD_NAME_TEXTBOX, trustOnboardingSubmission.getEntityName().getLanguage(language));
+            fieldMapping.put(
+                FIELD_NAME_TEXTBOX,
+                LocalizedMapUtil.getByLanguageOrDefault(trustOnboardingSubmission.getEntityName(), language)
+            );
         } else {
             fieldMapping.put(FIELD_NAME_TEXTBOX, trustOnboardingSubmission.getContactPerson().getFullName());
         }
@@ -175,13 +179,7 @@ public class TrustDeclarationOfIntentPdfService {
     }
 
     private static String getDateHeader(Language language) {
-        var prefix = switch (language) {
-            case DE -> DOI_DATE_HEADER_PREFIX.getDe();
-            case FR -> DOI_DATE_HEADER_PREFIX.getFr();
-            case IT -> DOI_DATE_HEADER_PREFIX.getIt();
-            case RM -> DOI_DATE_HEADER_PREFIX.getRm();
-            case EN -> DOI_DATE_HEADER_PREFIX.getEn();
-        };
+        var prefix = LocalizedMapUtil.getByLanguageOrDefault(DOI_DATE_HEADER_PREFIX, language);
 
         var today = LocalDate.now();
         var formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy", language.getSwissLocale());

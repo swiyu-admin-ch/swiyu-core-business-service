@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.core.business.modules.management.domain.pams;
 
 import ch.admin.bj.swiyu.core.business.common.exceptions.ExternalSystem;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ExternalSystemException;
+import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.eportal.pams.client.api.BusinessPartnerApi;
 import ch.admin.eportal.pams.client.model.ApiBusinesspartnersForeignIDPutRequest;
@@ -36,7 +37,7 @@ class DefaultPamsClient implements PamsClient {
             businessPartnerApi.getApiClient().setBearerToken(pamsProperties.createToken());
             var bp = new ch.admin.eportal.pams.client.model.BusinessPartner();
             bp.setForeignID(businessPartner.getId().toString());
-            bp.setName(businessPartner.getName());
+            bp.setName(LocalizedMapUtil.getDefaultValue(businessPartner.getEntityName()));
 
             var bpAutoAssignedProfileGroup = new ApiBusinesspartnersForeignIDPutRequestProfileGroupsInner();
             bpAutoAssignedProfileGroup.setProfileGroupForeignID(pamsProperties.autoAppliedProfileGroupId());
@@ -74,7 +75,7 @@ class DefaultPamsClient implements PamsClient {
                 .getApiClient()
                 .addDefaultHeader("Authorization", "Bearer %s".formatted(pamsProperties.createToken()));
             var bp = new ApiBusinesspartnersForeignIDPutRequest();
-            bp.setName(businessPartner.getName());
+            bp.setName(LocalizedMapUtil.getDefaultValue(businessPartner.getEntityName()));
             var response = businessPartnerApi.apiBusinesspartnersForeignIDPut(
                 businessPartner.getId().toString(),
                 0,

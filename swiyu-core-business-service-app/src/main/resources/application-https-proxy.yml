@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2025 Swiss Confederation
+# SPDX-License-Identifier: MIT
+#
+# Use with: local,shared,https-proxy
+# Direct HTTP calls use backend ports; DIDs keep public port 8190 for didresolver HTTPS resolution.
+
+app:
+  identifier-registry:
+    did-tdw-route-template: "https://localhost:8190/api/v1/did/{0}"
+    did-web-template: "did:web:localhost%3A8190:api:v1:did:{0}"
+    default-public-resolve-url-template: https://localhost:8191/api/v1/did/%s
+    additional-public-resolve-url-templates:
+      - https://identifier-reg-d.trust-infra.swiyu.admin.ch/api/v1/did/%s
+      - https://identifier-data-service-d.apps.p-szb-ros-shrd-npr-01.cloud.admin.ch/api/v1/did/%s
+      - https://localhost:8190/api/v1/did/%s
+      - http://localhost:8191/api/v1/did/%s
+  status-registry:
+    data-url-template: http://localhost:8291/api/v1/statuslist/{0}.{1}
+  trust-registry:
+    data-service-base-url: http://localhost:8391/

@@ -13,6 +13,7 @@ import ch.admin.bj.swiyu.core.business.common.api.ObjectLimitsDto;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
+import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
 import ch.admin.bj.swiyu.core.business.modules.management.api.CreateBusinessEntityDto;
 import ch.admin.bj.swiyu.core.business.modules.management.api.CreatePartnerDto;
@@ -98,7 +99,7 @@ class BusinessPartnerServiceIT {
         // THEN
         assertThat(partner.getId()).isNotNull();
         assertThat(readEntity).isPresent();
-        assertThat(readEntity.get().name()).isEqualTo(partner.getName());
+        assertThat(readEntity.get().name()).isEqualTo(LocalizedMapUtil.getDefaultValue(partner.getEntityName()));
         assertThat(readEntity.get().id()).isEqualTo(partner.getId());
         assertThat(readEntity.get().limitInfos()).hasSize(2);
         assertThat(readEntity.get().limitInfos().getFirst().relatesTo()).isEqualTo(ApiObjectDto.STATUSLIST_ENTRY);
@@ -118,7 +119,7 @@ class BusinessPartnerServiceIT {
         var readEntity = businessPartnerService.getBusinessPartner(partner.getId());
         // THEN
         assertThat(partner.getId()).isNotNull();
-        assertThat(readEntity.name()).isEqualTo(partner.getName());
+        assertThat(readEntity.name()).isEqualTo(LocalizedMapUtil.getDefaultValue(partner.getEntityName()));
         assertThat(readEntity.id()).isEqualTo(partner.getId());
         assertThat(readEntity.limitInfos()).hasSize(2);
         assertThat(readEntity.limitInfos().getFirst().relatesTo()).isEqualTo(ApiObjectDto.STATUSLIST_ENTRY);
@@ -238,6 +239,12 @@ class BusinessPartnerServiceIT {
         assertThat(businessEntity.contactEmailAddress()).isEqualTo("hello.brave.new.world@example.com");
         assertThat(businessEntity.id()).isEqualTo(oldBusinessEntity.id());
         assertThat(businessEntity.name()).isEqualTo("example name");
+
+        var updatedPartner = businessPartnerService.getBusinessPartner(oldBusinessEntity.id());
+        assertThat(LocalizedMapUtil.getDefaultValue(updatedPartner.entityName())).isEqualTo("example name");
+
+        var updatedEntity = repos.businessPartner.findById(oldBusinessEntity.id()).orElseThrow();
+        assertThat(LocalizedMapUtil.getDefaultValue(updatedEntity.getEntityName())).isEqualTo("example name");
     }
 
     @Test
@@ -257,7 +264,7 @@ class BusinessPartnerServiceIT {
         // WHEN
         businessPartnerService.updateBusinessPartner(
             businessEntity.getId(),
-            newName,
+            LocalizedMapUtil.fromSingleName(newName),
             newAddress,
             newEmail,
             newUid,
@@ -267,7 +274,7 @@ class BusinessPartnerServiceIT {
 
         // THEN
         var updatedEntity = repos.businessPartner.findById(businessEntity.getId()).orElseThrow();
-        assertThat(updatedEntity.getName()).isEqualTo(newName);
+        assertThat(LocalizedMapUtil.getDefaultValue(updatedEntity.getEntityName())).isEqualTo(newName);
         assertThat(updatedEntity.getContactEmail()).isEqualTo(newEmail);
         assertThat(updatedEntity.getUid()).isEqualTo(newUid);
         assertThat(updatedEntity.getContactPhone()).isEqualTo(newPhone);

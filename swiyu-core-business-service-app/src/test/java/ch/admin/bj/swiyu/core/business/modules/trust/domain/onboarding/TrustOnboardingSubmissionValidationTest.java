@@ -6,11 +6,11 @@ import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
-import ch.admin.bj.swiyu.core.business.common.domain.MultiLanguageText;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -58,7 +58,7 @@ class TrustOnboardingSubmissionValidationTest {
         return new TrustOnboardingSubmission(
             UUID.randomUUID(),
             UUID.randomUUID(),
-            new MultiLanguageText(),
+            Map.of("default", "Entity"),
             new Address(),
             "valid@example.com",
             contact,

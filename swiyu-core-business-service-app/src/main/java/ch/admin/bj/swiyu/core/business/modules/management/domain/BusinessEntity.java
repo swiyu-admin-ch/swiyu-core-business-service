@@ -1,19 +1,28 @@
 package ch.admin.bj.swiyu.core.business.modules.management.domain;
 
+import static ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil.fromSingleName;
 import static ch.admin.bj.swiyu.core.business.common.validation.EmailValidation.EMAIL_REGEX;
 
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.AuditMetadata;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
+import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
 import com.google.common.annotations.VisibleForTesting;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Formula;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
@@ -34,8 +43,16 @@ public class BusinessEntity {
     @Id
     private UUID id;
 
-    @Setter
-    private String name;
+    @ValidLocalizedMap
+    @NotNull
+    @Column(columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, @NotBlank @Size(max = 255) String> entityName;
+
+    // Readonly field of {@link #entityName} with the default key, used in ORDER BY query. */
+    @Formula("(entity_name->>'default')")
+    @Getter(AccessLevel.NONE)
+    private String defaultEntityName;
 
     @NotNull
     @Pattern(regexp = EMAIL_REGEX)
@@ -83,7 +100,7 @@ public class BusinessEntity {
     @Deprecated(since = "1.13.35")
     public BusinessEntity(UUID id, String name, String contactEmail, BusinessPartnerType type) {
         this.id = id;
-        this.name = name;
+        this.entityName = fromSingleName(name);
         this.contactEmail = contactEmail;
         this.type = type;
         this.trustVerificationStatus = BusinessEntityTrustStatus.NOT_VERIFIED;
@@ -100,8 +117,20 @@ public class BusinessEntity {
         String uid,
         String contactPhone
     ) {
+        this(id, fromSingleName(name), contactEmail, type, address, uid, contactPhone);
+    }
+
+    public BusinessEntity(
+        UUID id,
+        Map<String, String> entityName,
+        String contactEmail,
+        BusinessPartnerType type,
+        Address address,
+        String uid,
+        String contactPhone
+    ) {
         this.id = id;
-        this.name = name;
+        this.entityName = entityName;
         this.contactEmail = contactEmail;
         this.type = type;
         this.trustVerificationStatus = BusinessEntityTrustStatus.NOT_VERIFIED;
@@ -116,8 +145,14 @@ public class BusinessEntity {
         // JPA
     }
 
-    public BusinessEntity update(String name, String contactEmail, Address address, String uid, String contactPhone) {
-        this.name = name;
+    public BusinessEntity update(
+        Map<String, String> entityName,
+        String contactEmail,
+        Address address,
+        String uid,
+        String contactPhone
+    ) {
+        this.entityName = entityName;
         this.contactEmail = contactEmail;
         this.address = address;
         this.uid = uid;
@@ -144,11 +179,15 @@ public class BusinessEntity {
     @VisibleForTesting
     public void overwriteFrom(BusinessEntity source) {
         // id & version cannot be overwritten (DemoData constraints)
-        this.name = source.name;
+        this.entityName = source.entityName;
         this.contactEmail = source.contactEmail;
         this.type = source.type;
         this.payedForDidSlots = source.payedForDidSlots;
         this.payedForTrustVerification = source.payedForTrustVerification;
         this.trustVerificationStatus = source.trustVerificationStatus;
+    }
+
+    public void setName(Map<String, String> entityName) {
+        this.entityName = entityName;
     }
 }

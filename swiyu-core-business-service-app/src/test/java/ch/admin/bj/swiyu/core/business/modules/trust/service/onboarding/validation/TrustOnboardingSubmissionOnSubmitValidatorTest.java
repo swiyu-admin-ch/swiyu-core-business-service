@@ -11,7 +11,6 @@ import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
-import ch.admin.bj.swiyu.core.business.common.domain.MultiLanguageText;
 import ch.admin.bj.swiyu.core.business.common.features.FeaturesProperties;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.DeclarationOfIntent;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.ProofOfPossession;
@@ -20,7 +19,9 @@ import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.SigningRu
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,7 +58,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     void succeeds_when_all_required_fields_present() {
         var s = trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             "valid@example.org",
             validContact(),
@@ -78,7 +79,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     void succeeds_when_all_required_fields_present_gov() {
         var s = trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             "valid@example.org",
             validContact(),
@@ -99,7 +100,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     void fails_when_requested_partner_type_gov_but_partner_not_gov() {
         var s = trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             "valid@example.org",
             validContact(),
@@ -120,7 +121,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
         var s = trustOnboardingSubmissionEmpty();
         // entityEmail missing
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             null,
             validContact(),
@@ -146,7 +147,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     void fails_when_email_invalid_format() {
         var s = trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             "not-an-email",
             validContact(),
@@ -254,7 +255,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     void fails_when_signing_rule_missing() {
         var s = trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             "valid@example.org",
             validContact(),
@@ -280,7 +281,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     void fails_when_signing_rule_signatory_count_mismatch() {
         var s = trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             "valid@example.org",
             validContact(),
@@ -306,7 +307,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     void fails_when_signing_rule_not_null_for_individual() {
         var s = trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             "valid@example.org",
             validContact(),
@@ -332,7 +333,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     void fails_when_signatories_not_empty_for_individual() {
         var s = trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             "valid@example.org",
             validContact(),
@@ -358,7 +359,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     void succeeds_when_signing_rule_and_signatories_null_for_individual() {
         var s = trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             "valid@example.org",
             validContact(),
@@ -380,7 +381,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     void fails_when_signatory_invalid() {
         var s = trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             "valid@example.org",
             validContact(),
@@ -406,7 +407,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     void fails_when_signatory_phone_invalid_format() {
         var s = trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             "valid@example.org",
             validContact(),
@@ -432,7 +433,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     void fails_when_signatory_email_invalid_format() {
         var s = trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             "valid@example.org",
             validContact(),
@@ -457,7 +458,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     private TrustOnboardingSubmission createValidSubmission() {
         var s = trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             "valid@example.org",
             validContact(),
@@ -477,7 +478,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     void fails_when_contact_phone_invalid_format() {
         var s = trustOnboardingSubmissionEmpty();
         s.update(
-            new MultiLanguageText(),
+            validEntityName(),
             new Address(),
             "valid@example.org",
             new Contact("John", "Doe", "john@example.org", "0791234567", null),
@@ -499,7 +500,49 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
         );
     }
 
+    @Test
+    void fails_when_entity_name_default_language_value_is_blank() {
+        var s = trustOnboardingSubmissionEmpty();
+        s.update(
+            validEntityNameWithBlankDefault(),
+            new Address(),
+            "valid@example.org",
+            validContact(),
+            Language.DE,
+            "uid",
+            List.of(new ProofOfPossession("did", UUID.randomUUID().toString()).toValid()),
+            BusinessPartnerType.BUSINESS,
+            SigningRule.SINGLE_SIGNATURE,
+            List.of(new Signatory("John", "Doe", "+41 79 123 45 67", "john@example.org")),
+            true
+        );
+
+        var violations = validator.validate(s, BusinessPartnerTypeDto.BUSINESS);
+
+        assertTrue(
+            violations
+                .getAllErrors()
+                .stream()
+                .anyMatch(v -> "entityName".equals(((FieldError) v).getField()) && "INVALID".equals(v.getCode()))
+        );
+    }
+
     private Contact validContact() {
         return new Contact("John", "Doe", "john@example.org", "+41 79 123 45 67", null);
+    }
+
+    private Map<String, String> validEntityName() {
+        return entityNameMap("Entity DE", "Entity DE");
+    }
+
+    private Map<String, String> validEntityNameWithBlankDefault() {
+        return entityNameMap("", "Entity DE");
+    }
+
+    private Map<String, String> entityNameMap(String defaultValue, String deValue) {
+        var map = new LinkedHashMap<String, String>();
+        map.put("default", defaultValue);
+        map.put("de-CH", deValue);
+        return Map.copyOf(map);
     }
 }

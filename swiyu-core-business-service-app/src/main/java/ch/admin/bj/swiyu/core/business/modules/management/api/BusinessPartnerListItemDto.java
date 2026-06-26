@@ -3,17 +3,26 @@ package ch.admin.bj.swiyu.core.business.modules.management.api;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
 import ch.admin.bj.swiyu.core.business.common.api.ListItemDto;
 import ch.admin.bj.swiyu.core.business.common.api.ObjectLimitsDto;
+import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Schema(name = "BusinessPartnerListItem")
 public record BusinessPartnerListItemDto(
     @Schema(description = "Key of the partner under which it is registered with ePortal") @NotBlank UUID id,
-    @Schema(description = "Unique name of the partner") @NotBlank String name,
+    // To be removed in EID-6303
+    @Schema(description = "Unique name of the partner. Deprecated: use entityName.", deprecated = true)
+    @NotBlank
+    String name,
+    @Schema(description = "Localized entity name map with required default key and BCP-47 locale keys")
+    @NotNull
+    @ValidLocalizedMap
+    Map<String, String> entityName,
     @Schema(description = "Type of the partner") @NotNull BusinessPartnerTypeDto type,
     List<ObjectLimitsDto> limitInfos,
     @Schema(description = "User paid for trust onboarding") boolean payedForTrustVerification,

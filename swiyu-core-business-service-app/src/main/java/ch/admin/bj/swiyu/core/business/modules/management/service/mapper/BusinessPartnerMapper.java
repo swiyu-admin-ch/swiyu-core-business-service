@@ -5,6 +5,7 @@ import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPart
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
 import ch.admin.bj.swiyu.core.business.common.api.ObjectLimitsDto;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
+import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
 import ch.admin.bj.swiyu.core.business.modules.management.api.*;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
@@ -34,7 +35,7 @@ public class BusinessPartnerMapper {
         BusinessPartnerTypeDto type = toBusinessPartnerTypeDto(source.getType());
         return new BusinessEntityDto(
             source.getId(),
-            source.getName(),
+            LocalizedMapUtil.getDefaultValue(source.getEntityName()),
             source.getContactEmail(),
             type,
             limits,
@@ -50,7 +51,8 @@ public class BusinessPartnerMapper {
         BusinessPartnerTypeDto type = toBusinessPartnerTypeDto(source.getType());
         return new BusinessPartnerDto(
             source.getId(),
-            source.getName(),
+            LocalizedMapUtil.getDefaultValue(source.getEntityName()),
+            source.getEntityName(),
             source.getContactEmail(),
             type,
             limits,
@@ -73,7 +75,8 @@ public class BusinessPartnerMapper {
         BusinessPartnerTypeDto type = toBusinessPartnerTypeDto(source.getType());
         return new BusinessPartnerListItemDto(
             source.getId(),
-            source.getName(),
+            LocalizedMapUtil.getDefaultValue(source.getEntityName()),
+            source.getEntityName(),
             type,
             limits,
             source.isPayedForTrustVerification(),

@@ -5,6 +5,7 @@ import ch.admin.bj.swiyu.core.business.common.exceptions.InvalidPaginationApiExc
 import java.lang.reflect.RecordComponent;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import lombok.experimental.UtilityClass;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,15 @@ public class PageableUtils {
         Class<S> dtoSource,
         Class<T> entityTarget,
         Pageable pageable
+    ) {
+        return toDbPageableFromUserPageable(dtoSource, entityTarget, pageable, Map.of());
+    }
+
+    public static <S extends ListItemDto, T> Pageable toDbPageableFromUserPageable(
+        Class<S> dtoSource,
+        Class<T> entityTarget,
+        Pageable pageable,
+        Map<String, String> sortFieldRemappings
     ) {
         // Get all fields of the class TrustOnboardingSubmissionD
         var allowedSortFields = Arrays.stream(dtoSource.getRecordComponents()).map(RecordComponent::getName).toList();
@@ -43,17 +53,22 @@ public class PageableUtils {
         List<Sort.Order> updatedSort = pageable
             .getSort()
             .stream()
-            .map(order -> {
-                String property = order.getProperty();
-                return switch (property) {
-                    case "createdAt" -> new Sort.Order(order.getDirection(), "auditMetadata.createdAt");
-                    case "updatedAt" -> new Sort.Order(order.getDirection(), "auditMetadata.lastModifiedAt");
-                    default -> order;
-                };
-            })
+            .map(order -> mapSortOrder(order, sortFieldRemappings))
             .toList();
 
         // Copy Pageable details over as a Pageable is immutable
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(updatedSort));
+    }
+
+    private static Sort.Order mapSortOrder(Sort.Order order, Map<String, String> sortFieldRemappings) {
+        String mappedProperty = switch (order.getProperty()) {
+            case "createdAt" -> "auditMetadata.createdAt";
+            case "updatedAt" -> "auditMetadata.lastModifiedAt";
+            default -> sortFieldRemappings.getOrDefault(order.getProperty(), order.getProperty());
+        };
+        if (mappedProperty.equals(order.getProperty())) {
+            return order;
+        }
+        return new Sort.Order(order.getDirection(), mappedProperty);
     }
 }

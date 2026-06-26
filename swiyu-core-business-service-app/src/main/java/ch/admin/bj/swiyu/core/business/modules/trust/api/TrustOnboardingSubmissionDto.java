@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.api;
 
 import ch.admin.bj.swiyu.core.business.common.api.*;
+import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
@@ -12,7 +13,10 @@ import java.util.UUID;
 public record TrustOnboardingSubmissionDto(
     @NotNull UUID id,
     @NotNull UUID partnerId,
-    @NotNull MultiLanguageTextDto entityName,
+    @NotNull @ValidLocalizedMap Map<String, String> name,
+    @Deprecated(since = "3.38.0", forRemoval = true) // Remove in EID-6303
+    @NotNull
+    MultiLanguageTextDto entityName,
     @NotNull String entityEmail,
     @NotNull AddressDto address,
     @NotNull ContactDto contactPerson,

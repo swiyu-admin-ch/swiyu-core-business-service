@@ -16,7 +16,7 @@ class ValidLocalizedMapValidatorTest {
         var map = new HashMap<String, String>();
         assertThatThrownBy(() -> validateLocalizedMap(map))
             .isInstanceOf(ValidationException.class)
-            .hasMessageContaining("Map cannot be null or empty");
+            .hasMessageContaining("Map cannot be empty");
     }
 
     @Test

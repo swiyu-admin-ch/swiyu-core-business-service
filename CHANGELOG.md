@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.39.0
+
+### Added
+
+- Add multi-language entity names for business partner V2 responses and persist new trust onboarding organization name translations.
+
+## 3.38.2
+
+### Fixed
+
+- Add iss claim into messaging system security context
+
+## 3.38.1
+
+### Changed
+
+- Bump bouncycastle version to 1.84 to fix HIGH vulnerabilities
+
 ## 3.38.0
 
 ### Added

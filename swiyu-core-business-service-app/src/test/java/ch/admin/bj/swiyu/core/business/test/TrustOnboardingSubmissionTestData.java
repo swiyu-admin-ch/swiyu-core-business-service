@@ -1,15 +1,15 @@
 package ch.admin.bj.swiyu.core.business.test;
 
+import static ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil.fromLanguages;
 import static ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionStatus.*;
 import static ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.TrustOnboardingMapper.*;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.DEFAULT_ENTITY;
-import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.multiLanguageTextDtoEntityName;
+import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.entityNameLocalizedMap;
 import static org.hibernate.internal.util.collections.CollectionHelper.listOf;
 
 import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
 import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
-import ch.admin.bj.swiyu.core.business.common.api.MultiLanguageTextDto;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
 import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerTrustStatusDto;
@@ -27,7 +27,7 @@ public class TrustOnboardingSubmissionTestData {
     private static TrustOnboardingSubmissionRequestDto.TrustOnboardingSubmissionRequestDtoBuilder trustOnboardingSubmissionRequestDtoBuilder() {
         return TrustOnboardingSubmissionRequestDto.builder()
             .partnerId(DEFAULT_ENTITY)
-            .entityName(multiLanguageTextDtoEntityName())
+            .entityName(entityNameLocalizedMap())
             .entityAddress(
                 AddressDto.builder().street("Test Street").postalCode("1234").city("Test City").country("CH").build()
             )
@@ -64,7 +64,8 @@ public class TrustOnboardingSubmissionTestData {
     public static TrustOnboardingSubmissionRequestDto trustOnboardingSubmissionRequestDtoUpdate() {
         return trustOnboardingSubmissionRequestDtoBuilder()
             .entityName(
-                new MultiLanguageTextDto(
+                fromLanguages(
+                    "Updated Test Entity Name DE",
                     "Updated Test Entity Name DE",
                     "Updated Test Entity Name FR",
                     "Updated Test Entity Name IT",
@@ -73,7 +74,7 @@ public class TrustOnboardingSubmissionTestData {
                 )
             )
             .entityEmail("updated@email.com")
-            .correspondingLanguage(LanguageDto.EN)
+            .correspondingLanguage(LanguageDto.DE)
             .entityAddress(
                 AddressDto.builder()
                     .street("Updated Test Street")
@@ -82,7 +83,6 @@ public class TrustOnboardingSubmissionTestData {
                     .country("CH")
                     .build()
             )
-            .correspondingLanguage(LanguageDto.DE)
             .registryIds(Map.of("UID", "CHE-789.012.345"))
             .contactPerson(
                 ContactDto.builder()
@@ -133,7 +133,7 @@ public class TrustOnboardingSubmissionTestData {
         var submission = new TrustOnboardingSubmission(
             id,
             partnerId,
-            toMultiLanguageTextEntity(dto.getEntityName()),
+            dto.getEntityName(),
             AddressMapper.toAddressEntity(dto.entityAddress()),
             dto.getEntityEmail(),
             toContactEntity(dto.getContactPerson()),

@@ -1,7 +1,7 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.infrastructure.web;
 
 import static ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.ProofOfPossessionKeyUtils.*;
-import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.multiLanguageTextDtoEntityName;
+import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.entityNameLocalizedMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -88,7 +88,7 @@ class TrustOnboardingSubmissionB2BControllerIT {
         // GIVEN trust onboarding submission with dids
         var requestDto = TrustOnboardingSubmissionRequestDto.builder()
             .partnerId(BusinessEntityTestData.DEFAULT_ENTITY)
-            .entityName(multiLanguageTextDtoEntityName())
+            .entityName(entityNameLocalizedMap())
             .entityAddress(
                 AddressDto.builder().street("Test Street").postalCode("1234").city("Test City").country("CH").build()
             )
@@ -135,7 +135,7 @@ class TrustOnboardingSubmissionB2BControllerIT {
         // GIVEN trust onboarding submission with dids
         var requestDto = TrustOnboardingSubmissionRequestDto.builder()
             .partnerId(UUID.randomUUID())
-            .entityName(multiLanguageTextDtoEntityName())
+            .entityName(entityNameLocalizedMap())
             .entityAddress(
                 AddressDto.builder().street("Test Street").postalCode("1234").city("Test City").country("CH").build()
             )
@@ -176,7 +176,7 @@ class TrustOnboardingSubmissionB2BControllerIT {
         // GIVEN trust onboarding submission with dids
         var requestDto = TrustOnboardingSubmissionRequestDto.builder()
             .partnerId(BusinessEntityTestData.DEFAULT_ENTITY)
-            .entityName(multiLanguageTextDtoEntityName())
+            .entityName(entityNameLocalizedMap())
             .entityAddress(
                 AddressDto.builder().street("Test Street").postalCode("1234").city("Test City").country("CH").build()
             )

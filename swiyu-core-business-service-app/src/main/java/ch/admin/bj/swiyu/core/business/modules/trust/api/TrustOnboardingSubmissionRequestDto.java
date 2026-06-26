@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.api;
 
 import ch.admin.bj.swiyu.core.business.common.api.*;
+import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
 import ch.admin.bj.swiyu.core.business.common.validation.ValidRegistryIds;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -18,12 +19,12 @@ public record TrustOnboardingSubmissionRequestDto(
     @Getter
     UUID partnerId,
     @Schema(
-        description = "The official name of the entity.",
-        example = "{ \"de\": \"Schweizerische Eidgenossenschaft\", \"fr\": \"Confédération suisse\", \"it\": \"Confederazione Svizzera\", \"en\": \"Swiss Confederation\" , \"rm\": \"Confederaziun svizra\" }"
+        description = "The official name of the entity as localized map.",
+        example = "{ \"default\": \"Swiss Confederation\", \"de-CH\": \"Schweizerische Eidgenossenschaft\", \"fr-CH\": \"Confédération suisse\", \"it-CH\": \"Confederazione Svizzera\", \"en-CH\": \"Swiss Confederation\", \"rm-CH\": \"Confederaziun svizra\" }"
     )
-    @Valid
+    @ValidLocalizedMap
     @Getter
-    MultiLanguageTextDto entityName,
+    Map<String, String> entityName,
     @Schema(
         description = "The official address of the entity.",
         example = "{ \"street\": \"Musterstrasse\", \"houseNumber\": \"1\", \"postalCode\": \"3000\", \"city\": \"Bern\", \"country\": \"CH\" }"
@@ -65,7 +66,7 @@ public record TrustOnboardingSubmissionRequestDto(
     @Getter
     Boolean isRegisteredInCommercialRegister,
 
-    // To be removed with EID-6270
+    // To be removed with EID-6303
     @Schema(description = "The preferred language for correspondence.", example = "DE")
     @Getter
     LanguageDto correspondingLanguage,

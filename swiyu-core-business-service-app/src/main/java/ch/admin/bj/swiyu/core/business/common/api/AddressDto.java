@@ -14,6 +14,6 @@ public record AddressDto(
     @NotBlank String city,
     @NotBlank @Pattern(regexp = SWISS_ZIP_CODE_PATTERN) String postalCode,
     @NotBlank String country,
-    // To be removed with EID-6270
+    // To be removed with EID-6303
     String region
 ) {}

@@ -32,6 +32,7 @@ public class MessagingSecurityContext {
         Map<String, Object> claims = new HashMap<>();
         claims.put("preferred_username", preferredUsername);
         claims.put("clientId", "system-client");
+        claims.put("iss", "system-issuer");
         claims.put("sub", "system-subject");
         claims.put("given_name", "System");
         claims.put("family_name", "User");

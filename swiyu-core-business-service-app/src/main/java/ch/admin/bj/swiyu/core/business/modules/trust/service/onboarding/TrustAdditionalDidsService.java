@@ -8,11 +8,7 @@ import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustAdditionalDidsSubm
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustAdditionalDidsSubmissionResponseDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustAdditionalDidsSubmissionUpdateRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustAdditionalDidsSubmissionLimitProperties;
-import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.ProofOfPossession;
-import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustAdditionalDidsRejectReason;
-import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustAdditionalDidsSubmission;
-import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustAdditionalDidsSubmissionRepository;
-import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustAdditionalDidsSubmissionStatus;
+import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.publisher.DomainEventPublisher;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.EventMapper;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.TrustAdditionalDidsMapper;
@@ -35,6 +31,7 @@ import org.springframework.validation.SimpleErrors;
 @AllArgsConstructor
 public class TrustAdditionalDidsService {
 
+    private static final String SUBMISSION_WITH_ID_NOT_FOUND = "TrustAdditionalDidsSubmission with id '%s' not found.";
     private final TrustAdditionalDidsSubmissionRepository repository;
     private final TrustAdditionalDidsSubmissionLimitProperties limitProperties;
     private final TrustStatementApi trustStatementApi;
@@ -42,7 +39,17 @@ public class TrustAdditionalDidsService {
     private final ProofOfPossessionValidator proofOfPossessionValidator;
     private final DomainEventPublisher domainEventPublisher;
 
-    private static final String SUBMISSION_WITH_ID_NOT_FOUND = "TrustAdditionalDidsSubmission with id '%s' not found.";
+    private static TrustAdditionalDidsRejectReason toTrustAdditionalDidsRejectReason(RejectReason source) {
+        if (source == null) {
+            return TrustAdditionalDidsRejectReason.UNKNOWN;
+        }
+        try {
+            return TrustAdditionalDidsRejectReason.valueOf(source.name());
+        } catch (IllegalArgumentException _) {
+            log.error("Unknown reject reason: {}. Mapping it to UNKNOWN.", source);
+            return TrustAdditionalDidsRejectReason.UNKNOWN;
+        }
+    }
 
     @Transactional
     public TrustAdditionalDidsSubmissionResponseDto createSubmission(
@@ -162,7 +169,10 @@ public class TrustAdditionalDidsService {
     private void validatePermissionDid(UUID partnerId, String permissionDid) {
         if (!identifierEntryService.belongsDidToBusinessPartner(partnerId, permissionDid)) {
             var errors = new SimpleErrors(permissionDid);
-            errors.reject("INVALID_DID", "permissionDid does not belong to the business partner");
+            errors.reject(
+                "INVALID_DID",
+                "permissionDid '%s' does not belong to the business partner '%s'".formatted(permissionDid, partnerId)
+            );
             throw new ValidationException("permissionDid validation failed", errors);
         }
 
@@ -183,21 +193,12 @@ public class TrustAdditionalDidsService {
         if (!invalidDids.isEmpty()) {
             var errors = new SimpleErrors(didsToAdd);
             invalidDids.forEach(did ->
-                errors.reject("INVALID_DID", "DID does not belong to the business partner: " + did)
+                errors.reject(
+                    "INVALID_DID",
+                    "DID '%s' does not belong to the business partner '%s'.".formatted(did, partnerId)
+                )
             );
             throw new ValidationException("didsToAdd validation failed", errors);
-        }
-    }
-
-    private static TrustAdditionalDidsRejectReason toTrustAdditionalDidsRejectReason(RejectReason source) {
-        if (source == null) {
-            return TrustAdditionalDidsRejectReason.UNKNOWN;
-        }
-        try {
-            return TrustAdditionalDidsRejectReason.valueOf(source.name());
-        } catch (IllegalArgumentException _) {
-            log.error("Unknown reject reason: {}. Mapping it to UNKNOWN.", source);
-            return TrustAdditionalDidsRejectReason.UNKNOWN;
         }
     }
 

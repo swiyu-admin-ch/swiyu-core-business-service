@@ -36,6 +36,7 @@ public class TrustDeclarationOfIntentPdfService {
     private static final String DOI_TEMPLATES_INDIVIDUAL_BUSINESS_PREFIX = "individual-business";
     private static final String DOI_TEMPLATES_INDIVIDUAL_PRIVATE_PREFIX = "individual-private";
 
+    @SuppressWarnings("java:S1192")
     private static final Map<String, String> DOI_DATE_HEADER_PREFIX = LocalizedMapUtil.fromLanguages(
         "Bern, ",
         "Bern, ",
@@ -44,6 +45,7 @@ public class TrustDeclarationOfIntentPdfService {
         "Bern, ",
         "Berna, "
     );
+
     private static final String FIELD_UID_TEXTBOX = "uid_textbox";
     private static final String FIELD_NAME_TEXTBOX = "name_textbox";
     private static final String FIELD_ADDRESS_TEXTBOX = "address_textbox";
@@ -52,72 +54,6 @@ public class TrustDeclarationOfIntentPdfService {
     private static final String FIELD_SIGNATORY_NAME_TEXTBOX_TEMPLATE = "signatory_%d_name_textbox";
 
     private final TrustOnboardingSubmissionDomainService trustOnboardingSubmissionService;
-
-    // This method streams the filled declaration of intent to the given OutputStream.
-    // The code will be used with EID-6148 and might need slight changes.
-    // Currently it is used to validate that the DOI-PDFs in the repository have the correct fields and can be filled out.
-    public void streamFilledDeclarationOfIntentPdf(
-        UUID trustOnboardingSubmissionId,
-        Language language,
-        OutputStream outputStream
-    ) {
-        var trustOnboardingSubmission = trustOnboardingSubmissionService.getTrustOnboardingSubmission(
-            trustOnboardingSubmissionId
-        );
-        var filename = getCorrectPdfFilename(trustOnboardingSubmission, language);
-        var classLoader = TrustDeclarationOfIntentPdfService.class.getClassLoader();
-
-        try (var inputStream = classLoader.getResourceAsStream(filename)) {
-            if (inputStream == null) {
-                throw new InternalStorageException("Declaration of intent PDF template not found: " + filename, null);
-            }
-            var bytes = inputStream.readAllBytes();
-
-            try (var pdf = Loader.loadPDF(bytes)) {
-                fillPdf(pdf, trustOnboardingSubmission, language, outputStream);
-            }
-        } catch (IOException e) {
-            throw new InternalStorageException("Error reading declaration of intent PDF template: " + filename, e);
-        }
-    }
-
-    private void fillPdf(
-        PDDocument pdf,
-        TrustOnboardingSubmission trustOnboardingSubmission,
-        Language language,
-        OutputStream outputStream
-    ) {
-        var form = getPdAcroForm(pdf);
-
-        var fieldMapping = getFieldMapping(trustOnboardingSubmission, language);
-
-        fieldMapping.forEach((fieldName, value) -> {
-            var field = form.getField(fieldName);
-            if (field == null) {
-                throw new DeclarationOfIntentPdfGenerationException(
-                    "Declaration of intent PDF template is missing form field: " + fieldName,
-                    null
-                );
-            }
-
-            try {
-                field.setValue(value);
-            } catch (IOException e) {
-                throw new DeclarationOfIntentPdfGenerationException(
-                    "Failed to set value on declaration of intent PDF field: " + fieldName,
-                    e
-                );
-            }
-
-            field.setReadOnly(true);
-        });
-
-        try {
-            pdf.save(outputStream);
-        } catch (IOException e) {
-            throw new InternalStorageException("Failed to write declaration of intent PDF to response", e);
-        }
-    }
 
     private static PDAcroForm getPdAcroForm(PDDocument pdf) {
         var catalog = pdf.getDocumentCatalog();
@@ -207,5 +143,71 @@ public class TrustDeclarationOfIntentPdfService {
             signatureCount,
             language.getSwissLocale().toLanguageTag()
         );
+    }
+
+    // This method streams the filled declaration of intent to the given OutputStream.
+    // The code will be used with EID-6148 and might need slight changes.
+    // Currently it is used to validate that the DOI-PDFs in the repository have the correct fields and can be filled out.
+    public void streamFilledDeclarationOfIntentPdf(
+        UUID trustOnboardingSubmissionId,
+        Language language,
+        OutputStream outputStream
+    ) {
+        var trustOnboardingSubmission = trustOnboardingSubmissionService.getTrustOnboardingSubmission(
+            trustOnboardingSubmissionId
+        );
+        var filename = getCorrectPdfFilename(trustOnboardingSubmission, language);
+        var classLoader = TrustDeclarationOfIntentPdfService.class.getClassLoader();
+
+        try (var inputStream = classLoader.getResourceAsStream(filename)) {
+            if (inputStream == null) {
+                throw new InternalStorageException("Declaration of intent PDF template not found: " + filename, null);
+            }
+            var bytes = inputStream.readAllBytes();
+
+            try (var pdf = Loader.loadPDF(bytes)) {
+                fillPdf(pdf, trustOnboardingSubmission, language, outputStream);
+            }
+        } catch (IOException e) {
+            throw new InternalStorageException("Error reading declaration of intent PDF template: " + filename, e);
+        }
+    }
+
+    private void fillPdf(
+        PDDocument pdf,
+        TrustOnboardingSubmission trustOnboardingSubmission,
+        Language language,
+        OutputStream outputStream
+    ) {
+        var form = getPdAcroForm(pdf);
+
+        var fieldMapping = getFieldMapping(trustOnboardingSubmission, language);
+
+        fieldMapping.forEach((fieldName, value) -> {
+            var field = form.getField(fieldName);
+            if (field == null) {
+                throw new DeclarationOfIntentPdfGenerationException(
+                    "Declaration of intent PDF template is missing form field: " + fieldName,
+                    null
+                );
+            }
+
+            try {
+                field.setValue(value);
+            } catch (IOException e) {
+                throw new DeclarationOfIntentPdfGenerationException(
+                    "Failed to set value on declaration of intent PDF field: " + fieldName,
+                    e
+                );
+            }
+
+            field.setReadOnly(true);
+        });
+
+        try {
+            pdf.save(outputStream);
+        } catch (IOException e) {
+            throw new InternalStorageException("Failed to write declaration of intent PDF to response", e);
+        }
     }
 }

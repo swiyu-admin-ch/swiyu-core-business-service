@@ -6,7 +6,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-core-business-service</artifactId>
-    <version>3.39.2-SNAPSHOT</version>
+    <version>3.39.3-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
@@ -54,6 +54,17 @@
                 <version>${project.version}</version>
             </dependency>
             <!-- CVE-OVERRIDE start -->
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>1.5.36</version>
+            </dependency>
+            <dependency>
+                <!-- Fixes SNYK-JAVA-CHQOSLOGBACK-17675439 / CVE-2025-11226 -->
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>1.5.36</version>
+            </dependency>
             <!-- CVE-OVERRIDE end -->
         </dependencies>
     </dependencyManagement>

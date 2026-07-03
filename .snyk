@@ -1,0 +1,22 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.25.1
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  SNYK-RHEL9-LIBACL-17713920:
+    - '*':
+        reason: >-
+          No fix available in ubi9 JRE base image yet; will resurface when
+          ignore expires
+        expires: 2026-08-01T00:00:00.000Z
+        created: 2026-07-01T12:20:25.164Z
+  SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890:
+    - '*':
+        reason: Will be fixed in EID-6392 with Spring Boot 4 upgrade
+        expires: 2027-01-01T00:00:00.000Z
+        created: 2026-07-01T13:12:50.599Z
+  SNYK-JAVA-ORGAPACHETOMCATEMBED-17733746:
+    - '*':
+        reason: Will be fixed in EID-6392 with Spring Boot 4 upgrade
+        expires: 2027-01-01T00:00:00.000Z
+        created: 2026-07-01T13:12:50.599Z
+patch: {}

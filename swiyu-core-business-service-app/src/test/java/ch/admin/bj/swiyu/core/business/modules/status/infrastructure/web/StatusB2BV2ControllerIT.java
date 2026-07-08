@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
+import ch.admin.bj.swiyu.core.business.common.utils.testSpan.WithTestSpan;
 import ch.admin.bj.swiyu.core.business.modules.status.service.StatusListEntryService;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.publisher.DomainEventPublisher;
 import ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData;
@@ -47,6 +48,7 @@ class StatusB2BV2ControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@status_#read" })
+    @WithTestSpan
     void updateStatusListEntry_unauthorized() throws Exception {
         var statusListEntryId = statusListEntryService.createStatusListEntry(DEFAULT_ENTITY).id();
 
@@ -66,6 +68,7 @@ class StatusB2BV2ControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.ENTITY_A_S + " = ti_@status_#write" })
+    @WithTestSpan
     void updateStatusListEntry_wrongAuthorized() throws Exception {
         var statusListEntryId = statusListEntryService.createStatusListEntry(ENTITY_B).id();
 
@@ -85,6 +88,7 @@ class StatusB2BV2ControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@status_#write" })
+    @WithTestSpan
     void updateStatusListEntry_withV1Token_failsSwissProfileCheck() throws Exception {
         var statusListEntryId = statusListEntryService.createStatusListEntry(DEFAULT_ENTITY).id();
 

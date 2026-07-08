@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
+import ch.admin.bj.swiyu.core.business.common.utils.testSpan.WithTestSpan;
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntryRepository;
 import ch.admin.bj.swiyu.core.business.modules.status.api.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.core.business.modules.status.api.StatusListEntryDto;
@@ -95,6 +96,7 @@ class StatusB2BControllerIT {
     @WithJeapAuthenticationToken(
         bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@businesspartner_#write" }
     )
+    @WithTestSpan
     void createStatusListEntry_unauthorized() throws Exception {
         // GIVEN (BusinessEntity provided through SQL)
         statusListEntryService.createStatusListEntry(ENTITY_A).id();
@@ -119,6 +121,7 @@ class StatusB2BControllerIT {
             BusinessEntityTestData.ENTITY_A_S + " = ti_@status_#write",
         }
     )
+    @WithTestSpan
     void createStatusListEntry_wrongAuthorized() throws Exception {
         // GIVEN (BusinessEntity provided through SQL)
         statusListEntryService.createStatusListEntry(ENTITY_A);
@@ -138,6 +141,7 @@ class StatusB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@status_#write" })
+    @WithTestSpan
     void updateStatusListEntry_authorized() throws Exception {
         // GIVEN (BusinessEntity provided through SQL)
         identifierEntryRepository.save(identifierEntry_Initialized(DEFAULT_ENTITY, VALID_STATUS_LIST_ISSUER_A_DID));
@@ -165,6 +169,7 @@ class StatusB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@status_#write" })
+    @WithTestSpan
     void updateStatusListEntry_authorized_throwsDidNotResolvable() throws Exception {
         // GIVEN (BusinessEntity provided through SQL)
         identifierEntryRepository.save(identifierEntry_Initialized(DEFAULT_ENTITY, VALID_STATUS_LIST_ISSUER_A_DID));
@@ -213,6 +218,7 @@ class StatusB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@status_#read" })
+    @WithTestSpan
     void updateStatusListEntry_unauthorized() throws Exception {
         // GIVEN (BusinessEntity provided through SQL)
         var statusListEntryId = statusListEntryService.createStatusListEntry(DEFAULT_ENTITY).id();
@@ -238,6 +244,7 @@ class StatusB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.ENTITY_A_S + " = ti_@status_#write" })
+    @WithTestSpan
     void updateStatusListEntry_wrongAuthorized() throws Exception {
         // GIVEN (BusinessEntity provided through SQL)
         var statusListEntryId = statusListEntryService.createStatusListEntry(ENTITY_B).id();
@@ -263,6 +270,7 @@ class StatusB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.ENTITY_A_S + " = ti_@status_#read" })
+    @WithTestSpan
     void getAllStatusListEntries_authorized() throws Exception {
         // GIVEN (BusinessEntity provided through SQL)
         var statusListEntryId01 = statusListEntryService.createStatusListEntry(ENTITY_A).id();
@@ -296,6 +304,7 @@ class StatusB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.ENTITY_A_S + " = ti_@status_#write" })
+    @WithTestSpan
     void getAllStatusListEntries_unauthorized() throws Exception {
         // GIVEN (BusinessEntity provided through SQL)
         statusListEntryService.createStatusListEntry(ENTITY_B);

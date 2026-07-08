@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.core.business.common.s3;
 
 import ch.admin.bj.swiyu.core.business.common.async.AsyncService;
-import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -19,7 +18,6 @@ public class S3BucketInitializer {
     private final S3ClientAdapter s3;
     private final AsyncService async;
 
-    @NewSpan // ansonsten fehlt traceid und spanid in logs
     @EventListener(classes = ApplicationReadyEvent.class)
     public void initS3StorageBuckets() {
         async.run(() -> {

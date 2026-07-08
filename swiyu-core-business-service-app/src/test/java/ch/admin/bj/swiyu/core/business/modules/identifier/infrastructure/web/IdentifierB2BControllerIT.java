@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
+import ch.admin.bj.swiyu.core.business.common.utils.testSpan.WithTestSpan;
 import ch.admin.bj.swiyu.core.business.modules.identifier.api.IdentifierEntryDto;
 import ch.admin.bj.swiyu.core.business.modules.identifier.config.IdentifierLimitProperties;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
@@ -118,6 +119,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_authorized() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL
@@ -144,6 +146,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_authorizedWithDidV1_2_0() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL
@@ -170,6 +173,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_authorizedWithDidV2_0_0() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL
@@ -196,6 +200,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_authorizedWithDidV2_1_0() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL
@@ -222,6 +227,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_authoirzedWithValidDidWebvhEntry() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL
@@ -248,6 +254,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_authorizedWithValidDidWebvhUpdatedEntry() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL
@@ -274,6 +281,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_invalidJson() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL
@@ -308,6 +316,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_invalidDidWebvhWrongBaseRegister() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL
@@ -340,6 +349,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_invalidDataIntegrity() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL
@@ -372,6 +382,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_invalidPortable() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL
@@ -408,6 +419,7 @@ class IdentifierB2BControllerIT {
     @WithJeapAuthenticationToken(
         bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@businesspartner_#write" }
     )
+    @WithTestSpan
     void unauthorizedUpdateIdentifierEntry() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL
@@ -434,6 +446,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { ENTITY_A_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_wrongAuthorized() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL
@@ -456,6 +469,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.ENTITY_A_S + " = ti_@identifier_#read" })
+    @WithTestSpan
     void getAllIdentifierEntries_authorized() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL
@@ -490,6 +504,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.ENTITY_A_S + " = ti_@businesspartner_#read" })
+    @WithTestSpan
     void unauthorizedGetIdentifierEntry() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL
@@ -510,6 +525,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_SizeLimitDidLog() throws Exception {
         // GIVEN
         doReturn(new IdentifierLimitProperties.DidLogLimits(DataSize.ofBytes(1L)))
@@ -539,6 +555,7 @@ class IdentifierB2BControllerIT {
 
     @Test
     @WithJeapAuthenticationToken(bpRoles = { DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_SizeLimitDidDoc() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL

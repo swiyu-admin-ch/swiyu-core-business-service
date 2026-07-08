@@ -5,11 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.39.4
+
+### Changed
+
+- Fix missing tracing span when loading demo data and during integration tests
+
 ## 3.39.3
 
 ### Changed
 
-- version bump logback to 1.5.36 and org.glassfish.jersey to 3.1.10 for security fixes
+- Version bump logback to 1.5.36 and org.glassfish.jersey to 3.1.10 for security fixes
 
 ## 3.39.2
 

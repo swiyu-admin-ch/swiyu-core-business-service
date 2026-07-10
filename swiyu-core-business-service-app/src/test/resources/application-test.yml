@@ -177,7 +177,6 @@ logging:
     org.springframework.transaction: WARN
 
 features:
-  EID_5540_UPDATE_IS_GOVERNMENT: true
   EIDARTFE_754_VC_SCHEMA: true
   EIDARTFE_1220_PROOF_OF_POSSESSION: true
 

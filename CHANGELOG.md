@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.39.6
+
+### Changed
+
+- removed EIDARTFE_754_VC_SCHEMA feature toggle from VqpsSubmissionB2BController. They are unrelated
+- removed unused feature toggle EID_5540_UPDATE_IS_GOVERNMENT
+
 ## 3.39.5
 
 ### Changed

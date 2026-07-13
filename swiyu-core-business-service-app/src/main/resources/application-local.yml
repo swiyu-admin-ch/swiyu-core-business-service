@@ -36,32 +36,25 @@ jeap:
           introspection:
             client-secret: "secret"
             uri: https://swiyu-oauth-mock-server-d.apps.p-szb-ros-shrd-npr-01.cloud.admin.ch/oauth2/introspect
-#         Uncomment the following lines to use the local mock server
-#          issuer: http://localhost:8480
-#          jwk-set-uri: http://localhost:8480/.well-known/jwks.json
-#          introspection:
-#            client-secret: "secret"
-#            uri: http://localhost:8480/oauth2/introspect
-#         Uncomment the following lines to use the dev keycloak server
-#          issuer: https://auth-d.trust-infra.swiyu.admin.ch/realms/bj-swiyu-ecosystem
-#          jwk-set-uri: https://swiyu-oauth-server-d.apps.p-szb-ros-shrd-npr-01.cloud.admin.ch/realms/bj-swiyu-ecosystem/protocol/openid-connect/certs
-#          introspection:
-#            client-secret: "" # copy from keycloak
         auth-servers:
+          - issuer: http://localhost:8480
+            jwk-set-uri: http://localhost:8480/.well-known/jwks.json
+            introspection:
+              client-id: "swiyu-core-business-service"
+              client-secret: "secret"
+              uri: http://localhost:8480/oauth2/introspect
           - issuer: https://keymanager-npr-intra.api.admin.ch/keycloak/realms/APIGW
             jwk-set-uri: https://keymanager-npr-intra.api.admin.ch/keycloak/realms/APIGW/protocol/openid-connect/certs
             authentication-contexts:
               - B2B
             introspection:
-              client-id: "portal-B2B"
-              client-secret: "{noop}secret"
+              mode: none
           - issuer: https://keymanager-npr.api.admin.ch/keycloak/realms/APIGW
             jwk-set-uri: https://keymanager-npr.api.admin.ch/keycloak/realms/APIGW/protocol/openid-connect/certs
             authentication-contexts:
               - B2B
             introspection:
-              client-id: "portal-B2B"
-              client-secret: "{noop}secret"
+              mode: none
 
   monitor:
     prometheus:
@@ -116,7 +109,7 @@ spring:
       password: secret
   flyway:
     enabled: true
-    locations: [] # keep empty since on local we don't want afterMigrate script
+    locations: [ ] # keep empty since on local we don't want afterMigrate script
   docker:
     compose:
       enabled: true
@@ -152,7 +145,6 @@ logging:
     ch.admin.bit.jeap.messaging.kafka: ERROR
     org.apache.kafka: ERROR
     software.amazon: WARN
-
 features:
   EIDARTFE_754_VC_SCHEMA: true
   EIDARTFE_1204_TRUST_ADD_DIDS: true

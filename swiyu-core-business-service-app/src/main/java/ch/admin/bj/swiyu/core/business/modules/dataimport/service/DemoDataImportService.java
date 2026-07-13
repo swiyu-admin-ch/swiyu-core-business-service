@@ -11,12 +11,16 @@ import ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocuments
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntry;
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntryRepository;
+import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentUploadRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.TrustOnboardingService;
+import ch.admin.bj.swiyu.registry.identifier.domain.DatastoreStatus;
+import ch.admin.bj.swiyu.registry.identifier.domain.IdentifierDatastoreEntity;
+import ch.admin.bj.swiyu.registry.identifier.domain.IdentifierDatastoreEntityRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -37,10 +41,13 @@ public class DemoDataImportService {
 
     private final BusinessPartnerRepository businessEntityRepository;
     private final IdentifierEntryRepository identifierEntryRepository;
+    private final IdentifierDatastoreEntityRepository identifierDatastoreEntityRepository;
     private final PartnerDocumentsRepository partnerDocumentsRepository;
     private final TrustOnboardingSubmissionRepository trustOnboardingSubmissionRepository;
     private final TrustOnboardingService trustOnboardingService;
     private final PartnerDocumentService partnerDocumentService;
+
+    private final IdentifierEntryService identifierEntryService;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<UUID> generateBusinessPartners() {
@@ -78,6 +85,12 @@ public class DemoDataImportService {
                 LocalizedMapUtil.getDefaultValue(CoreDemoData.CORE_ID_BP_GOV_NAMES),
                 CoreDemoData.CORE_ID_BP_GOV_EMAIL,
                 BusinessPartnerType.GOVERNMENTAL_INSTITUTION
+            ),
+            new BusinessEntity(
+                CoreDemoData.CORE_ID_BP_E2ETESTS,
+                LocalizedMapUtil.getDefaultValue(CoreDemoData.CORE_ID_BP_E2ETESTS_NAMES),
+                CoreDemoData.CORE_ID_BP_E2ETESTS_EMAIL,
+                BusinessPartnerType.GOVERNMENTAL_INSTITUTION
             )
         );
         for (var d : data) {
@@ -107,6 +120,31 @@ public class DemoDataImportService {
                 identifierEntryRepository.saveAndFlush(entity);
             }
         }
+
+        var identifierDatastoreEntityOpt = identifierDatastoreEntityRepository.findById(
+            CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL
+        );
+        var identifierDatastoreEntity = identifierDatastoreEntityOpt.orElseGet(() ->
+            identifierDatastoreEntityRepository.save(
+                new IdentifierDatastoreEntity(CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL)
+            )
+        );
+        identifierDatastoreEntity.changeStatus(DatastoreStatus.ACTIVE);
+        identifierDatastoreEntityRepository.save(identifierDatastoreEntity);
+
+        var identifierEntryOpt = identifierEntryRepository.findById(CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL);
+        var identifierEntry = identifierEntryOpt.orElseGet(() ->
+            identifierEntryRepository.save(
+                new IdentifierEntry(CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL, CoreDemoData.CORE_ID_BP_E2ETESTS)
+            )
+        );
+        identifierEntry.setDescription("DID for local E2E tests");
+        identifierEntryRepository.save(identifierEntry);
+        identifierEntryService.updateIdentifierEntry(
+            CoreDemoData.CORE_ID_BP_E2ETESTS,
+            CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL,
+            CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL_DIDLOG
+        );
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

@@ -16,11 +16,8 @@ import lombok.experimental.UtilityClass;
 public class CoreDemoData {
 
     public static final UUID CORE_ID_BP_DEFAULT = UUID.fromString("9f425029-9775-4984-99ba-bacc60069502");
-    static final String CORE_ID_BP_WANTS_TO_BE_TRUSTED_S = "897edd6b-2e3e-4cc2-95a8-5b759c301df8";
-    public static final UUID CORE_ID_BP_WANTS_TO_BE_TRUSTED = UUID.fromString(CORE_ID_BP_WANTS_TO_BE_TRUSTED_S);
     public static final UUID CORE_ID_BP_GOV = UUID.fromString("39f92e48-619e-4e92-8958-468ae138d8a3");
     public static final UUID CORE_ID_BP_BASE_ONBOARDING_ONLY = UUID.fromString("e97e84e6-f40e-47ba-bdfe-d92f3d3dbc84");
-
     public static final UUID CORE_ID_TOS_UNSUBMITTED = UUID.fromString(
         DemoDataConstants.TrustOnboardingSubmission.ID_UNSUBMITTED
     );
@@ -30,9 +27,25 @@ public class CoreDemoData {
         DemoDataConstants.TrustOnboardingSubmission.ID_SUCCEEDED
     );
     public static final UUID CORE_ID_TOS_INFO_REQUESTED = UUID.fromString("dc828a98-ffb1-4ae4-8f07-b35d2818ac87");
-
     public static final String CORE_ID_BP_BASE_ONBOARDING_ONLY_PHONE = "+41791234567";
     public static final String CORE_ID_BP_DEFAULT_PHONE = "+41791234567";
+
+    public static final UUID CORE_ID_BP_E2ETESTS = UUID.fromString("7b24f978-afe7-4f60-af2f-57ae5a01d303");
+    public static final UUID CORE_ID_IDENTIFIER_E2ETESTS_LOCAL = UUID.fromString(
+        "1133c5ee-f7b2-400c-a358-3bae4bba7672"
+    );
+    public static final String CORE_ID_IDENTIFIER_E2ETESTS_LOCAL_DIDLOG =
+        "{\"versionId\":\"1-QmStVvgLKv3oVnerc74p54pt8UcF8urHH32t9LvDVYLhMu\",\"versionTime\":\"2026-07-07T15:10:31Z\",\"parameters\":{\"method\":\"did:webvh:1.0\",\"scid\":\"QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy\",\"updateKeys\":[\"z6MknJEsZ8hynVFFF1oFFrJEdtsgTtSjuaE3k3RtpJfzLK9G\"],\"portable\":false},\"state\":{\"id\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672\",\"profile_version\":\"swiss-profile-anchor:1.0.0\",\"authentication\":[\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#auth-key-01\"],\"assertionMethod\":[\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#assert-key-01\"],\"verificationMethod\":[{\"id\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#auth-key-01\",\"controller\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672\",\"type\":\"JsonWebKey2020\",\"publicKeyJwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"lJHTz-hxyWyudXR-Ik3n59Njh0ZDe67LOAC4rWtGwVI\",\"y\":\"UQ-GiYrC3ZPwVhKNc00u1-QHYXRU1tIz8_KtkC-MGSs\",\"kid\":\"auth-key-01\"}},{\"id\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#assert-key-01\",\"controller\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672\",\"type\":\"JsonWebKey2020\",\"publicKeyJwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"b8iC-SjRKmuoSIGDhD7C7GTiSq06aIyx07yI9WlryF4\",\"y\":\"GsyVRZcIyc6pcXKClxTiwXGTCcXZf6sWXA8tQmWgRBI\",\"kid\":\"assert-key-01\"}}]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"created\":\"2026-07-07T15:10:31Z\",\"verificationMethod\":\"did:key:z6MknJEsZ8hynVFFF1oFFrJEdtsgTtSjuaE3k3RtpJfzLK9G#z6MknJEsZ8hynVFFF1oFFrJEdtsgTtSjuaE3k3RtpJfzLK9G\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4FaBXsyaD4ZXY3WYTsjiPLp4N2HDGfz6ax2sELpxLMrJrTFyk5T6MhgEUCrfyPPxPsicNdqPRSiXFMLFWREpoYkp\"}]}";
+
+    public static final Map<String, String> CORE_ID_BP_E2ETESTS_NAMES = fromLanguages(
+        "E2e GmbH (DE)",
+        "E2e GmbH (DE)",
+        "E2e GmbH (FR)",
+        "E2e S.r.l. (IT)",
+        "E2e GmbH (EN)",
+        "E2e GmbH (RM)"
+    );
+    public static final String CORE_ID_BP_E2ETESTS_EMAIL = "erika.mueller@e2e.test";
 
     // CORE_ID_BP_DEFAULT
     public static final Map<String, String> CORE_ID_BP_DEFAULT_NAMES = fromLanguages(
@@ -58,11 +71,9 @@ public class CoreDemoData {
         "+41548884440",
         CORE_ID_BP_DEFAULT_ADDRESS
     );
-
     public static final List<Signatory> CORE_ID_BP_DEFAULT_SIGNATORIES = List.of(
         new Signatory("Erika", "Müller", "+41776665544", CORE_ID_BP_DEFAULT_EMAIL)
     );
-
     // CORE_ID_BP_WANTS_TO_BE_TRUSTED
     public static final Map<String, String> CORE_ID_BP_WANTS_TO_BE_TRUSTED_NAMES = fromLanguages(
         "Böswilliges Umzugsunternehmen GmbH",
@@ -87,7 +98,6 @@ public class CoreDemoData {
         "+41548884441",
         CORE_ID_BP_WANTS_TO_BE_TRUSTED_ADDRESS
     );
-
     // CORE_ID_BP_GOV
     public static final Map<String, String> CORE_ID_BP_GOV_NAMES = fromLanguages(
         "Demo Kanton",
@@ -119,7 +129,6 @@ public class CoreDemoData {
         new Signatory("John", "Doe", "+41776665544", CORE_ID_BP_GOV_EMAIL_JOHN),
         new Signatory("Erika", "Müller", "+41554443322", CORE_ID_BP_GOV_EMAIL_ERIKA)
     );
-
     // CORE_ID_BP_BASE_ONBOARDING_ONLY
     public static final Map<String, String> CORE_ID_BP_BASE_ONBOARDING_ONLY_NAMES = fromLanguages(
         "Demo Unternehmen",
@@ -137,4 +146,6 @@ public class CoreDemoData {
         "Democanton"
     );
     public static final String CORE_ID_BP_BASE_ONBOARDING_ONLY_EMAIL = "helvetica@demo-comp.com";
+    static final String CORE_ID_BP_WANTS_TO_BE_TRUSTED_S = "897edd6b-2e3e-4cc2-95a8-5b759c301df8";
+    public static final UUID CORE_ID_BP_WANTS_TO_BE_TRUSTED = UUID.fromString(CORE_ID_BP_WANTS_TO_BE_TRUSTED_S);
 }

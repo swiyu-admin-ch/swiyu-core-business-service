@@ -34,6 +34,12 @@ public class IdentifierRegistryService {
     private final IdentifierDatastoreEntityRepository identifierDatastoreEntityRepository;
     private final IdentifierRegistryProperties identifierRegistryProperties;
 
+    private static void validateCanEdit(IdentifierDatastoreEntity entry) throws DidEntityNotReadyException {
+        if (entry.getStatus() == DatastoreStatus.DISABLED) throw new DidEntityNotReadyException(
+            entry.getId().toString()
+        );
+    }
+
     @Transactional(transactionManager = "identifierRegistryTransactionManager")
     public DatastoreEntityResponseDto createDatastoreEntity() {
         log.debug("Creating new DatastoreEntity");
@@ -74,7 +80,7 @@ public class IdentifierRegistryService {
     }
 
     private IdentifierDatastoreEntity createEmptyDatastoreEntity() {
-        return this.identifierDatastoreEntityRepository.save(new IdentifierDatastoreEntity());
+        return this.identifierDatastoreEntityRepository.save(new IdentifierDatastoreEntity(UUID.randomUUID()));
     }
 
     private IdentifierDatastoreEntity saveNewDidAndActivateDatastore(
@@ -129,11 +135,5 @@ public class IdentifierRegistryService {
             }
         }
         return result;
-    }
-
-    private static void validateCanEdit(IdentifierDatastoreEntity entry) throws DidEntityNotReadyException {
-        if (entry.getStatus() == DatastoreStatus.DISABLED) throw new DidEntityNotReadyException(
-            entry.getId().toString()
-        );
     }
 }

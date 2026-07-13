@@ -317,6 +317,39 @@ class IdentifierB2BControllerIT {
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
     @WithTestSpan
+    void updateIdentifierEntry_unknownDidMethod() throws Exception {
+        // GIVEN
+        // BusinessEntity provided through SQL
+        var identifierEntryId = identifierEntryService.createIdentifierEntry(DEFAULT_ENTITY).id();
+        // WHEN
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.put(
+                    BASE_URL +
+                        "business-entities/" +
+                        BusinessEntityTestData.DEFAULT_ENTITY_S +
+                        "/identifier-entries/" +
+                        identifierEntryId
+                )
+                    .content("just a random string that is not a did log at all")
+                    .contentType("application/jsonl+json")
+            )
+            // THEN
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.errorCode").value("identifier_validation_failed"))
+            .andExpect(jsonPath("$.message").value("Provided identifier resource is invalid."))
+            .andExpect(jsonPath("$.additionalDetails").isArray())
+            .andExpect(jsonPath("$.additionalDetails.length()").value(1))
+            .andExpect(
+                jsonPath("$.additionalDetails.[0]").value(
+                    "Unknown DID method in log entry: neither 'did:tdw:' nor 'did:webvh:' found"
+                )
+            );
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_invalidDidWebvhWrongBaseRegister() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL

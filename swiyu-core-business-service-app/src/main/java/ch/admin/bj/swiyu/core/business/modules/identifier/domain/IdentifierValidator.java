@@ -48,7 +48,12 @@ public class IdentifierValidator {
         }
 
         var lines = didLog.lines().toList();
-        var method = detectDidMethod(lines.getFirst());
+        DidMethod method;
+        try {
+            method = detectDidMethod(lines.getFirst());
+        } catch (IllegalArgumentException e) {
+            throw new IdentifierValidationFailedException(e.getMessage(), e);
+        }
         for (var lineNo = 0; lineNo < lines.size(); lineNo++) {
             var didLogEntryLine = lines.get(lineNo);
             var didLogEntry = validateDidLogEntry(didLogEntryLine, method);

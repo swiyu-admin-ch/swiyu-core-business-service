@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-core-business-service</artifactId>
-    <version>3.40.0-SNAPSHOT</version>
+    <version>3.40.3-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
@@ -22,9 +20,9 @@
     <properties>
         <java.version>25</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
-        <archunit-junit5.version>1.4.1</archunit-junit5.version>
+        <archunit-junit5.version>1.4.2</archunit-junit5.version>
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
-        <spotless-maven-plugin.version>3.2.1</spotless-maven-plugin.version>
+        <spotless-maven-plugin.version>3.8.0</spotless-maven-plugin.version>
         <cleanthat.version>2.25</cleanthat.version>
         <prettier.version>3.8.1</prettier.version>
         <prettier-plugin-java.version>2.8.1</prettier-plugin-java.version>
@@ -57,13 +55,13 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.5.36</version>
+                <version>1.5.38</version>
             </dependency>
             <dependency>
                 <!-- Fixes SNYK-JAVA-CHQOSLOGBACK-17675439 / CVE-2025-11226 -->
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-core</artifactId>
-                <version>1.5.36</version>
+                <version>1.5.38</version>
             </dependency>
             <!-- CVE-OVERRIDE end -->
         </dependencies>
@@ -76,7 +74,7 @@
                     <!-- Hotfix for archunit incompatibility: https://github.com/apache/maven-surefire/issues/839 -->
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.5.5</version>
+                    <version>3.5.6</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -167,7 +165,7 @@
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
-                <version>5.5.0.6356</version>
+                <version>5.7.0.6970</version>
             </plugin>
             <!-- Make Pact Maven plugin's publish goal run by default-->
             <plugin>

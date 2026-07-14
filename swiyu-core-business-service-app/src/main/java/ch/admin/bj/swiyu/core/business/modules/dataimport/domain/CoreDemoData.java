@@ -11,7 +11,12 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.experimental.UtilityClass;
 
-@SuppressWarnings({ "java:S1192" })
+@SuppressWarnings(
+    {
+        "java:S1192", // Allow text repeats in demo data
+        "java:S2386", // Sonar does not catch that the maps are unmodifiable
+    }
+)
 @UtilityClass
 public class CoreDemoData {
 

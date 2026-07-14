@@ -84,13 +84,19 @@ public class DemoDataImportService {
                 CoreDemoData.CORE_ID_BP_GOV,
                 LocalizedMapUtil.getDefaultValue(CoreDemoData.CORE_ID_BP_GOV_NAMES),
                 CoreDemoData.CORE_ID_BP_GOV_EMAIL,
-                BusinessPartnerType.GOVERNMENTAL_INSTITUTION
+                BusinessPartnerType.GOVERNMENTAL_INSTITUTION,
+                null,
+                null,
+                null
             ),
             new BusinessEntity(
                 CoreDemoData.CORE_ID_BP_E2ETESTS,
                 LocalizedMapUtil.getDefaultValue(CoreDemoData.CORE_ID_BP_E2ETESTS_NAMES),
                 CoreDemoData.CORE_ID_BP_E2ETESTS_EMAIL,
-                BusinessPartnerType.GOVERNMENTAL_INSTITUTION
+                BusinessPartnerType.GOVERNMENTAL_INSTITUTION,
+                null,
+                null,
+                null
             )
         );
         for (var d : data) {

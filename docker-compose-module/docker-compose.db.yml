@@ -1,6 +1,6 @@
 services:
   core-db:
-    image: repo.bit.admin.ch:8444/postgres:17.8
+    image: repo.bit.admin.ch:8444/postgres:17.10
     container_name: bj_swiyu_ti_ctrl_core_db
     ports:
       - "5432:5432"

@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.40.3
+
+### Changed
+
+- Migrate all `business_entity` records with type `UNKNOWN` or `INDIVIDUAL` to `BUSINESS` (migration `V1_21_0`). The new v2 onboarding flow (`/api/v2/internal/management/business-partners/`) always requires an explicit partner type, so `UNKNOWN` is no longer produced for new partners.
+- Deprecated `BusinessPartnerType.UNKNOWN` and `BusinessPartnerTypeDto.UNKNOWN`. All existing occurrences have been migrated; this value must not be used in new onboarding requests via the v2 controller.
+
+## 3.40.2
+
+### Changed
+
+- Update confluentinc/cp-enterprise-control-center from 7.9.5 to 7.9.8
+- Update confluentinc/cp-enterprise-kafka from 7.9.5 to 7.9.8
+- Update confluentinc/cp-schema-registry from 7.9.5 to 7.9.8
+- Update confluentinc/cp-zookeeper from 7.9.5 to 7.9.8
+- Update maven from 3.9.12 to 3.9.16
+- Update repo.bit.admin.ch:8444/postgres from 17.8 to 17.10
+- Update at.yawk.lz4:lz4-java from 1.10.1 to 1.11.1
+- Update net.java.dev.jna:jna from 5.18.1 to 5.19.1
+- Update org.jetbrains.kotlin:kotlin-stdlib from 2.2.21 to 2.4.0
+- Update org.apache.commons:commons-fileupload2-jakarta-servlet6 from 2.0.0-M4 to 2.0.0-M5
+- Update org.apache.commons:commons-fileupload2-core from 2.0.0-M4 to 2.0.0-M5
+- Update commons-logging:commons-logging from 1.2 to 1.4.0
+- Update commons-io:commons-io from 2.19.0 to 2.22.0
+- Update commons-codec:commons-codec from 1.11 to 1.22.0
+- Update jakarta.json:jakarta.json-api from 2.1.2 to 2.1.3
+- Update jakarta.activation:jakarta.activation-api from 2.1.2 to 2.1.4
+- Update jakarta.xml.bind:jakarta.xml.bind-api from 4.0.0 to 4.0.5
+- Update com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations from 2.17.2 to 2.22.1
+- Update com.fasterxml.jackson.jakarta.rs:jackson-jakarta-rs-base from 2.17.2 to 2.22.1
+- Update com.fasterxml.jackson.jakarta.rs:jackson-jakarta-rs-json-provider from 2.17.2 to 2.22.1
+- Update org.sonarsource.scanner.maven:sonar-maven-plugin from 5.5.0.6356 to 5.7.0.6970
+- Update org.apache.maven.plugins:maven-surefire-plugin from 3.5.5 to 3.5.6
+- Update ch.qos.logback:logback-core from 1.5.36 to 1.5.38
+- Update ch.qos.logback:logback-classic from 1.5.36 to 1.5.38
+- Update org.glassfish.jersey.connectors:jersey-apache-connector from 3.1.10 to 3.1.12
+- Update org.glassfish.jersey.inject:jersey-hk2 from 3.1.10 to 3.1.12
+- Update org.glassfish.jersey.core:jersey-common from 3.1.10 to 3.1.12
+- Update org.glassfish.jersey.core:jersey-client from 3.1.10 to 3.1.12
+- Update io.github.openfeign.querydsl:querydsl-jpa-spring from 7.1 to 7.4.0
+- Update io.github.openfeign.querydsl:querydsl-apt from 7.1 to 7.4.0
+- Update org.openapitools:openapi-generator-maven-plugin from 7.20.0 to 7.23.0
+- Update com.diffplug.spotless:spotless-maven-plugin from 3.2.1 to 3.8.0
+- Update org.openapitools:jackson-databind-nullable from 0.2.9 to 0.2.10
+- Update com.nimbusds:nimbus-jose-jwt from 10.8 to 10.9.1
+- Update com.tngtech.archunit:archunit-junit5 from 1.4.1 to 1.4.2
+- Update com.tngtech.archunit:archunit-junit5 from 1.4.1 to 1.4.2
+- Update com.tngtech.archunit:archunit-junit5 from 1.4.1 to 1.4.2
+
+## 3.40.1
+
+### Changed
+
+- Update demo data to align with sonar ruleset
+
 ## 3.40.0
 
 ### Changed
@@ -62,8 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add multi-language entity names for business partner V2 responses and persist new trust onboarding organization name
-  translations.
+- Add multi-language entity names for business partner V2 responses and persist new trust onboarding organization name translations.
 
 ## 3.38.2
 

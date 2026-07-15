@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding;
 
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerType;
 import static ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentMapper.toTrustOnboardingSubmissionDocumentListItemDto;
+import static ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT;
 import static ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.TrustOnboardingMapper.*;
 
 import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
@@ -22,6 +23,7 @@ import ch.admin.bj.swiyu.core.business.modules.trust.domain.publisher.DomainEven
 import ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.EventMapper;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.TrustOnboardingMapper;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.*;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.querydsl.core.BooleanBuilder;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.constraints.NotNull;
@@ -87,13 +89,14 @@ public class TrustOnboardingService {
             throw new ValidationException("TrustOnboardingSubmissionDocument has missing/invalid fields.", errors);
         }
 
-        var fileReport =
-            request.type() == TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT
-                ? declarationOfIntentValidator.validateDeclarationOfIntent(
-                      request.file(),
-                      trustOnboarding.getSigningRule()
-                  )
-                : null;
+        JsonNode doiValidationFileReportAsJson = null;
+        if (request.type() == TRUST_ONBOARDING_DECLARATION_OF_INTENT) {
+            var result = declarationOfIntentValidator.validateDeclarationOfIntent(
+                request.file(),
+                trustOnboarding.getSigningRule()
+            );
+            doiValidationFileReportAsJson = result.fileReport();
+        }
 
         var document = partnerDocumentService.createTrustOnboardingSubmissionDocument(
             trustOnboarding.getPartnerId(),
@@ -104,8 +107,10 @@ public class TrustOnboardingService {
 
         var submissionDocument = toTrustOnboardingSubmissionDocumentListItemDto(document, true);
 
-        if (request.type() == TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT) {
-            trustOnboarding.updateDeclarationOfIntent(new DeclarationOfIntent(document.id().toString(), fileReport));
+        if (request.type() == TRUST_ONBOARDING_DECLARATION_OF_INTENT) {
+            trustOnboarding.updateDeclarationOfIntent(
+                new DeclarationOfIntent(document.id().toString(), doiValidationFileReportAsJson)
+            );
             trustOnboardingSubmissionRepository.saveAndFlush(trustOnboarding);
         }
 

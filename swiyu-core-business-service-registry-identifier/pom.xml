@@ -3,7 +3,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-core-business-service</artifactId>
-        <version>3.40.3-SNAPSHOT</version>
+        <version>3.40.6-SNAPSHOT</version>
     </parent>
     <artifactId>swiyu-core-business-service-registry-identifier</artifactId>
     <description>Provides a service for accessing the Identifier Registry DB</description>

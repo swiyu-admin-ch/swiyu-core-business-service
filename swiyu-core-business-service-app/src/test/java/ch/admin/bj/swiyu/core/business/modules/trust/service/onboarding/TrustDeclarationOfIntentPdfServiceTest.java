@@ -105,6 +105,7 @@ class TrustDeclarationOfIntentPdfServiceTest {
         }
     }
 
+    @SuppressWarnings({ "java:S1874" }) // Remove with EID-6656
     @Test
     void streamFilledDeclarationOfIntentPdf_withUnknownPartnerType_throwsDeclarationOfIntentPdfGenerationException() {
         var submission = submission(BusinessPartnerType.UNKNOWN, SigningRule.SINGLE_SIGNATURE, List.of(), true);

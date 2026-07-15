@@ -197,6 +197,7 @@ public class BusinessPartnerService {
         );
     }
 
+    @SuppressWarnings({ "java:S1874" }) // Remove with EID-6656
     @Transactional
     public BusinessEntityDto updateBusinessEntityIsGovernment(UUID businessEntityId, boolean isGovernment) {
         log.warn("Updating business partner with id '{}' to be set as government.", businessEntityId);
@@ -238,6 +239,7 @@ public class BusinessPartnerService {
         return GOVERNMENTAL_INSTITUTION.equals(partnerType);
     }
 
+    @SuppressWarnings({ "java:S1874" }) // Remove with EID-6656
     @Transactional(readOnly = true)
     public BusinessPartnerTypeDto getBusinessPartnerType(UUID partnerId) {
         if (partnerId == null) {
@@ -284,6 +286,7 @@ public class BusinessPartnerService {
         );
     }
 
+    @SuppressWarnings({ "java:S1874" }) // Remove with EID-6656
     private @NonNull BusinessPartnerType lookupBusinessPartnerType(UUID partnerId) {
         return businessPartnerRepository
             .findById(partnerId)

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BusinessPartnerTypeMapper {
 
+    @SuppressWarnings({ "java:S1874" }) // Remove with EID-6656
     public static BusinessPartnerType toBusinessPartnerType(BusinessPartnerTypeDto businessPartnerTypeDto) {
         if (businessPartnerTypeDto == null) {
             return BusinessPartnerType.UNKNOWN;
@@ -20,6 +21,7 @@ public class BusinessPartnerTypeMapper {
         };
     }
 
+    @SuppressWarnings({ "java:S1874" }) // Remove with EID-6656
     public static BusinessPartnerTypeDto toBusinessPartnerTypeDto(BusinessPartnerType businessPartnerType) {
         if (businessPartnerType == null) {
             return BusinessPartnerTypeDto.UNKNOWN;

@@ -44,6 +44,7 @@ public class BusinessEntityTestData {
         );
     }
 
+    @SuppressWarnings({ "java:S1874" }) // Remove with EID-6656
     public static BusinessEntity businessPartnerOfTypeUnknown(UUID partnerId) {
         return new BusinessEntity(
             partnerId,
@@ -96,6 +97,7 @@ public class BusinessEntityTestData {
         return entityA;
     }
 
+    @SuppressWarnings({ "java:S1874" }) // Remove with EID-6656
     public static BusinessEntity businessPartnerB() {
         var entityB = new BusinessEntity(
             UUID.randomUUID(),
@@ -110,6 +112,7 @@ public class BusinessEntityTestData {
         return entityB;
     }
 
+    @SuppressWarnings({ "java:S1874" }) // Remove with EID-6656
     private static BusinessEntity businessPartnerC() {
         var entityC = new BusinessEntity(
             UUID.randomUUID(),

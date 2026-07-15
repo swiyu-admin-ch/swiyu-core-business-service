@@ -4,7 +4,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-core-business-service</artifactId>
-    <version>3.40.3-SNAPSHOT</version>
+    <version>3.40.6-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
@@ -37,6 +37,7 @@
         <module>swiyu-core-business-service-app</module>
         <module>swiyu-core-business-service-registry-identifier</module>
         <module>swiyu-core-business-service-registry-status</module>
+        <module>swiyu-discrete-validator-client</module>
     </modules>
 
     <dependencyManagement>
@@ -49,6 +50,11 @@
             <dependency>
                 <groupId>ch.admin.bj.swiyu</groupId>
                 <artifactId>swiyu-core-business-service-registry-status</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.admin.bj.swiyu</groupId>
+                <artifactId>swiyu-discrete-validator-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- CVE-OVERRIDE start -->

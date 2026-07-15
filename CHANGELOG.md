@@ -5,12 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.40.6
+
+### Changed
+
+- Format address in doi pdf correctly if street is missing
+
+## 3.40.5
+
+### Changed
+
+- refactored discrete validator into maven sub-module
+
+## 3.40.4
+
+### Changed
+
+- Marked UNKNOWN business partner type as to be removed with contract story EID-6656
+
 ## 3.40.3
 
 ### Changed
 
-- Migrate all `business_entity` records with type `UNKNOWN` or `INDIVIDUAL` to `BUSINESS` (migration `V1_21_0`). The new v2 onboarding flow (`/api/v2/internal/management/business-partners/`) always requires an explicit partner type, so `UNKNOWN` is no longer produced for new partners.
-- Deprecated `BusinessPartnerType.UNKNOWN` and `BusinessPartnerTypeDto.UNKNOWN`. All existing occurrences have been migrated; this value must not be used in new onboarding requests via the v2 controller.
+- Migrate all `business_entity` records with type `UNKNOWN` or `INDIVIDUAL` to `BUSINESS` (migration `V1_21_0`). The new
+  v2 onboarding flow (`/api/v2/internal/management/business-partners/`) always requires an explicit partner type, so
+  `UNKNOWN` is no longer produced for new partners.
+- Deprecated `BusinessPartnerType.UNKNOWN` and `BusinessPartnerTypeDto.UNKNOWN`. All existing occurrences have been
+  migrated; this value must not be used in new onboarding requests via the v2 controller.
 
 ## 3.40.2
 
@@ -117,7 +138,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add multi-language entity names for business partner V2 responses and persist new trust onboarding organization name translations.
+- Add multi-language entity names for business partner V2 responses and persist new trust onboarding organization name
+  translations.
 
 ## 3.38.2
 

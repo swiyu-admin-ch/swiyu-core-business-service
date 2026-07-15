@@ -18,6 +18,19 @@ public class Address {
     private String region;
 
     public String getFullAddressOneLine() {
-        return String.format("%s, %s %s, %s", street, postalCode, city, country);
+        var parts = new java.util.ArrayList<String>();
+        if (street != null && !street.isBlank()) {
+            parts.add(street);
+        }
+        var cityPart = java.util.stream.Stream.of(postalCode, city)
+            .filter(s -> s != null && !s.isBlank())
+            .collect(java.util.stream.Collectors.joining(" "));
+        if (!cityPart.isBlank()) {
+            parts.add(cityPart);
+        }
+        if (country != null && !country.isBlank()) {
+            parts.add(country);
+        }
+        return String.join(", ", parts);
     }
 }

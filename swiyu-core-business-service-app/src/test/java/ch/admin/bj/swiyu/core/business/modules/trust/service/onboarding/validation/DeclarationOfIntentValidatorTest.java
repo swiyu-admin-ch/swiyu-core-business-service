@@ -4,26 +4,23 @@ import static ch.admin.bj.swiyu.core.business.modules.trust.api.DeclarationOfInt
 import static ch.admin.bj.swiyu.core.business.modules.trust.api.DeclarationOfIntentValidatorErrorCodeDto.NO_SIGNATURES_FOUND;
 import static ch.admin.bj.swiyu.core.business.modules.trust.api.DeclarationOfIntentValidatorErrorCodeDto.VALIDATION_SERVICE_NOT_AVAILABLE;
 import static ch.admin.bj.swiyu.core.business.modules.trust.api.DeclarationOfIntentValidatorErrorCodeDto.VIOLATING_DOI_VARIANT_JOINT_SIGNATURE_TWO;
+import static ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionDoiValidationProperties.TrustOnboardingSubmissionDoiValidationMandantProperties.NONE;
+import static ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionDoiValidationProperties.TrustOnboardingSubmissionDoiValidationMandantProperties.SWISS_PKI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
+import ch.admin.bj.swiyu.core.business.modules.trust.config.DiscreteValidatorClientConfig;
 import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionDoiValidationProperties;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.SigningRule;
 import ch.admin.bj.swiyu.core.business.modules.trust.exceptions.DeclarationOfIntentValidationException;
-import ch.admin.suis.client.core.service.IValidationServiceClient;
-import ch.admin.suis.validator.rest.to.ValidStatus;
-import ch.admin.suis.validator.rest.to.response.FileReport;
-import ch.admin.suis.validator.rest.to.response.SignatureReport;
-import ch.admin.suis.validator.rest.to.response.ValidationResponse;
+import ch.admin.bj.swiyu.discrete.validator.DiscreteValidationResult;
+import ch.admin.bj.swiyu.discrete.validator.DiscreteValidatorClient;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -34,26 +31,15 @@ import org.springframework.mock.web.MockMultipartFile;
 class DeclarationOfIntentValidatorTest {
 
     @Mock
-    private IValidationServiceClient validationServiceClient;
+    private DiscreteValidatorClient discreteValidatorClient;
 
     @Test
-    void validateDeclarationOfIntent_rejects_when_no_signatures_found() throws Exception {
-        var validator = createValidator(
-            TrustOnboardingSubmissionDoiValidationProperties.TrustOnboardingSubmissionDoiValidationMandantProperties.SWISS_PKI
-        );
+    void validateDeclarationOfIntent_rejects_when_no_signatures_found() {
+        var validator = createValidator(SWISS_PKI);
         var file = new MockMultipartFile("file", "doi.pdf", "application/pdf", "test".getBytes(StandardCharsets.UTF_8));
-        when(
-            validationServiceClient.validateOneRequest(
-                anyList(),
-                eq(false),
-                isNull(),
-                isNull(),
-                eq("de"),
-                isNull(),
-                eq(false),
-                eq(true)
-            )
-        ).thenReturn(emptyFileReportResponse());
+        when(discreteValidatorClient.executeValidationRequest(any(), any(), anyInt())).thenReturn(
+            emptyDiscreteValidationResult()
+        );
 
         assertThatThrownBy(() -> validator.validateDeclarationOfIntent(file, SigningRule.SINGLE_SIGNATURE))
             .isInstanceOf(DeclarationOfIntentValidationException.class)
@@ -65,28 +51,12 @@ class DeclarationOfIntentValidatorTest {
     }
 
     @Test
-    void validateDeclarationOfIntent_rejects_when_mandant_status_is_invalid() throws Exception {
-        var validator = createValidator(
-            TrustOnboardingSubmissionDoiValidationProperties.TrustOnboardingSubmissionDoiValidationMandantProperties.SWISS_PKI
-        );
+    void validateDeclarationOfIntent_rejects_when_mandant_status_is_invalid() {
+        var validator = createValidator(SWISS_PKI);
         var file = new MockMultipartFile("file", "doi.pdf", "application/pdf", "test".getBytes(StandardCharsets.UTF_8));
-        var response = mock(ValidationResponse.class);
-        var fileReport = new FileReport();
-        fileReport.setSignatureReports(List.of(new SignatureReport()));
-        when(response.isValid()).thenReturn(ValidStatus.INVALID);
-        when(response.getFileReports()).thenReturn(List.of(fileReport));
-        when(
-            validationServiceClient.validateOneRequest(
-                anyList(),
-                eq(false),
-                isNull(),
-                isNull(),
-                eq("de"),
-                isNull(),
-                eq(false),
-                eq(true)
-            )
-        ).thenReturn(response);
+        when(discreteValidatorClient.executeValidationRequest(any(), any(), anyInt())).thenReturn(
+            invalidDiscreteValidationResult()
+        );
 
         assertThatThrownBy(() -> validator.validateDeclarationOfIntent(file, SigningRule.SINGLE_SIGNATURE))
             .isInstanceOf(DeclarationOfIntentValidationException.class)
@@ -98,28 +68,12 @@ class DeclarationOfIntentValidatorTest {
     }
 
     @Test
-    void validateDeclarationOfIntent_rejects_when_signing_rule_and_signature_count_do_not_match() throws Exception {
-        var validator = createValidator(
-            TrustOnboardingSubmissionDoiValidationProperties.TrustOnboardingSubmissionDoiValidationMandantProperties.SWISS_PKI
-        );
+    void validateDeclarationOfIntent_rejects_when_signing_rule_and_signature_count_do_not_match() {
+        var validator = createValidator(SWISS_PKI);
         var file = new MockMultipartFile("file", "doi.pdf", "application/pdf", "test".getBytes(StandardCharsets.UTF_8));
-        var response = mock(ValidationResponse.class);
-        var fileReport = mock(FileReport.class);
-        when(response.isValid()).thenReturn(ValidStatus.VALID);
-        when(fileReport.getSignatureReports()).thenReturn(List.of(mock(SignatureReport.class)));
-        when(response.getFileReports()).thenReturn(List.of(fileReport));
-        when(
-            validationServiceClient.validateOneRequest(
-                anyList(),
-                eq(false),
-                isNull(),
-                isNull(),
-                eq("de"),
-                isNull(),
-                eq(false),
-                eq(true)
-            )
-        ).thenReturn(response);
+        when(discreteValidatorClient.executeValidationRequest(any(), any(), anyInt())).thenReturn(
+            validDiscreteValidationResult()
+        );
 
         assertThatThrownBy(() -> validator.validateDeclarationOfIntent(file, SigningRule.JOINT_SIGNATURE_TWO))
             .isInstanceOf(DeclarationOfIntentValidationException.class)
@@ -131,36 +85,26 @@ class DeclarationOfIntentValidatorTest {
     }
 
     @Test
-    void validateDeclarationOfIntent_skips_remote_validation_when_mandant_is_none() {
+    void validateDeclarationOfIntent_validates_positive_when_mandant_is_none() {
+        // note: we are creating the validator here with the discreteValidatorClientMock which
+        // is used in app when mandant was configured with NONE
         var validator = createValidator(
-            TrustOnboardingSubmissionDoiValidationProperties.TrustOnboardingSubmissionDoiValidationMandantProperties.NONE
+            new DiscreteValidatorClientConfig(null, null).discreteValidatorClientMock(),
+            NONE
         );
         var file = new MockMultipartFile("file", "doi.pdf", "application/pdf", "test".getBytes(StandardCharsets.UTF_8));
-
         var result = validator.validateDeclarationOfIntent(file, SigningRule.SINGLE_SIGNATURE);
-
-        assertNull(result);
-        verifyNoInteractions(validationServiceClient);
+        assertNotNull(result.fileReport());
     }
 
     @Test
-    void validateDeclarationOfIntent_wraps_validator_client_exceptions() throws Exception {
-        var validator = createValidator(
-            TrustOnboardingSubmissionDoiValidationProperties.TrustOnboardingSubmissionDoiValidationMandantProperties.SWISS_PKI
-        );
+    void validateDeclarationOfIntent_wraps_validator_client_exceptions() {
+        var validator = createValidator(SWISS_PKI);
         var file = new MockMultipartFile("file", "doi.pdf", "application/pdf", "test".getBytes(StandardCharsets.UTF_8));
-        when(
-            validationServiceClient.validateOneRequest(
-                anyList(),
-                eq(false),
-                isNull(),
-                isNull(),
-                eq("de"),
-                isNull(),
-                eq(false),
-                eq(true)
-            )
-        ).thenThrow(new RuntimeException("validator unavailable"));
+
+        when(discreteValidatorClient.executeValidationRequest(any(), any(), anyInt())).thenThrow(
+            new IllegalStateException("validator unavailable")
+        );
 
         assertThatThrownBy(() -> validator.validateDeclarationOfIntent(file, SigningRule.SINGLE_SIGNATURE))
             .isInstanceOf(DeclarationOfIntentValidationException.class)
@@ -172,29 +116,13 @@ class DeclarationOfIntentValidatorTest {
     }
 
     @Test
-    void validateDeclarationOfIntent_keeps_uploaded_file_bytes_available_after_validation() throws Exception {
-        var validator = createValidator(
-            TrustOnboardingSubmissionDoiValidationProperties.TrustOnboardingSubmissionDoiValidationMandantProperties.SWISS_PKI
-        );
+    void validateDeclarationOfIntent_keeps_uploaded_file_bytes_available_after_validation() throws IOException {
+        var validator = createValidator(SWISS_PKI);
         var originalBytes = "test-pdf-content".getBytes(StandardCharsets.UTF_8);
         var file = new MockMultipartFile("file", "doi.pdf", "application/pdf", originalBytes);
-        var response = mock(ValidationResponse.class);
-        var fileReport = mock(FileReport.class);
-        when(response.isValid()).thenReturn(ValidStatus.VALID);
-        when(response.getFileReports()).thenReturn(List.of(fileReport));
-        when(fileReport.getSignatureReports()).thenReturn(List.of(mock(SignatureReport.class)));
-        when(
-            validationServiceClient.validateOneRequest(
-                anyList(),
-                eq(false),
-                isNull(),
-                isNull(),
-                eq("de"),
-                isNull(),
-                eq(false),
-                eq(true)
-            )
-        ).thenReturn(response);
+        when(discreteValidatorClient.executeValidationRequest(any(), any(), anyInt())).thenReturn(
+            validDiscreteValidationResult()
+        );
 
         validator.validateDeclarationOfIntent(file, SigningRule.SINGLE_SIGNATURE);
 
@@ -202,6 +130,13 @@ class DeclarationOfIntentValidatorTest {
     }
 
     private DeclarationOfIntentValidator createValidator(
+        TrustOnboardingSubmissionDoiValidationProperties.TrustOnboardingSubmissionDoiValidationMandantProperties mandant
+    ) {
+        return createValidator(discreteValidatorClient, mandant);
+    }
+
+    private static DeclarationOfIntentValidator createValidator(
+        DiscreteValidatorClient client,
         TrustOnboardingSubmissionDoiValidationProperties.TrustOnboardingSubmissionDoiValidationMandantProperties mandant
     ) {
         return new DeclarationOfIntentValidator(
@@ -213,15 +148,19 @@ class DeclarationOfIntentValidatorTest {
                     "password"
                 )
             ),
-            validationServiceClient
+            client
         );
     }
 
-    private ValidationResponse emptyFileReportResponse() {
-        var fileReport = new FileReport();
-        fileReport.setSignatureReports(List.of());
-        var response = new ValidationResponse();
-        response.setFileReports(List.of(fileReport));
-        return response;
+    private static DiscreteValidationResult emptyDiscreteValidationResult() {
+        return new DiscreteValidationResult(false, null, 0);
+    }
+
+    private static DiscreteValidationResult invalidDiscreteValidationResult() {
+        return new DiscreteValidationResult(false, JsonNodeFactory.instance.objectNode(), 1);
+    }
+
+    private static DiscreteValidationResult validDiscreteValidationResult() {
+        return new DiscreteValidationResult(true, JsonNodeFactory.instance.objectNode(), 1);
     }
 }

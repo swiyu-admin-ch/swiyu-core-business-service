@@ -3,14 +3,8 @@ package ch.admin.bj.swiyu.core.business.modules.trust.infrastructure.web;
 import static ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionStatus.SUBMITTED;
 import static ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTestData.trustOnboardingSubmission;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.everyItem;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
@@ -19,10 +13,11 @@ import ch.admin.bj.swiyu.antivirus.client.model.ScanResult;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
-import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.SigningRule;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
-import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.DeclarationOfIntentValidator;
-import ch.admin.bj.swiyu.core.business.test.*;
+import ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData;
+import ch.admin.bj.swiyu.core.business.test.TestRepositories;
+import ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionDocumentTestData;
+import ch.admin.bj.swiyu.core.business.test.WithExtendedJeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
 import com.jayway.jsonpath.JsonPath;
 import java.time.Instant;
@@ -55,9 +50,6 @@ class TrustOnboardingSubmissionDocumentsInternalControllerIT {
 
     @MockitoBean
     ScanApi scanApi;
-
-    @MockitoBean
-    DeclarationOfIntentValidator declarationOfIntentValidator;
 
     @Autowired
     private MockMvc mockMvc;
@@ -95,10 +87,6 @@ class TrustOnboardingSubmissionDocumentsInternalControllerIT {
         bpRoles = BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@trustonboardingsubmission_#write"
     )
     void test_DocumentUploadOk() throws Exception {
-        doThrow(new AssertionError("DOI validator must not be called for TRUST_ONBOARDING_OTHER"))
-            .when(declarationOfIntentValidator)
-            .validateDeclarationOfIntent(any(), any());
-
         var testDocument = TrustOnboardingSubmissionDocumentTestData.TestDocument.builder()
             .trustOnboardingSubmissionId(trustOnboardingSubmissionId)
             .build();
@@ -108,7 +96,6 @@ class TrustOnboardingSubmissionDocumentsInternalControllerIT {
         assertThat(resultUpload.getResponse().getStatus()).isEqualTo(HttpStatus.OK.value());
         assertThat((String) documentUploadResponseJson.read("$.id")).isNotEmpty();
         assertThat((String) documentUploadResponseJson.read("$.type")).isEqualTo(testDocument.partnerDocumentType());
-        verify(declarationOfIntentValidator, never()).validateDeclarationOfIntent(any(), any());
     }
 
     @Test
@@ -125,7 +112,6 @@ class TrustOnboardingSubmissionDocumentsInternalControllerIT {
         var resultUpload = uploadTestDocument(testDocument);
 
         assertThat(resultUpload.getResponse().getStatus()).isEqualTo(HttpStatus.OK.value());
-        verify(declarationOfIntentValidator).validateDeclarationOfIntent(any(), eq(SigningRule.SINGLE_SIGNATURE));
     }
 
     @Test
@@ -206,6 +192,7 @@ class TrustOnboardingSubmissionDocumentsInternalControllerIT {
         }
     )
     void test_ListDocumentOk() throws Exception {
+        // GIVEN
         var testDocumentTemplate =
             TrustOnboardingSubmissionDocumentTestData.TestDocument.builder().trustOnboardingSubmissionId(
                 trustOnboardingSubmissionId
@@ -219,6 +206,7 @@ class TrustOnboardingSubmissionDocumentsInternalControllerIT {
         );
         var documentUploadResponseJson = JsonPath.parse(documentUploadResponse.getResponse().getContentAsString());
         String documentId = documentUploadResponseJson.read("$.id");
+        // WHEN / THEN
         mockMvc
             .perform(
                 MockMvcRequestBuilders.get(

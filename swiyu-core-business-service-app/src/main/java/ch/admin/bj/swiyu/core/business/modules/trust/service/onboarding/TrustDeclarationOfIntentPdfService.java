@@ -122,6 +122,7 @@ public class TrustDeclarationOfIntentPdfService {
         return prefix + today.format(formatter);
     }
 
+    @SuppressWarnings({ "java:S1874" }) // Remove with EID-6656
     private static String getCorrectPdfFilename(
         TrustOnboardingSubmission trustOnboardingSubmission,
         Language language

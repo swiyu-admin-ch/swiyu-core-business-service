@@ -15,6 +15,7 @@ import ch.admin.bj.swiyu.core.business.modules.documents.api.PartnerDocumentType
 import ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocumentType;
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
+import ch.admin.bj.swiyu.core.business.modules.trust.api.DeclarationOfIntentValidationResult;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentUploadRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionRequestDto;
@@ -28,7 +29,7 @@ import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validati
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.TrustOnboardingSubmissionOnSubmitValidator;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.TrustOnboardingSubmissionValidator;
 import ch.admin.suis.client.core.service.IValidationServiceClient;
-import ch.admin.suis.validator.rest.to.response.FileReport;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
@@ -105,7 +106,6 @@ class TrustOnboardingServiceDocumentUploadTest {
             .file(file)
             .build();
         var errors = new BeanPropertyBindingResult(file, "file");
-        var fileReport = new FileReport();
         var document = toPartnerDocumentDto(
             createTrustOnboardingSubissionPartnerDocument(
                 UUID.randomUUID(),
@@ -119,13 +119,14 @@ class TrustOnboardingServiceDocumentUploadTest {
                 Instant.now()
             )
         );
+        var validationResult = declarationOfIntentValidationResult();
 
         when(trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(submission.getId())).thenReturn(
             submission
         );
         when(trustOnboardingSubmissionDocumentValidator.validateDocument(submission, file, null)).thenReturn(errors);
         when(declarationOfIntentValidator.validateDeclarationOfIntent(file, submission.getSigningRule())).thenReturn(
-            fileReport
+            declarationOfIntentValidationResult()
         );
         when(
             partnerDocumentService.createTrustOnboardingSubmissionDocument(
@@ -147,7 +148,9 @@ class TrustOnboardingServiceDocumentUploadTest {
         assertThat(submissionCaptor.getValue().getDeclarationOfIntent().fullySignedDocumentId()).isEqualTo(
             document.id().toString()
         );
-        assertThat(submissionCaptor.getValue().getDeclarationOfIntent().validationReport()).isEqualTo(fileReport);
+        assertThat(submissionCaptor.getValue().getDeclarationOfIntent().validationReport()).isEqualTo(
+            validationResult.fileReport()
+        );
     }
 
     @Test
@@ -238,5 +241,9 @@ class TrustOnboardingServiceDocumentUploadTest {
 
         verify(partnerDocumentService).deletePartnerDocument(doiDocumentId);
         assertThat(submission.getDeclarationOfIntent()).isNull();
+    }
+
+    private DeclarationOfIntentValidationResult declarationOfIntentValidationResult() {
+        return new DeclarationOfIntentValidationResult(JsonNodeFactory.instance.objectNode());
     }
 }

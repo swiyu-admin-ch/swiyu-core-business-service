@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>ch.admin.bj.swiyu</groupId>
+        <artifactId>swiyu-core-business-service</artifactId>
+        <version>3.40.6-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>swiyu-discrete-validator-client</artifactId>
+    <packaging>jar</packaging>
+
+    <description>Client library for remote signature validation. See
+        https://www.bit.admin.ch/de/der-diskrete-validator.
+    </description>
+    <properties>
+        <jersey.version>3.1.12</jersey.version>
+    </properties>
+
+    <dependencies>
+
+        <!-- eGov validation client -->
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-egov-validationclient-api</artifactId>
+            <version>2.1.5</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-egov-validationclient-sdk</artifactId>
+            <version>2.1.5</version>
+        </dependency>
+
+        <!-- Intarsys document / PDF stack -->
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-document-core</artifactId>
+            <version>1.15.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-processor-core</artifactId>
+            <version>1.15.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-pdf-kernel</artifactId>
+            <version>5.21.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-pdf-design</artifactId>
+            <version>5.21.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-license</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <!-- Intarsys security stack -->
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-security-asn1</artifactId>
+            <version>1.28.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-security-audit</artifactId>
+            <version>1.28.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-security-device-core</artifactId>
+            <version>1.28.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-security-method-cms</artifactId>
+            <version>1.28.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-security-method-pdf</artifactId>
+            <version>1.28.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-security-model-common</artifactId>
+            <version>1.28.3</version>
+        </dependency>
+
+        <!-- Intarsys tools stack -->
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-authentication</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-claptz</artifactId>
+            <version>4.29.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-commandline</artifactId>
+            <version>4.29.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-common</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-conversation</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-form</artifactId>
+            <version>4.29.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-google</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-http-component</artifactId>
+            <version>4.29.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-http-protocol</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-jaxrs</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-json</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-logback</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-manage</artifactId>
+            <version>4.29.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-observation</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-runtime</artifactId>
+            <version>4.29.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-security</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-servlet</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-ssl</artifactId>
+            <version>4.29.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.admin.bj.vendor.intarsys</groupId>
+            <artifactId>intarsys-tools-table</artifactId>
+            <version>4.29.3</version>
+        </dependency>
+
+        <!-- Jersey client stack -->
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-common</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.connectors</groupId>
+            <artifactId>jersey-apache-connector</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+
+        <!-- Jackson JAX-RS provider -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.jakarta.rs</groupId>
+            <artifactId>jackson-jakarta-rs-json-provider</artifactId>
+            <version>2.22.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.jakarta.rs</groupId>
+            <artifactId>jackson-jakarta-rs-base</artifactId>
+            <version>2.22.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-jakarta-xmlbind-annotations</artifactId>
+            <version>2.22.1</version>
+        </dependency>
+
+        <!-- Apache HTTP client used by jersey-apache-connector -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.14</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>4.4.16</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>4.5.14</version>
+        </dependency>
+
+        <!-- Crypto -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.84</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcutil-jdk18on</artifactId>
+            <version>1.84</version>
+        </dependency>
+
+        <!-- Jakarta APIs used by Jersey / SDK -->
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>4.0.5</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.activation</groupId>
+            <artifactId>jakarta.activation-api</artifactId>
+            <version>2.1.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.json</groupId>
+            <artifactId>jakarta.json-api</artifactId>
+            <version>2.1.3</version>
+        </dependency>
+
+        <!-- Commons -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.22.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.22.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.4.0</version>
+        </dependency>
+
+        <!-- File upload, only needed if the SDK actually uses multipart upload -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-fileupload2-core</artifactId>
+            <version>2.0.0-M5</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-fileupload2-jakarta-servlet6</artifactId>
+            <version>2.0.0-M5</version>
+        </dependency>
+
+    </dependencies>
+</project>

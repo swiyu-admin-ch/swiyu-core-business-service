@@ -209,11 +209,7 @@ class StatusB2BControllerIT {
                     .contentType("application/statuslist+jwt")
             )
             .andExpect(status().isBadRequest())
-            .andExpect(
-                jsonPath("$.message").value(
-                    "Status list entry creation failed. Please check if the business partner exists in this environment"
-                )
-            );
+            .andExpect(jsonPath("$.message").value("The business partner does not exist in this environment."));
     }
 
     @Test

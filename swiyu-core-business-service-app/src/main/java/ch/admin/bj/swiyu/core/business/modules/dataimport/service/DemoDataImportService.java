@@ -57,7 +57,7 @@ public class DemoDataImportService {
                 CoreDemoData.CORE_ID_BP_BASE_ONBOARDING_ONLY,
                 LocalizedMapUtil.getDefaultValue(CoreDemoData.CORE_ID_BP_BASE_ONBOARDING_ONLY_NAMES),
                 CoreDemoData.CORE_ID_BP_BASE_ONBOARDING_ONLY_EMAIL,
-                BusinessPartnerType.INDIVIDUAL,
+                BusinessPartnerType.BUSINESS,
                 CoreDemoData.CORE_ID_BP_BASE_ONBOARDING_ONLY_ADDRESS,
                 null,
                 CoreDemoData.CORE_ID_BP_BASE_ONBOARDING_ONLY_PHONE
@@ -66,7 +66,7 @@ public class DemoDataImportService {
                 CoreDemoData.CORE_ID_BP_DEFAULT,
                 LocalizedMapUtil.getDefaultValue(CoreDemoData.CORE_ID_BP_DEFAULT_NAMES),
                 CoreDemoData.CORE_ID_BP_DEFAULT_EMAIL,
-                BusinessPartnerType.INDIVIDUAL,
+                BusinessPartnerType.BUSINESS,
                 null,
                 null,
                 CoreDemoData.CORE_ID_BP_DEFAULT_PHONE
@@ -75,7 +75,7 @@ public class DemoDataImportService {
                 CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED,
                 LocalizedMapUtil.getDefaultValue(CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_NAMES),
                 CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_EMAIL,
-                BusinessPartnerType.INDIVIDUAL,
+                BusinessPartnerType.BUSINESS,
                 null,
                 null,
                 null
@@ -221,7 +221,7 @@ public class DemoDataImportService {
             CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_ADDRESS,
             CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_CONTACT,
             CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_EMAIL,
-            BusinessPartnerType.INDIVIDUAL,
+            BusinessPartnerType.BUSINESS,
             null,
             List.of()
         );
@@ -236,7 +236,7 @@ public class DemoDataImportService {
             CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_ADDRESS,
             CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_CONTACT,
             CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_EMAIL,
-            BusinessPartnerType.INDIVIDUAL,
+            BusinessPartnerType.BUSINESS,
             null,
             List.of()
         );

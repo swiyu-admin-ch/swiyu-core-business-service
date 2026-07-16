@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.41.1
+
+### Changed
+
+- Re-apply migration of `business_entity` records with type `UNKNOWN` or `INDIVIDUAL` to `BUSINESS` (migration `V1_22_0`),
+  covering any partners created between the initial `V1_21_0` migration and the enforcement of the type constraint.
+- Sync `requested_partner_type` on all `TrustOnboardingSubmission` records to match the current type of their
+  associated `business_entity`, ensuring submissions that were created with `UNKNOWN` or `INDIVIDUAL` are updated to `BUSINESS`.
+
+## 3.41.0
+
+### Added
+
+- Explicit check for existence of the BP ID in the ecosystem before interacting with the status lists.
+
+## 3.40.7
+
+### Changed
+
+- Update demo data to align with feature set (Disable INDIVIDUAL BPs)
+
 ## 3.40.6
 
 ### Changed

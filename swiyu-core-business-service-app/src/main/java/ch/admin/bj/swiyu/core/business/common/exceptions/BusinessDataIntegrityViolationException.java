@@ -2,6 +2,10 @@ package ch.admin.bj.swiyu.core.business.common.exceptions;
 
 public class BusinessDataIntegrityViolationException extends BusinessException {
 
+    public BusinessDataIntegrityViolationException(String message) {
+        super(message);
+    }
+
     public BusinessDataIntegrityViolationException(String message, Throwable cause) {
         super(message, cause);
     }

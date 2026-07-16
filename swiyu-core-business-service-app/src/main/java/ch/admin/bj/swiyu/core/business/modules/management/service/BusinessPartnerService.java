@@ -13,6 +13,7 @@ import ch.admin.bj.swiyu.core.business.common.audit.AuditMapper;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
+import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessDataIntegrityViolationException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
@@ -22,6 +23,7 @@ import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartner
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper;
 import ch.admin.bj.swiyu.core.business.modules.status.service.StatusListEntryService;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.List;
@@ -54,6 +56,10 @@ public class BusinessPartnerService {
     private final IdentifierEntryService identifierEntryService;
     private final StatusListEntryService statusListEntryService;
     private final AuditPublisher auditPublisher;
+
+    private static @NonNull Supplier<ResourceNotFoundException> throwNotFoundException(UUID id) {
+        return () -> new ResourceNotFoundException(String.format(BUSINESS_PARTNER_WITH_ID_S_NOT_FOUND, id));
+    }
 
     @Transactional(readOnly = true)
     public Page<BusinessEntityDto> getAllEntities(List<UUID> businessEntityIds, Pageable pageable) {
@@ -333,7 +339,13 @@ public class BusinessPartnerService {
         );
     }
 
-    private static @NonNull Supplier<ResourceNotFoundException> throwNotFoundException(UUID id) {
-        return () -> new ResourceNotFoundException(String.format(BUSINESS_PARTNER_WITH_ID_S_NOT_FOUND, id));
+    @Transactional(readOnly = true)
+    public void validateBusinessPartnerExists(@Valid UUID businessEntityId)
+        throws BusinessDataIntegrityViolationException {
+        if (!businessPartnerRepository.existsById(businessEntityId)) {
+            throw new BusinessDataIntegrityViolationException(
+                "The business partner does not exist in this environment."
+            );
+        }
     }
 }

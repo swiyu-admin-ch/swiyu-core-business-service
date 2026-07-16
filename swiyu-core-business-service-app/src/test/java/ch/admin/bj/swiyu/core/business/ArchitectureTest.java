@@ -68,6 +68,31 @@ public class ArchitectureTest {
             .ignoreDependency(JavaClass.Predicates.simpleName("DemoDataImportService"), alwaysTrue());
     }
 
+    private static @NonNull ArchCondition<JavaMethod> noReturnTypeFromDomainPackageCondition() {
+        return new ArchCondition<JavaMethod>("not have a return type from the domain layer") {
+            @Override
+            public void check(JavaMethod method, ConditionEvents events) {
+                method
+                    .getReturnType()
+                    .getAllInvolvedRawTypes()
+                    .stream()
+                    .filter(type ->
+                        type
+                            .getPackageName()
+                            .matches(Pattern.quote(ROOT_PACKAGE.replace("..", "")) + ".*\\.domain(\\..+)?")
+                    )
+                    .forEach(type ->
+                        events.add(
+                            SimpleConditionEvent.violated(
+                                method,
+                                method.getFullName() + " returns domain type: " + type.getName()
+                            )
+                        )
+                    );
+            }
+        };
+    }
+
     @Getter
     enum Layer {
         DOMAIN("Domain", "..domain.."),
@@ -191,6 +216,11 @@ public class ArchitectureTest {
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.status.service.."),
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.identifier.service..")
             )
+            // status -> management
+            .ignoreDependency(
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.status.infrastructure.."),
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service..")
+            )
             // trust -> documents
             .ignoreDependency(
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.trust.[service|infrastructure].."),
@@ -282,30 +312,5 @@ public class ArchitectureTest {
             .should()
             .beInterfaces()
             .allowEmptyShould(true);
-    }
-
-    private static @NonNull ArchCondition<JavaMethod> noReturnTypeFromDomainPackageCondition() {
-        return new ArchCondition<JavaMethod>("not have a return type from the domain layer") {
-            @Override
-            public void check(JavaMethod method, ConditionEvents events) {
-                method
-                    .getReturnType()
-                    .getAllInvolvedRawTypes()
-                    .stream()
-                    .filter(type ->
-                        type
-                            .getPackageName()
-                            .matches(Pattern.quote(ROOT_PACKAGE.replace("..", "")) + ".*\\.domain(\\..+)?")
-                    )
-                    .forEach(type ->
-                        events.add(
-                            SimpleConditionEvent.violated(
-                                method,
-                                method.getFullName() + " returns domain type: " + type.getName()
-                            )
-                        )
-                    );
-            }
-        };
     }
 }

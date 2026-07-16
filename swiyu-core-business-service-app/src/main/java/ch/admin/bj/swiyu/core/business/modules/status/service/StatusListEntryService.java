@@ -58,10 +58,7 @@ public class StatusListEntryService {
                 .statusRegistryUrl(registryEntry.files().get("TokenStatusListJWT").readUri())
                 .build();
         } catch (DataIntegrityViolationException e) {
-            throw new BusinessDataIntegrityViolationException(
-                "Status list entry creation failed. Please check if the business partner exists in this environment",
-                e
-            );
+            throw new BusinessDataIntegrityViolationException("Status list entry creation failed.", e);
         }
     }
 

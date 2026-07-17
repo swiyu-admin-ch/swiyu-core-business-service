@@ -237,7 +237,7 @@ public class DemoDataImportService {
             CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_CONTACT,
             CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_EMAIL,
             BusinessPartnerType.BUSINESS,
-            null,
+            SigningRule.SINGLE_SIGNATURE,
             List.of()
         );
         trustOnboardingService.uploadTrustOnboardingSubmissionDocument(

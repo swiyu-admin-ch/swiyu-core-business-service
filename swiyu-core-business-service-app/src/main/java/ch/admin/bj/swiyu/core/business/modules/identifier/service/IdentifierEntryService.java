@@ -3,8 +3,8 @@ package ch.admin.bj.swiyu.core.business.modules.identifier.service;
 import static ch.admin.bj.swiyu.core.business.common.api.utils.PageableUtils.toDbPageableFromUserPageable;
 
 import ch.admin.bj.swiyu.core.business.common.api.ApiObjectDto;
+import ch.admin.bj.swiyu.core.business.common.api.CountLimitDto;
 import ch.admin.bj.swiyu.core.business.common.api.IdentifierUpdateRequestDto;
-import ch.admin.bj.swiyu.core.business.common.api.ObjectLimitsDto;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditMapper;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.did.DidUtil;
@@ -12,6 +12,7 @@ import ch.admin.bj.swiyu.core.business.common.exceptions.ObjectCountLimitApiExce
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.modules.identifier.api.IdentifierEntryDto;
 import ch.admin.bj.swiyu.core.business.modules.identifier.api.IdentifierEntryFilterDto;
+import ch.admin.bj.swiyu.core.business.modules.identifier.api.IdentifierEntryLimitsDto;
 import ch.admin.bj.swiyu.core.business.modules.identifier.config.IdentifierLimitProperties;
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.*;
 import ch.admin.bj.swiyu.core.business.modules.identifier.exceptions.IdentifierValidationFailedException;
@@ -42,20 +43,25 @@ public class IdentifierEntryService {
     private final AuditPublisher auditPublisher;
 
     @Transactional(readOnly = true)
-    public ObjectLimitsDto getCurrentLimits(UUID businessEntityId) {
-        return ObjectLimitsDto.builder()
-            .relatesTo(ApiObjectDto.IDENTIFIER_ENTRY)
-            .currentCount(identifierEntryRepository.countByBusinessEntityId(businessEntityId))
-            .maxCount(identifierLimitProperties.defaultMaxCount())
-            .build();
+    public IdentifierEntryLimitsDto getLimits(@Valid @NotNull UUID businessEntityId) {
+        return new IdentifierEntryLimitsDto(
+            new CountLimitDto(
+                ApiObjectDto.IDENTIFIER_ENTRY,
+                identifierEntryRepository.countByBusinessEntityId(businessEntityId),
+                identifierLimitProperties.defaultMaxCount()
+            )
+        );
     }
 
     @Transactional
     public IdentifierEntryDto createIdentifierEntry(UUID businessEntityId) throws ObjectCountLimitApiException {
         log.debug("Creating new identifier entry for businessEntityId {}", businessEntityId);
-        var currentLimits = getCurrentLimits(businessEntityId); // NOSONAR invoking transactional method is fine here
-        if (currentLimits.currentCount() >= identifierLimitProperties.defaultMaxCount()) {
-            throw new ObjectCountLimitApiException(currentLimits.relatesTo().toString(), currentLimits.currentCount());
+        var currentLimits = getLimits(businessEntityId); // NOSONAR invoking transactional method is fine here
+        if (currentLimits.count().current() >= identifierLimitProperties.defaultMaxCount()) {
+            throw new ObjectCountLimitApiException(
+                currentLimits.count().relatesTo().toString(),
+                currentLimits.count().current()
+            );
         }
 
         var registryEntry = identifierRegistryService.createDatastoreEntity();

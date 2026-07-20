@@ -1,7 +1,5 @@
 package ch.admin.bj.swiyu.core.business.modules.status.service;
 
-import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.businessPartner;
-import static ch.admin.bj.swiyu.core.business.test.IdentifierTestData.identifierEntry_Initialized;
 import static ch.admin.bj.swiyu.core.business.test.StatusTestData.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -30,7 +28,6 @@ import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitia
 import ch.admin.bj.swiyu.registry.status.StatusRegistryConfig;
 import java.time.Duration;
 import java.util.UUID;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
@@ -55,7 +52,6 @@ import org.springframework.web.client.RestClient;
         DataJpaTestConfiguration.class,
         DataJpaTestKafkaConfiguration.class,
         JsonSchemaConfig.class,
-        StatusListEntryService.class,
         StatusRegistryConfig.class,
         StatusListValidator.class,
         StatusListSchemaConfig.class,
@@ -84,9 +80,6 @@ class StatusListValidatorIT {
     StatusListValidator statusListValidator;
 
     @Autowired
-    StatusListEntryService statusListEntryService;
-
-    @Autowired
     TestRepositories repos;
 
     @BeforeEach
@@ -100,20 +93,6 @@ class StatusListValidatorIT {
         when(
             didResolverClient.get().uri(startsWith(VALID_STATUS_LIST_ISSUER_B_DID_URL)).retrieve().body(String.class)
         ).thenReturn(VALID_STATUS_LIST_ISSUER_B_DID_LOG);
-    }
-
-    @Test
-    void statusListValid() {
-        // GIVEN
-        var partnerId = repos.businessPartner.save(businessPartner()).getId();
-        repos.identifierEntry.save(identifierEntry_Initialized(partnerId, VALID_STATUS_LIST_ISSUER_A_DID));
-        var statusListEntryId = statusListEntryService.createStatusListEntry(partnerId).id();
-        var statusListEntry = repos.statusListEntry.findById(statusListEntryId).orElseThrow();
-
-        // WHEN / THEN no error
-        Assertions.assertDoesNotThrow(() ->
-            statusListValidator.validateStatusListVc(statusListEntry, VALID_STATUS_LIST_VC_FROM_ISSUER_A)
-        );
     }
 
     @Test
@@ -245,28 +224,6 @@ class StatusListValidatorIT {
     }
 
     @Test
-    void statusListInvalid_throwsWithStatusListNotFromSameIssuer() {
-        // GIVEN
-        var partnerId = repos.businessPartner.save(businessPartner()).getId();
-        var statusListEntryId = statusListEntryService.createStatusListEntry(partnerId).id();
-        repos.identifierEntry.save(identifierEntry_Initialized(partnerId, VALID_STATUS_LIST_ISSUER_B_DID));
-        statusListEntryService.updateStatusListEntry(partnerId, statusListEntryId, VALID_STATUS_LIST_VC_FROM_ISSUER_B);
-        var entry = repos.statusListEntry.findById(statusListEntryId).orElseThrow();
-
-        // WHEN / THEN
-        var exception = assertThrows(StatusListValidationFailedException.class, () ->
-            statusListValidator.validateStatusListVc(entry, StatusTestData.VALID_STATUS_LIST_VC_FROM_ISSUER_A)
-        );
-
-        // THEN Throw general exception
-        assertThat(exception.getMessage()).contains("Provided status list resource is invalid");
-        assertThat(exception.getAdditionalDetails()).hasSize(1);
-        assertThat(exception.getAdditionalDetails().getFirst()).contains(
-            "Statuslist VC issuer does not match the issuer of the already uploaded statuslist."
-        );
-    }
-
-    @Test
     void statusListInvalid_throwsWithStatusListNotFromSameBusinessPartner() {
         // GIVEN
         StatusListEntry entry = new StatusListEntry(VALID_STATUS_LIST_ENTRY_ID_FROM_ISSUER_A, UUID.randomUUID());
@@ -281,23 +238,6 @@ class StatusListValidatorIT {
         assertThat(exception.getAdditionalDetails()).hasSize(1);
         assertThat(exception.getAdditionalDetails().getFirst()).contains(
             "Statuslist VC is not signed by an issuer belonging to the same business partner."
-        );
-    }
-
-    // ── Swiss profile (v1.0.0) validation tests ──────────────────────────────────
-
-    @Test
-    void swissProfile_v1_0_0_valid() {
-        // GIVEN
-        var partnerId = repos.businessPartner.save(businessPartner()).getId();
-        repos.identifierEntry.save(identifierEntry_Initialized(partnerId, VALID_STATUS_LIST_ISSUER_A_DID));
-        var statusListEntryId = statusListEntryService.createStatusListEntry(partnerId).id();
-        var entry = repos.statusListEntry.findById(statusListEntryId).orElseThrow();
-        doNothing().when(statusListValidator).checkStatusListCryptoIntegrity(any());
-
-        // WHEN / THEN no error
-        Assertions.assertDoesNotThrow(() ->
-            statusListValidator.validateStatusListVcV2(entry, VALID_SWISS_PROFILE_STATUS_LIST_VC)
         );
     }
 

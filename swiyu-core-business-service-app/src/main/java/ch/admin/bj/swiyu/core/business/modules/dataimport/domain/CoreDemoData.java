@@ -20,9 +20,11 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class CoreDemoData {
 
+    // Keep in sync with DemoDataConstants
     public static final UUID CORE_ID_BP_DEFAULT = UUID.fromString("9f425029-9775-4984-99ba-bacc60069502");
     public static final UUID CORE_ID_BP_GOV = UUID.fromString("39f92e48-619e-4e92-8958-468ae138d8a3");
     public static final UUID CORE_ID_BP_BASE_ONBOARDING_ONLY = UUID.fromString("e97e84e6-f40e-47ba-bdfe-d92f3d3dbc84");
+
     public static final UUID CORE_ID_TOS_UNSUBMITTED = UUID.fromString(
         DemoDataConstants.TrustOnboardingSubmission.ID_UNSUBMITTED
     );

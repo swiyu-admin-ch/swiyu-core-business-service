@@ -201,11 +201,6 @@ public class ArchitectureTest {
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service.."),
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.identifier.service..")
             )
-            // management -> status
-            .ignoreDependency(
-                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service.."),
-                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.status.service..")
-            )
             // trust -> management
             .ignoreDependency(
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.trust.service.."),
@@ -218,7 +213,7 @@ public class ArchitectureTest {
             )
             // status -> management
             .ignoreDependency(
-                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.status.infrastructure.."),
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.status.service.."),
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service..")
             )
             // trust -> documents

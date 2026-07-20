@@ -76,7 +76,7 @@ public class BusinessEntityTestData {
         businessPartnerRepository.save(businessPartnerC());
     }
 
-    public static BusinessEntity businessPartner() {
+    public static BusinessEntity businessPartnerDefault() {
         return businessPartnerA();
     }
 
@@ -113,7 +113,7 @@ public class BusinessEntityTestData {
     }
 
     @SuppressWarnings({ "java:S1874" }) // Remove with EID-6656
-    private static BusinessEntity businessPartnerC() {
+    public static BusinessEntity businessPartnerC() {
         var entityC = new BusinessEntity(
             UUID.randomUUID(),
             "Hello Second Entry AG",

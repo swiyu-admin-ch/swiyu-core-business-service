@@ -50,6 +50,7 @@ public class TestRepositories {
         trustOnboardingSubmission.deleteAllInBatch();
         trustAdditionalDidsSubmission.deleteAllInBatch();
         vqpsSubmission.deleteAllInBatch();
+        statusListEntry.deleteAllInBatch();
         if (activeTransaction) {
             // so all tests start with an open transaction
             startNewTransaction();

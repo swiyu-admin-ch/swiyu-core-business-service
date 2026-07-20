@@ -142,6 +142,9 @@ public class TrustOnboardingSubmissionOnSubmitValidator {
 
     private static void validateProofs(TrustOnboardingSubmission s, Errors errors) {
         if (!errors.hasFieldErrors(Field.ENTITY_PROOFS)) {
+            if (s.getProofOfPossessions().isEmpty()) {
+                errors.rejectValue(Field.ENTITY_PROOFS, ErrorCode.INVALID);
+            }
             for (var entry : s.getProofOfPossessions()) {
                 if (entry.getStatus() != ProofOfPossessionStatus.VALID) {
                     errors.rejectValue(Field.ENTITY_PROOFS, ErrorCode.INVALID);

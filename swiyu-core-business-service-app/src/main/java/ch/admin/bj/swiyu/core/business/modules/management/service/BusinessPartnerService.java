@@ -22,7 +22,6 @@ import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper;
-import ch.admin.bj.swiyu.core.business.modules.status.service.StatusListEntryService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
@@ -54,7 +53,6 @@ public class BusinessPartnerService {
     private final BusinessPartnerRepository businessPartnerRepository;
     private final PamsClient pamsClient;
     private final IdentifierEntryService identifierEntryService;
-    private final StatusListEntryService statusListEntryService;
     private final AuditPublisher auditPublisher;
 
     private static @NonNull Supplier<ResourceNotFoundException> throwNotFoundException(UUID id) {
@@ -301,33 +299,15 @@ public class BusinessPartnerService {
     }
 
     private BusinessPartnerDto toBusinessPartnerDto(BusinessEntity businessPartner) {
-        return BusinessPartnerMapper.toBusinessPartnerDto(
-            businessPartner,
-            List.of(
-                statusListEntryService.getCurrentLimits(businessPartner.getId()),
-                identifierEntryService.getCurrentLimits(businessPartner.getId())
-            )
-        );
+        return BusinessPartnerMapper.toBusinessPartnerDto(businessPartner);
     }
 
     private BusinessEntityDto toBusinessEntityDto(BusinessEntity businessPartner) {
-        return BusinessPartnerMapper.toBusinessEntityDto(
-            businessPartner,
-            List.of(
-                statusListEntryService.getCurrentLimits(businessPartner.getId()),
-                identifierEntryService.getCurrentLimits(businessPartner.getId())
-            )
-        );
+        return BusinessPartnerMapper.toBusinessEntityDto(businessPartner);
     }
 
     private BusinessPartnerListItemDto getBusinessPartnerListItemDto(BusinessEntity businessPartner) {
-        return BusinessPartnerMapper.toBusinessPartnerListItemDto(
-            businessPartner,
-            List.of(
-                statusListEntryService.getCurrentLimits(businessPartner.getId()),
-                identifierEntryService.getCurrentLimits(businessPartner.getId())
-            )
-        );
+        return BusinessPartnerMapper.toBusinessPartnerListItemDto(businessPartner);
     }
 
     private Pageable toBusinessPartnerPageable(Class<? extends ListItemDto> dtoClass, Pageable pageable) {

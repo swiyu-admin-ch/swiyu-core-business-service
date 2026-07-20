@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.42.0
+
+### Added
+
+- Add state & identifier specific limit endpoints
+
+## 3.41.3
+
+### Changed
+
+- add more unit test
+- fix validation of POP
+- fix tiny bugs in the conversion of TrustOnboardingSubmission
+
 ## 3.41.2
 
 ### Fix
@@ -16,10 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Re-apply migration of `business_entity` records with type `UNKNOWN` or `INDIVIDUAL` to `BUSINESS` (migration `V1_22_0`),
+- Re-apply migration of `business_entity` records with type `UNKNOWN` or `INDIVIDUAL` to `BUSINESS` (migration
+  `V1_22_0`),
   covering any partners created between the initial `V1_21_0` migration and the enforcement of the type constraint.
 - Sync `requested_partner_type` on all `TrustOnboardingSubmission` records to match the current type of their
-  associated `business_entity`, ensuring submissions that were created with `UNKNOWN` or `INDIVIDUAL` are updated to `BUSINESS`.
+  associated `business_entity`, ensuring submissions that were created with `UNKNOWN` or `INDIVIDUAL` are updated to
+  `BUSINESS`.
 
 ## 3.41.0
 

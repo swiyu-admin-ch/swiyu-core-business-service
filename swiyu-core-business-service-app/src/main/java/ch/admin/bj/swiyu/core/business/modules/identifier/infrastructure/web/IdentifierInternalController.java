@@ -1,8 +1,10 @@
 package ch.admin.bj.swiyu.core.business.modules.identifier.infrastructure.web;
 
 import ch.admin.bj.swiyu.core.business.common.api.IdentifierUpdateRequestDto;
+import ch.admin.bj.swiyu.core.business.common.demodata.DemoDataConstants;
 import ch.admin.bj.swiyu.core.business.modules.identifier.api.IdentifierEntryDto;
 import ch.admin.bj.swiyu.core.business.modules.identifier.api.IdentifierEntryFilterDto;
+import ch.admin.bj.swiyu.core.business.modules.identifier.api.IdentifierEntryLimitsDto;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -29,6 +31,18 @@ import org.springframework.web.bind.annotation.*;
 public class IdentifierInternalController {
 
     private final IdentifierEntryService identifierEntryService;
+
+    @GetMapping(value = "business-entities/{partnerId}/limits")
+    @PreAuthorize("hasRoleForPartner('identifier', 'read', #partnerId)")
+    @Operation(summary = "Get current limits in the scope of the identifier registry.")
+    public IdentifierEntryLimitsDto getIdentifierEntryLimits(
+        @PathVariable @Parameter(
+            description = "The business partner id to get limits for",
+            example = DemoDataConstants.BusinessPartner.CORE_ID_BP_DEFAULT
+        ) @Valid UUID partnerId
+    ) {
+        return identifierEntryService.getLimits(partnerId);
+    }
 
     @GetMapping(value = "business-entities/{partnerId}/identifier/")
     @PreAuthorize("hasRoleForPartner('identifier', 'read', #partnerId)")

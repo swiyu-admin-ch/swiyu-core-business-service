@@ -7,9 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ch.admin.bit.jeap.security.resource.token.JeapAuthenticationToken;
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
-import ch.admin.bj.swiyu.core.business.common.api.ApiObjectDto;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
-import ch.admin.bj.swiyu.core.business.common.api.ObjectLimitsDto;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
@@ -25,9 +23,7 @@ import ch.admin.bj.swiyu.core.business.test.TestRepositories;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -67,28 +63,6 @@ class BusinessPartnerServiceIT {
         ).getPreferredUsername();
     }
 
-    @BeforeEach
-    void setUp() {
-        // GIVEN
-        // Mock explicitly allowed cross dependency between modules
-        // management -> identifier limits
-        Mockito.when(identifierEntryService.getCurrentLimits(Mockito.any())).thenReturn(
-            ObjectLimitsDto.builder()
-                .relatesTo(ApiObjectDto.IDENTIFIER_ENTRY)
-                .currentCount((long) 1)
-                .maxCount(Long.MAX_VALUE)
-                .build()
-        );
-        // management -> status limits
-        Mockito.when(statusListEntryService.getCurrentLimits(Mockito.any())).thenReturn(
-            ObjectLimitsDto.builder()
-                .relatesTo(ApiObjectDto.STATUSLIST_ENTRY)
-                .currentCount((long) 1)
-                .maxCount(Long.MAX_VALUE)
-                .build()
-        );
-    }
-
     @Test
     void getBusinessEntities() {
         // GIVEN
@@ -101,13 +75,6 @@ class BusinessPartnerServiceIT {
         assertThat(readEntity).isPresent();
         assertThat(readEntity.get().name()).isEqualTo(LocalizedMapUtil.getDefaultValue(partner.getEntityName()));
         assertThat(readEntity.get().id()).isEqualTo(partner.getId());
-        assertThat(readEntity.get().limitInfos()).hasSize(2);
-        assertThat(readEntity.get().limitInfos().getFirst().relatesTo()).isEqualTo(ApiObjectDto.STATUSLIST_ENTRY);
-        assertThat(readEntity.get().limitInfos().getFirst().currentCount()).isEqualTo(1);
-        assertThat(readEntity.get().limitInfos().getFirst().maxCount()).isEqualTo(Long.MAX_VALUE);
-        assertThat(readEntity.get().limitInfos().get(1).relatesTo()).isEqualTo(ApiObjectDto.IDENTIFIER_ENTRY);
-        assertThat(readEntity.get().limitInfos().get(1).currentCount()).isEqualTo(1);
-        assertThat(readEntity.get().limitInfos().get(1).maxCount()).isEqualTo(Long.MAX_VALUE);
     }
 
     @Test
@@ -121,13 +88,6 @@ class BusinessPartnerServiceIT {
         assertThat(partner.getId()).isNotNull();
         assertThat(readEntity.name()).isEqualTo(LocalizedMapUtil.getDefaultValue(partner.getEntityName()));
         assertThat(readEntity.id()).isEqualTo(partner.getId());
-        assertThat(readEntity.limitInfos()).hasSize(2);
-        assertThat(readEntity.limitInfos().getFirst().relatesTo()).isEqualTo(ApiObjectDto.STATUSLIST_ENTRY);
-        assertThat(readEntity.limitInfos().get(0).currentCount()).isEqualTo(1);
-        assertThat(readEntity.limitInfos().get(0).maxCount()).isEqualTo(Long.MAX_VALUE);
-        assertThat(readEntity.limitInfos().get(1).relatesTo()).isEqualTo(ApiObjectDto.IDENTIFIER_ENTRY);
-        assertThat(readEntity.limitInfos().get(1).currentCount()).isEqualTo(1);
-        assertThat(readEntity.limitInfos().get(1).maxCount()).isEqualTo(Long.MAX_VALUE);
     }
 
     @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "/insert_test_business_entities.sql")

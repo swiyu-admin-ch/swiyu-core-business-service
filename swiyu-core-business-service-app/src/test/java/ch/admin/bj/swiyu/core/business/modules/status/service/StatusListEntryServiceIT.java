@@ -1,10 +1,11 @@
 package ch.admin.bj.swiyu.core.business.modules.status.service;
 
-import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.DEFAULT_ENTITY;
+import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.businessPartnerDefault;
 import static ch.admin.bj.swiyu.core.business.test.IdentifierTestData.identifierEntry_Initialized;
 import static ch.admin.bj.swiyu.core.business.test.StatusTestData.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.*;
 
@@ -18,15 +19,12 @@ import ch.admin.bj.swiyu.core.business.modules.identifier.config.IdentifierSchem
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierValidator;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryMapper;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
+import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.status.config.StatusListSchemaConfig;
 import ch.admin.bj.swiyu.core.business.modules.status.config.StatusListsLimitProperties;
 import ch.admin.bj.swiyu.core.business.modules.status.exceptions.StatusListValidationFailedException;
-import ch.admin.bj.swiyu.core.business.test.DataJpaTestConfiguration;
-import ch.admin.bj.swiyu.core.business.test.DataJpaTestKafkaConfiguration;
-import ch.admin.bj.swiyu.core.business.test.TestRepositories;
-import ch.admin.bj.swiyu.core.business.test.WithExtendedJeapAuthenticationToken;
+import ch.admin.bj.swiyu.core.business.test.*;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
-import ch.admin.bj.swiyu.registry.status.StatusRegistryConfig;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.*;
@@ -42,7 +40,6 @@ import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.springframework.test.context.jdbc.Sql;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.client.RestClient;
 
@@ -57,7 +54,6 @@ import org.springframework.web.client.RestClient;
         DataJpaTestKafkaConfiguration.class,
         JsonSchemaConfig.class,
         StatusListEntryService.class,
-        StatusRegistryConfig.class,
         StatusListValidator.class,
         StatusListSchemaConfig.class,
         IdentifierSchemaConfig.class,
@@ -72,10 +68,11 @@ import org.springframework.web.client.RestClient;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @WithAllTestContainerInitializers
 @TestMethodOrder(MethodOrderer.MethodName.class)
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "/delete_business_entities.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "/insert_test_business_entities.sql")
 @WithExtendedJeapAuthenticationToken
 class StatusListEntryServiceIT {
+
+    @MockitoBean
+    BusinessPartnerService businessPartnerService;
 
     @MockitoSpyBean
     StatusListsLimitProperties statusListsLimitProperties;
@@ -93,8 +90,14 @@ class StatusListEntryServiceIT {
     @MockitoBean // registers a callback so we can verify the sent message
     JeapKafkaMessageCallback kafkaMsgCallback;
 
+    // A few tests should skip certain validations
+    @MockitoSpyBean
+    StatusListValidator statusListValidator;
+
     @BeforeEach
     void setUp() {
+        repos.truncateTables();
+
         reset(kafkaMsgCallback);
         when(statusListsLimitProperties.minSize()).thenReturn(DataSize.ofBytes(200));
         when(statusListsLimitProperties.maxSize()).thenReturn(DataSize.ofKilobytes(200));
@@ -110,8 +113,10 @@ class StatusListEntryServiceIT {
 
     @Test
     void createStatusListEntry() {
+        // GIVEN
+        var partnerId = repos.businessPartner.save(businessPartnerDefault()).getId();
         // WHEN
-        var statusListEntry = statusListEntryService.createStatusListEntry(DEFAULT_ENTITY);
+        var statusListEntry = statusListEntryService.createStatusListEntry(partnerId);
         // THEN
         assertThat(statusListEntry.id()).isNotNull();
         assertThat(statusListEntry.statusRegistryUrl()).isEqualTo(
@@ -122,11 +127,12 @@ class StatusListEntryServiceIT {
     @Test
     void createStatusListEntryLimitReached() {
         // GIVEN
+        var partnerId = repos.businessPartner.save(businessPartnerDefault()).getId();
         when(statusListsLimitProperties.defaultMaxCount()).thenReturn((long) 2);
-        statusListEntryService.createStatusListEntry(DEFAULT_ENTITY);
-        statusListEntryService.createStatusListEntry(DEFAULT_ENTITY);
+        statusListEntryService.createStatusListEntry(partnerId);
+        statusListEntryService.createStatusListEntry(partnerId);
         assertThatException()
-            .isThrownBy(() -> statusListEntryService.createStatusListEntry(DEFAULT_ENTITY))
+            .isThrownBy(() -> statusListEntryService.createStatusListEntry(partnerId))
             // THEN
             .withMessage("Object count limit reached.")
             .matches(e -> {
@@ -140,15 +146,32 @@ class StatusListEntryServiceIT {
     }
 
     @Test
+    void getLimits_returnsCorrectValues() {
+        // GIVEN
+        var partnerId = repos.businessPartner.save(businessPartnerDefault()).getId();
+        when(statusListsLimitProperties.defaultMaxCount()).thenReturn(5L);
+        var limitsEmpty = statusListEntryService.getLimits(partnerId);
+        assertThat(limitsEmpty.count().current()).isZero();
+        assertThat(limitsEmpty.count().max()).isEqualTo(5L);
+        // WHEN create an entry
+        statusListEntryService.createStatusListEntry(partnerId);
+        // THEN limits reflect count 1
+        var limitsAfter = statusListEntryService.getLimits(partnerId);
+        assertThat(limitsAfter.count().current()).isEqualTo(1);
+        assertThat(limitsAfter.count().max()).isEqualTo(5L);
+    }
+
+    @Test
     void updateStatusListEntry() {
         // GIVEN
-        var statusListEntryId = statusListEntryService.createStatusListEntry(DEFAULT_ENTITY).id();
-        repos.identifierEntry.save(identifierEntry_Initialized(DEFAULT_ENTITY, VALID_STATUS_LIST_ISSUER_A_DID));
+        var partnerId = repos.businessPartner.save(businessPartnerDefault()).getId();
+        var statusListEntryId = statusListEntryService.createStatusListEntry(partnerId).id();
+        repos.identifierEntry.save(identifierEntry_Initialized(partnerId, VALID_STATUS_LIST_ISSUER_A_DID));
         reset(kafkaMsgCallback); // reset after create so only the update audit is counted during verifyAuditCommandWasSent
         // WHEN / THEN
         Assertions.assertDoesNotThrow(() ->
             statusListEntryService.updateStatusListEntry(
-                DEFAULT_ENTITY,
+                partnerId,
                 statusListEntryId,
                 VALID_STATUS_LIST_VC_FROM_ISSUER_A
             )
@@ -160,11 +183,12 @@ class StatusListEntryServiceIT {
     @Test
     void updateStatusListEntry_validation() {
         // GIVEN
-        var statusListEntryId = statusListEntryService.createStatusListEntry(DEFAULT_ENTITY).id();
+        var partnerId = repos.businessPartner.save(businessPartnerDefault()).getId();
+        var statusListEntryId = statusListEntryService.createStatusListEntry(partnerId).id();
 
         // WHEN Wrongly serialized jwt is sent
         var exception = Assertions.assertThrows(StatusListValidationFailedException.class, () ->
-            statusListEntryService.updateStatusListEntry(DEFAULT_ENTITY, statusListEntryId, null)
+            statusListEntryService.updateStatusListEntry(partnerId, statusListEntryId, null)
         );
 
         // THEN Throw general exception
@@ -175,12 +199,13 @@ class StatusListEntryServiceIT {
     @Test
     void getStatusListEntryList() {
         // GIVEN
-        statusListEntryService.createStatusListEntry(DEFAULT_ENTITY);
-        statusListEntryService.createStatusListEntry(DEFAULT_ENTITY);
-        statusListEntryService.createStatusListEntry(DEFAULT_ENTITY);
+        var partnerId = repos.businessPartner.save(businessPartnerDefault()).getId();
+        statusListEntryService.createStatusListEntry(partnerId);
+        statusListEntryService.createStatusListEntry(partnerId);
+        statusListEntryService.createStatusListEntry(partnerId);
         var pagination = PageRequest.of(1, 2);
         // WHEN
-        var result = statusListEntryService.getPagedByBusinessPartner(DEFAULT_ENTITY, pagination);
+        var result = statusListEntryService.getPagedByBusinessPartner(partnerId, pagination);
         // THEN
         assertThat(result).isNotNull();
         assertThat(result.getTotalElements()).isEqualTo(3);
@@ -195,5 +220,56 @@ class StatusListEntryServiceIT {
         verify(kafkaMsgCallback, times(1)).onSend(messageCaptor.capture(), any());
         var msg = messageCaptor.getValue();
         assertThat(msg.getPayload().getAuditedData().getId()).isEqualTo(auditObjectId);
+    }
+
+    @Test
+    void statusListValid() {
+        // GIVEN
+        var partnerId = repos.businessPartner.save(businessPartnerDefault()).getId();
+        repos.identifierEntry.save(identifierEntry_Initialized(partnerId, VALID_STATUS_LIST_ISSUER_A_DID));
+        var statusListEntryId = statusListEntryService.createStatusListEntry(partnerId).id();
+        var statusListEntry = repos.statusListEntry.findById(statusListEntryId).orElseThrow();
+
+        // WHEN / THEN no error
+        Assertions.assertDoesNotThrow(() ->
+            statusListValidator.validateStatusListVc(statusListEntry, VALID_STATUS_LIST_VC_FROM_ISSUER_A)
+        );
+    }
+
+    @Test
+    void statusListInvalid_throwsWithStatusListNotFromSameIssuer() {
+        // GIVEN
+        var partnerId = repos.businessPartner.save(businessPartnerDefault()).getId();
+        var statusListEntryId = statusListEntryService.createStatusListEntry(partnerId).id();
+        repos.identifierEntry.save(identifierEntry_Initialized(partnerId, VALID_STATUS_LIST_ISSUER_B_DID));
+        statusListEntryService.updateStatusListEntry(partnerId, statusListEntryId, VALID_STATUS_LIST_VC_FROM_ISSUER_B);
+        var entry = repos.statusListEntry.findById(statusListEntryId).orElseThrow();
+
+        // WHEN / THEN
+        var exception = assertThrows(StatusListValidationFailedException.class, () ->
+            statusListValidator.validateStatusListVc(entry, StatusTestData.VALID_STATUS_LIST_VC_FROM_ISSUER_A)
+        );
+
+        // THEN Throw general exception
+        assertThat(exception.getMessage()).contains("Provided status list resource is invalid");
+        assertThat(exception.getAdditionalDetails()).hasSize(1);
+        assertThat(exception.getAdditionalDetails().getFirst()).contains(
+            "Statuslist VC issuer does not match the issuer of the already uploaded statuslist."
+        );
+    }
+
+    @Test
+    void swissProfile_v1_0_0_valid() {
+        // GIVEN
+        var partnerId = repos.businessPartner.save(businessPartnerDefault()).getId();
+        repos.identifierEntry.save(identifierEntry_Initialized(partnerId, VALID_STATUS_LIST_ISSUER_A_DID));
+        var statusListEntryId = statusListEntryService.createStatusListEntry(partnerId).id();
+        var entry = repos.statusListEntry.findById(statusListEntryId).orElseThrow();
+        doNothing().when(statusListValidator).checkStatusListCryptoIntegrity(any());
+
+        // WHEN / THEN no error
+        Assertions.assertDoesNotThrow(() ->
+            statusListValidator.validateStatusListVcV2(entry, VALID_SWISS_PROFILE_STATUS_LIST_VC)
+        );
     }
 }

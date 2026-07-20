@@ -1,19 +1,23 @@
 package ch.admin.bj.swiyu.core.business.modules.status.service;
 
 import ch.admin.bj.swiyu.core.business.common.api.ApiObjectDto;
-import ch.admin.bj.swiyu.core.business.common.api.ObjectLimitsDto;
+import ch.admin.bj.swiyu.core.business.common.api.CountLimitDto;
 import ch.admin.bj.swiyu.core.business.common.api.utils.PageableUtils;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditMapper;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessDataIntegrityViolationException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ObjectCountLimitApiException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
+import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.status.api.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.core.business.modules.status.api.StatusListEntryDto;
+import ch.admin.bj.swiyu.core.business.modules.status.api.StatusListEntryLimitsDto;
 import ch.admin.bj.swiyu.core.business.modules.status.config.StatusListsLimitProperties;
 import ch.admin.bj.swiyu.core.business.modules.status.domain.StatusListEntry;
 import ch.admin.bj.swiyu.core.business.modules.status.domain.StatusListEntryRepository;
 import ch.admin.bj.swiyu.registry.status.service.StatusListRegistryService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -31,21 +35,28 @@ public class StatusListEntryService {
     private final StatusListValidator statusListValidator;
     private final StatusListsLimitProperties statusListsLimitProperties;
     private final AuditPublisher auditPublisher;
+    private final BusinessPartnerService businessPartnerService;
 
     @Transactional(readOnly = true)
-    public ObjectLimitsDto getCurrentLimits(UUID businessEntityId) {
-        return ObjectLimitsDto.builder()
-            .relatesTo(ApiObjectDto.STATUSLIST_ENTRY)
-            .currentCount(statusListEntryRepository.countByBusinessEntityId(businessEntityId))
-            .maxCount(statusListsLimitProperties.defaultMaxCount())
-            .build();
+    public StatusListEntryLimitsDto getLimits(@Valid @NotNull UUID businessEntityId) {
+        return new StatusListEntryLimitsDto(
+            new CountLimitDto(
+                ApiObjectDto.STATUSLIST_ENTRY,
+                statusListEntryRepository.countByBusinessEntityId(businessEntityId),
+                statusListsLimitProperties.defaultMaxCount()
+            )
+        );
     }
 
     @Transactional
     public StatusListEntryCreationDto createStatusListEntry(UUID businessEntityId) throws ObjectCountLimitApiException {
-        var currentLimits = getCurrentLimits(businessEntityId); // NOSONAR invoking transactional method is fine here
-        if (currentLimits.currentCount() >= statusListsLimitProperties.defaultMaxCount()) {
-            throw new ObjectCountLimitApiException(currentLimits.relatesTo().toString(), currentLimits.currentCount());
+        businessPartnerService.validateBusinessPartnerExists(businessEntityId);
+        var currentLimits = getLimits(businessEntityId); // NOSONAR invoking transactional method is fine here
+        if (currentLimits.count().current() >= statusListsLimitProperties.defaultMaxCount()) {
+            throw new ObjectCountLimitApiException(
+                currentLimits.count().relatesTo().toString(),
+                currentLimits.count().current()
+            );
         }
         try {
             var registryEntry = statusListRegistryService.createDatastoreEntry();

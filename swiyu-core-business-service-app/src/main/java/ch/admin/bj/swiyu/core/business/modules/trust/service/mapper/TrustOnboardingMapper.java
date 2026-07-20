@@ -3,13 +3,16 @@ package ch.admin.bj.swiyu.core.business.modules.trust.service.mapper;
 import static ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil.getByLanguageOrDefault;
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerTypeDto;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static org.springframework.util.CollectionUtils.isEmpty;
 
 import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
 import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
 import ch.admin.bj.swiyu.core.business.common.api.MultiLanguageTextDto;
-import ch.admin.bj.swiyu.core.business.common.domain.*;
+import ch.admin.bj.swiyu.core.business.common.domain.Address;
+import ch.admin.bj.swiyu.core.business.common.domain.Contact;
+import ch.admin.bj.swiyu.core.business.common.domain.Language;
 import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
 import ch.admin.bj.swiyu.core.business.modules.documents.api.PartnerDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.*;
@@ -53,10 +56,10 @@ public class TrustOnboardingMapper {
             toBusinessPartnerTypeDto(source.getRequestedPartnerType()),
             toSigningRuleDto(source.getSigningRule()),
             toSignatoryDtos(source.getSignatories()),
-            Collections.singletonMap("UID", source.getUid()), // EID-5476
+            source.getUid() == null ? emptyMap() : Collections.singletonMap("UID", source.getUid()), // EID-5476
             source.getIsRegisteredInCommercialRegister(),
-            String.valueOf(source.getRejectReason()),
-            String.valueOf(source.getDeclineReason()),
+            source.getRejectReason() == null ? null : String.valueOf(source.getRejectReason()),
+            source.getDeclineReason() == null ? null : String.valueOf(source.getDeclineReason()),
             source.getPartnerNote(),
             toLanguageDto(source.getCorrespondingLanguage()),
             truncateInstantToMicroseconds(source.getSubmittedAt()),

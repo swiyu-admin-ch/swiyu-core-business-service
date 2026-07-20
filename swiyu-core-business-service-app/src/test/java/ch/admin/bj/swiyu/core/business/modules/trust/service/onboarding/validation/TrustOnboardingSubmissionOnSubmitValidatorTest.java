@@ -201,6 +201,35 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     }
 
     @Test
+    void fails_when_proof_of_possession_is_empty() {
+        var s = createValidSubmission();
+        s.update(
+            s.getEntityName(),
+            s.getEntityAddress(),
+            s.getEntityEmail(),
+            s.getContactPerson(),
+            s.getCorrespondingLanguage(),
+            s.getUid(),
+            List.of(), // 0 POP
+            BusinessPartnerType.BUSINESS,
+            s.getSigningRule(),
+            s.getSignatories(),
+            true
+        );
+
+        var violations = validator.validate(s, BusinessPartnerTypeDto.BUSINESS);
+
+        assertTrue(
+            violations
+                .getAllErrors()
+                .stream()
+                .anyMatch(
+                    v -> "proofOfPossessions".equals(((FieldError) v).getField()) && "INVALID".equals(v.getCode())
+                )
+        );
+    }
+
+    @Test
     void succeeds_when_proof_of_possession_is_valid() {
         var s = createValidSubmission();
         s.update(

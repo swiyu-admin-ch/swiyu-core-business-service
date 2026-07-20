@@ -2,11 +2,9 @@ package ch.admin.bj.swiyu.core.business.modules.management.api;
 
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
 import ch.admin.bj.swiyu.core.business.common.api.ListItemDto;
-import ch.admin.bj.swiyu.core.business.common.api.ObjectLimitsDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 @Schema(name = "BusinessEntity")
@@ -15,7 +13,6 @@ public record BusinessEntityDto(
     @Schema(description = "Unique name of the entity") @NotBlank String name,
     @NotBlank String contactEmailAddress,
     @Schema(description = "Type of the entity", nullable = true) BusinessPartnerTypeDto type,
-    List<ObjectLimitsDto> limitInfos,
     @Schema(description = "Was there a successful trust onboarding") boolean isVerified,
     @Schema(description = "User payed for trust onboarding") boolean payedForTrustVerification,
     @Schema(description = "Number of DID slots the user payed for already") int payedForDIDSlots,

@@ -2,13 +2,11 @@ package ch.admin.bj.swiyu.core.business.modules.management.api;
 
 import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
-import ch.admin.bj.swiyu.core.business.common.api.ObjectLimitsDto;
 import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,7 +23,6 @@ public record BusinessPartnerDto(
     Map<String, String> entityName,
     @NotBlank String contactEmailAddress,
     @Schema(description = "Type of the partner") @NotNull BusinessPartnerTypeDto type,
-    List<ObjectLimitsDto> limitInfos,
     @Schema(description = "User paid for trust onboarding") boolean payedForTrustVerification,
     @Schema(description = "Number of DID slots the user paid for already") int payedForDIDSlots,
     @Schema(example = "2024-10-29T09:35:16.809924Z") Instant createdAt,

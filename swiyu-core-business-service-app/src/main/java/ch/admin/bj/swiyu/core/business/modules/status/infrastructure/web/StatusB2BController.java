@@ -1,6 +1,5 @@
 package ch.admin.bj.swiyu.core.business.modules.status.infrastructure.web;
 
-import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.status.api.StatusListEntryCreationDto;
 import ch.admin.bj.swiyu.core.business.modules.status.api.StatusListEntryDto;
 import ch.admin.bj.swiyu.core.business.modules.status.service.StatusListEntryService;
@@ -27,7 +26,6 @@ import org.springframework.web.bind.annotation.*;
 class StatusB2BController {
 
     private final StatusListEntryService statusListEntryService;
-    private final BusinessPartnerService businessPartnerService;
 
     @PostMapping(value = "business-entities/{businessEntityId}/status-list-entries/")
     @PreAuthorize("hasRoleForPartner('status', 'write', #businessEntityId)")
@@ -38,7 +36,6 @@ class StatusB2BController {
             example = "8432e1f3-8119-4fb9-a879-190ab2cb9deb"
         ) @Valid UUID businessEntityId
     ) {
-        businessPartnerService.validateBusinessPartnerExists(businessEntityId);
         return statusListEntryService.createStatusListEntry(businessEntityId);
     }
 

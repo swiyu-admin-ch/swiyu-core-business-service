@@ -2,16 +2,12 @@ package ch.admin.bj.swiyu.core.business.modules.management.infrastructure.web;
 
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.insertTestBusinessPartners;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
-import ch.admin.bj.swiyu.core.business.common.api.ApiObjectDto;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
-import ch.admin.bj.swiyu.core.business.common.api.ObjectLimitsDto;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
@@ -77,7 +73,6 @@ class BusinessPartnerInternalV2ControllerIT {
     void setUp() {
         repos.businessPartner.deleteAll();
         repos.businessPartner.flush();
-        mockLimits();
     }
 
     @Test
@@ -433,16 +428,6 @@ class BusinessPartnerInternalV2ControllerIT {
                 )
             )
             .andExpect(status().isForbidden());
-    }
-
-    private void mockLimits() {
-        var limits = ObjectLimitsDto.builder()
-            .relatesTo(ApiObjectDto.IDENTIFIER_ENTRY)
-            .currentCount(0L)
-            .maxCount(100L)
-            .build();
-        Mockito.when(statusListEntryService.getCurrentLimits(Mockito.any())).thenReturn(limits);
-        Mockito.when(identifierEntryService.getCurrentLimits(Mockito.any())).thenReturn(limits);
     }
 
     private MvcResult callCreateBusinessPartner() throws Exception {

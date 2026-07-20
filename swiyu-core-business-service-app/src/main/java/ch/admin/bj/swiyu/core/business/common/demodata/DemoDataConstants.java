@@ -10,6 +10,14 @@ import lombok.experimental.UtilityClass;
 public class DemoDataConstants {
 
     @UtilityClass
+    public static class BusinessPartner {
+
+        public static final String CORE_ID_BP_DEFAULT = "9f425029-9775-4984-99ba-bacc60069502";
+        public static final String CORE_ID_BP_GOV = "39f92e48-619e-4e92-8958-468ae138d8a3";
+        public static final String CORE_ID_BP_BASE_ONBOARDING_ONLY = "e97e84e6-f40e-47ba-bdfe-d92f3d3dbc84";
+    }
+
+    @UtilityClass
     public static class TrustOnboardingSubmission {
 
         /**

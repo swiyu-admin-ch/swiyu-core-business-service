@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(name = "ApiObject")
 public enum ApiObjectDto {
-    TRUST_ONBOARDING_SUBMISSION_PARTNER_DOCUMENT("trust_onboarding_submission_partner_document"),
     IDENTIFIER_ENTRY("identifier_entries"),
     STATUSLIST_ENTRY("statuslist_entries");
 

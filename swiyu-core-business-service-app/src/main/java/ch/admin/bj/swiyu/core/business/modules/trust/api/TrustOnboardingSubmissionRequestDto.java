@@ -1,6 +1,12 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.api;
 
-import ch.admin.bj.swiyu.core.business.common.api.*;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+
+import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
+import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
+import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
+import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
 import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
 import ch.admin.bj.swiyu.core.business.common.validation.ValidRegistryIds;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -77,4 +83,9 @@ public record TrustOnboardingSubmissionRequestDto(
     )
     @Getter
     BusinessPartnerTypeDto requestedPartnerType
-) {}
+) {
+    public TrustOnboardingSubmissionRequestDto {
+        signatories = (signatories == null) ? emptyList() : signatories;
+        registryIds = (registryIds == null) ? emptyMap() : registryIds;
+    }
+}

@@ -116,6 +116,22 @@ class IdentityEntryServiceIT {
     }
 
     @Test
+    void getLimits_returnsCorrectValues() {
+        // GIVEN
+        when(identifierLimitProperties.defaultMaxCount()).thenReturn(5L);
+        // Ensure repository is empty (setup does deleteAll)
+        var limitsEmpty = identifierEntryService.getLimits(DEFAULT_ENTITY);
+        assertThat(limitsEmpty.count().current()).isZero();
+        assertThat(limitsEmpty.count().max()).isEqualTo(5L);
+        // WHEN create an entry
+        identifierEntryService.createIdentifierEntry(DEFAULT_ENTITY);
+        // THEN limits reflect count 1
+        var limitsAfter = identifierEntryService.getLimits(DEFAULT_ENTITY);
+        assertThat(limitsAfter.count().current()).isEqualTo(1);
+        assertThat(limitsAfter.count().max()).isEqualTo(5L);
+    }
+
+    @Test
     void updateIdentifierEntry() {
         // GIVEN
         var identifierEntryId = identifierEntryService.createIdentifierEntry(DEFAULT_ENTITY).id();

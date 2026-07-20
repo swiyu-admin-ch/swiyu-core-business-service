@@ -3,14 +3,12 @@ package ch.admin.bj.swiyu.core.business.modules.management.service.mapper;
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerTypeDto;
 
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
-import ch.admin.bj.swiyu.core.business.common.api.ObjectLimitsDto;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
 import ch.admin.bj.swiyu.core.business.modules.management.api.*;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntityTrustStatus;
-import java.util.List;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.jspecify.annotations.NonNull;
@@ -31,14 +29,13 @@ public class BusinessPartnerMapper {
         );
     }
 
-    public static BusinessEntityDto toBusinessEntityDto(BusinessEntity source, List<ObjectLimitsDto> limits) {
+    public static BusinessEntityDto toBusinessEntityDto(BusinessEntity source) {
         BusinessPartnerTypeDto type = toBusinessPartnerTypeDto(source.getType());
         return new BusinessEntityDto(
             source.getId(),
             LocalizedMapUtil.getDefaultValue(source.getEntityName()),
             source.getContactEmail(),
             type,
-            limits,
             source.getTrustVerificationStatus() == BusinessEntityTrustStatus.VERIFIED,
             source.isPayedForTrustVerification(),
             source.getPayedForDidSlots(),
@@ -47,7 +44,7 @@ public class BusinessPartnerMapper {
         );
     }
 
-    public static BusinessPartnerDto toBusinessPartnerDto(BusinessEntity source, List<ObjectLimitsDto> limits) {
+    public static BusinessPartnerDto toBusinessPartnerDto(BusinessEntity source) {
         BusinessPartnerTypeDto type = toBusinessPartnerTypeDto(source.getType());
         return new BusinessPartnerDto(
             source.getId(),
@@ -55,7 +52,6 @@ public class BusinessPartnerMapper {
             source.getEntityName(),
             source.getContactEmail(),
             type,
-            limits,
             source.isPayedForTrustVerification(),
             source.getPayedForDidSlots(),
             source.getAuditMetadata().getCreatedAt(),
@@ -68,17 +64,13 @@ public class BusinessPartnerMapper {
         );
     }
 
-    public static BusinessPartnerListItemDto toBusinessPartnerListItemDto(
-        BusinessEntity source,
-        List<ObjectLimitsDto> limits
-    ) {
+    public static BusinessPartnerListItemDto toBusinessPartnerListItemDto(BusinessEntity source) {
         BusinessPartnerTypeDto type = toBusinessPartnerTypeDto(source.getType());
         return new BusinessPartnerListItemDto(
             source.getId(),
             LocalizedMapUtil.getDefaultValue(source.getEntityName()),
             source.getEntityName(),
             type,
-            limits,
             source.isPayedForTrustVerification(),
             source.getPayedForDidSlots(),
             source.getAuditMetadata().getCreatedAt(),

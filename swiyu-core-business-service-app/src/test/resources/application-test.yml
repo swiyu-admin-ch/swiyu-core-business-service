@@ -30,7 +30,7 @@ spring:
       maximum-pool-size: 2
   flyway:
     enabled: true # locations are defined in PersistenceConfig classes since we have multiple datasources
-    locations: [] # keep empty since on test we don't want the default afterMigrate scripts in "extra" folder
+    locations: [ ] # keep empty since on test we don't want the default afterMigrate scripts in "extra" folder
 
 jeap:
   logging:

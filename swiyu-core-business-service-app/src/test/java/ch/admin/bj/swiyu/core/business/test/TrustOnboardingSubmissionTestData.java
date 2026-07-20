@@ -2,9 +2,11 @@ package ch.admin.bj.swiyu.core.business.test;
 
 import static ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil.fromLanguages;
 import static ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionStatus.*;
-import static ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.TrustOnboardingMapper.*;
+import static ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.TrustOnboardingMapper.toContactEntity;
+import static ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.TrustOnboardingMapper.toLanguageEntity;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.DEFAULT_ENTITY;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.entityNameLocalizedMap;
+import static java.util.Collections.emptyMap;
 import static org.hibernate.internal.util.collections.CollectionHelper.listOf;
 
 import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
@@ -59,6 +61,16 @@ public class TrustOnboardingSubmissionTestData {
 
     public static TrustOnboardingSubmissionRequestDto trustOnboardingSubmissionRequestDto() {
         return trustOnboardingSubmissionRequestDtoBuilder().build();
+    }
+
+    public static TrustOnboardingSubmissionRequestDto trustOnboardingSubmissionRequestDtoWithoutUID() {
+        return trustOnboardingSubmissionRequestDtoBuilder().registryIds(emptyMap()).build();
+    }
+
+    public static TrustOnboardingSubmissionRequestDto trustOnboardingSubmissionRequestDtoWithOnlyPartnerId(
+        UUID partnerId
+    ) {
+        return TrustOnboardingSubmissionRequestDto.builder().partnerId(partnerId).build();
     }
 
     public static TrustOnboardingSubmissionRequestDto trustOnboardingSubmissionRequestDtoUpdate() {

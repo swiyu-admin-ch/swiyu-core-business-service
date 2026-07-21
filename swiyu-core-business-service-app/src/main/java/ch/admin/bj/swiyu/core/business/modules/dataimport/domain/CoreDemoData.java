@@ -105,6 +105,12 @@ public class CoreDemoData {
         "+41548884441",
         CORE_ID_BP_WANTS_TO_BE_TRUSTED_ADDRESS
     );
+    public static final Signatory CORE_ID_BP_WANTS_TO_BE_TRUSTED_SIGNATORY = new Signatory(
+        "John",
+        "Doe",
+        "+41548884441",
+        CORE_ID_BP_WANTS_TO_BE_TRUSTED_EMAIL
+    );
     // CORE_ID_BP_GOV
     public static final Map<String, String> CORE_ID_BP_GOV_NAMES = fromLanguages(
         "Demo Kanton",

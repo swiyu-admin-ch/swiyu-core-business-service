@@ -118,14 +118,17 @@ public class DemoDataImportService {
         for (UUID partnerId : partnerIds) {
             var optEntity = identifierEntryRepository.findById(partnerId);
             if (optEntity.isEmpty()) {
-                var entity = new IdentifierEntry(
-                    partnerId, // same
-                    partnerId
-                );
-                entity.updateDidAndActivate("did:example:" + partnerId);
-                identifierEntryRepository.saveAndFlush(entity);
+                addExampleIdentifier(partnerId, partnerId);
             }
         }
+        addExampleIdentifier(
+            CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED,
+            UUID.fromString("f66469be-fb56-4ed3-be31-a2f5bd670ac9")
+        );
+        addExampleIdentifier(
+            CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED,
+            UUID.fromString("ff8757d8-9de8-4cde-a538-1e0e6fc73e5e")
+        );
 
         var identifierDatastoreEntityOpt = identifierDatastoreEntityRepository.findById(
             CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL
@@ -151,6 +154,14 @@ public class DemoDataImportService {
             CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL,
             CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL_DIDLOG
         );
+    }
+
+    private void addExampleIdentifier(UUID partnerId, UUID identifierId) {
+        var entity = identifierEntryRepository
+            .findById(identifierId)
+            .orElse(new IdentifierEntry(identifierId, partnerId));
+        entity.updateDidAndActivate("did:example:" + identifierId + "-" + partnerId);
+        identifierEntryRepository.saveAndFlush(entity);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -238,7 +249,7 @@ public class DemoDataImportService {
             CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_EMAIL,
             BusinessPartnerType.BUSINESS,
             SigningRule.SINGLE_SIGNATURE,
-            List.of()
+            List.of(CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_SIGNATORY)
         );
         trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
             CoreDemoData.CORE_ID_TOS_UNSUBMITTED,
@@ -313,7 +324,7 @@ public class DemoDataImportService {
                 email,
                 contact,
                 Language.DE,
-                "TST-111.222.333",
+                "CHE-123.456.789",
                 true,
                 List.of(pop),
                 requestedPartnerType,

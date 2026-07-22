@@ -3,7 +3,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-core-business-service</artifactId>
-        <version>3.42.2-SNAPSHOT</version>
+        <version>3.42.4-SNAPSHOT</version>
     </parent>
     <artifactId>swiyu-core-business-service-registry-status</artifactId>
     <description>Provides a service for accessing the Status Registry DB</description>

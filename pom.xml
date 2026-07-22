@@ -5,7 +5,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-core-business-service</artifactId>
-    <version>3.42.2-SNAPSHOT</version>
+    <version>3.42.4-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
@@ -79,6 +79,46 @@
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotation</artifactId>
                 <version>2.21.5</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>2.21.5</version>
+            </dependency>
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>42.7.12</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-context</artifactId>
+                <version>6.2.19</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-web</artifactId>
+                <version>6.2.19</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-expression</artifactId>
+                <version>6.2.19</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-core</artifactId>
+                <version>6.2.19</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.core5</groupId>
+                <artifactId>httpcore5-h2</artifactId>
+                <version>5.4.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>10.1.56</version>
             </dependency>
             <!-- CVE-OVERRIDE end -->
         </dependencies>

@@ -70,7 +70,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
             List.of(new Signatory("John", "Doe", "+41 79 123 45 67", "john@example.org")),
             true
         );
-        s.updateDeclarationOfIntent(new DeclarationOfIntent(UUID.randomUUID().toString(), null));
+        s.updateDeclarationOfIntent(new DeclarationOfIntent(UUID.randomUUID(), null));
         var violations = validator.validate(s, BusinessPartnerTypeDto.BUSINESS);
         assertFalse(violations.hasErrors());
     }
@@ -91,7 +91,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
             List.of(new Signatory("John", "Doe", "+41 79 123 45 67", "john@example.org")),
             true
         );
-        s.updateDeclarationOfIntent(new DeclarationOfIntent(UUID.randomUUID().toString(), null));
+        s.updateDeclarationOfIntent(new DeclarationOfIntent(UUID.randomUUID(), null));
         var violations = validator.validate(s, BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION);
         assertFalse(violations.hasErrors());
     }
@@ -400,7 +400,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
             List.of(),
             true
         );
-        s.updateDeclarationOfIntent(new DeclarationOfIntent(UUID.randomUUID().toString(), null));
+        s.updateDeclarationOfIntent(new DeclarationOfIntent(UUID.randomUUID(), null));
 
         var violations = validator.validate(s, BusinessPartnerTypeDto.INDIVIDUAL);
         assertFalse(violations.hasErrors());
@@ -499,7 +499,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
             List.of(new Signatory("John", "Doe", "+41 79 123 45 67", "john@example.org")),
             true
         );
-        s.updateDeclarationOfIntent(new DeclarationOfIntent(UUID.randomUUID().toString(), null));
+        s.updateDeclarationOfIntent(new DeclarationOfIntent(UUID.randomUUID(), null));
         return s;
     }
 

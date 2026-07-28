@@ -123,9 +123,13 @@ public class TrustOnboardingSubmission {
     private BusinessPartnerType requestedPartnerType;
 
     @Getter
-    @Column(columnDefinition = "jsonb")
-    @JdbcTypeCode(SqlTypes.JSON)
+    @Embedded
     @Valid
+    @AttributeOverride(name = "fullySignedDocumentId", column = @Column(name = "declaration_of_intent_document_id"))
+    @AttributeOverride(
+        name = "validationReport",
+        column = @Column(name = "declaration_of_intent_validation_report", columnDefinition = "jsonb")
+    )
     private DeclarationOfIntent declarationOfIntent;
 
     protected TrustOnboardingSubmission() {
@@ -250,8 +254,7 @@ public class TrustOnboardingSubmission {
     // Deleting any other document on this submission must not wipe the DOI reference.
     public void removeDeclarationOfIntent(UUID documentId) {
         if (
-            this.declarationOfIntent != null &&
-            documentId.toString().equals(this.declarationOfIntent.fullySignedDocumentId())
+            this.declarationOfIntent != null && documentId.equals(this.declarationOfIntent.getFullySignedDocumentId())
         ) {
             this.declarationOfIntent = null;
         }

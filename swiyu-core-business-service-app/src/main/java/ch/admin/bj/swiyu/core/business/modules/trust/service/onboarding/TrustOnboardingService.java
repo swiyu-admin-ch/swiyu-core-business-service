@@ -109,7 +109,7 @@ public class TrustOnboardingService {
 
         if (request.type() == TRUST_ONBOARDING_DECLARATION_OF_INTENT) {
             trustOnboarding.updateDeclarationOfIntent(
-                new DeclarationOfIntent(document.id().toString(), doiValidationFileReportAsJson)
+                new DeclarationOfIntent(document.id(), doiValidationFileReportAsJson)
             );
             trustOnboardingSubmissionRepository.saveAndFlush(trustOnboarding);
         }
@@ -251,7 +251,7 @@ public class TrustOnboardingService {
         if (discardDoi) {
             var doi = trustOnboardingSubmission.getDeclarationOfIntent();
             if (doi != null) {
-                doiDocumentIdToDelete = UUID.fromString(doi.fullySignedDocumentId());
+                doiDocumentIdToDelete = doi.getFullySignedDocumentId();
                 trustOnboardingSubmission.updateDeclarationOfIntent(null);
             }
         }

@@ -145,10 +145,10 @@ class TrustOnboardingServiceDocumentUploadTest {
         verify(trustOnboardingSubmissionRepository).saveAndFlush(submissionCaptor.capture());
 
         assertThat(submissionCaptor.getValue().getDeclarationOfIntent()).isNotNull();
-        assertThat(submissionCaptor.getValue().getDeclarationOfIntent().fullySignedDocumentId()).isEqualTo(
-            document.id().toString()
+        assertThat(submissionCaptor.getValue().getDeclarationOfIntent().getFullySignedDocumentId()).isEqualTo(
+            document.id()
         );
-        assertThat(submissionCaptor.getValue().getDeclarationOfIntent().validationReport()).isEqualTo(
+        assertThat(submissionCaptor.getValue().getDeclarationOfIntent().getValidationReport()).isEqualTo(
             validationResult.fileReport()
         );
     }
@@ -212,7 +212,7 @@ class TrustOnboardingServiceDocumentUploadTest {
     void updateTrustOnboardingSubmission_deletesDoiDocument_whenDoiRelevantFieldsChange() {
         var submission = trustOnboardingSubmission();
         var doiDocumentId = UUID.randomUUID();
-        submission.updateDeclarationOfIntent(new DeclarationOfIntent(doiDocumentId.toString(), null));
+        submission.updateDeclarationOfIntent(new DeclarationOfIntent(doiDocumentId, null));
 
         TrustOnboardingSubmissionRequestDto baseRequest = trustOnboardingSubmissionRequestDto();
         var request = TrustOnboardingSubmissionRequestDto.builder()

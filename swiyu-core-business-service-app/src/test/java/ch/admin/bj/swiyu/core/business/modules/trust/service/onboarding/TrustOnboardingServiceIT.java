@@ -314,7 +314,13 @@ class TrustOnboardingServiceIT {
 
         // Set DOI before submitting (required for submit)
         var forDoi = repos.trustOnboardingSubmission.findById(resultDto.id()).orElseThrow();
-        forDoi.updateDeclarationOfIntent(new DeclarationOfIntent(UUID.randomUUID().toString(), null));
+        var doiDocument = partnerDocumentService.createTrustOnboardingSubmissionDocument(
+            forDoi.getPartnerId(),
+            forDoi.getId(),
+            TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+            mockMultipartFile()
+        );
+        forDoi.updateDeclarationOfIntent(new DeclarationOfIntent(doiDocument.id(), null));
         var savedWithDoi = repos.trustOnboardingSubmission.saveAndFlush(forDoi);
 
         service.submit(resultDto.id(), new TrustOnboardingSubmitRequestDto(savedWithDoi.getVersion()));
@@ -551,7 +557,14 @@ class TrustOnboardingServiceIT {
             false
         );
         // DOI required for submit
-        s.updateDeclarationOfIntent(new DeclarationOfIntent(UUID.randomUUID().toString(), null));
+        s = repos.trustOnboardingSubmission.save(s);
+        var doiDocument = partnerDocumentService.createTrustOnboardingSubmissionDocument(
+            s.getPartnerId(),
+            s.getId(),
+            TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+            mockMultipartFile()
+        );
+        s.updateDeclarationOfIntent(new DeclarationOfIntent(doiDocument.id(), null));
         s = repos.trustOnboardingSubmission.save(s);
 
         TrustOnboardingSubmission finalS = s;
@@ -993,7 +1006,7 @@ class TrustOnboardingServiceIT {
             TRUST_ONBOARDING_DECLARATION_OF_INTENT,
             mockMultipartFile()
         );
-        submission.updateDeclarationOfIntent(new DeclarationOfIntent(document.id().toString(), null));
+        submission.updateDeclarationOfIntent(new DeclarationOfIntent(document.id(), null));
         repos.trustOnboardingSubmission.save(submission);
         return submission;
     }

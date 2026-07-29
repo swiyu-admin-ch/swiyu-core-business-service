@@ -14,11 +14,13 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+@EqualsAndHashCode
 @Entity
 @Getter
 @EntityListeners(AuditingEntityListener.class)
@@ -73,14 +75,14 @@ public class TrustOnboardingSubmission {
 
     @Getter
     @Embedded
-    @AttributeOverride(name = "address.street", column = @Column(name = "contact_street"))
-    @AttributeOverride(name = "address.postalCode", column = @Column(name = "contact_postal_code"))
-    @AttributeOverride(name = "address.city", column = @Column(name = "contact_city"))
-    @AttributeOverride(name = "address.country", column = @Column(name = "contact_country"))
     @AttributeOverride(name = "phone", column = @Column(name = "contact_phone"))
     @AttributeOverride(name = "email", column = @Column(name = "contact_email"))
     @AttributeOverride(name = "firstName", column = @Column(name = "contact_first_name"))
     @AttributeOverride(name = "lastName", column = @Column(name = "contact_last_name"))
+    @AttributeOverride(
+        name = "correspondingLanguage",
+        column = @Column(name = "contact_corresponding_language", insertable = false, updatable = false)
+    )
     @Valid
     private Contact contactPerson;
 

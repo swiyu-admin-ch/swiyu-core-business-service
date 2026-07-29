@@ -4,7 +4,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-core-business-service</artifactId>
-        <version>3.42.5-SNAPSHOT</version>
+        <version>3.42.7-SNAPSHOT</version>
     </parent>
     <artifactId>swiyu-core-business-service-app</artifactId>
     <packaging>jar</packaging>
@@ -214,6 +214,21 @@
             <artifactId>jeap-messaging-outbox</artifactId>
         </dependency>
         <!-- Messages -->
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-business-partner-identity-activated-event</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-business-partner-identity-deactivated-event</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-business-partner-identity-updated-event</artifactId>
+            <version>2.0.0</version>
+        </dependency>
         <dependency>
             <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
             <artifactId>ti-vc-schema-submission-accepted-event</artifactId>

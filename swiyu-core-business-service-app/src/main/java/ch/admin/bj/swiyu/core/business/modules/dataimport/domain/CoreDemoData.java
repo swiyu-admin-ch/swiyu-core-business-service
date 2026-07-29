@@ -5,6 +5,7 @@ import static ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil.fr
 import ch.admin.bj.swiyu.core.business.common.demodata.DemoDataConstants;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
+import ch.admin.bj.swiyu.core.business.common.domain.Language;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.Signatory;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +77,7 @@ public class CoreDemoData {
         "müller",
         CORE_ID_BP_DEFAULT_EMAIL,
         "+41548884440",
-        CORE_ID_BP_DEFAULT_ADDRESS
+        Language.DE
     );
     public static final List<Signatory> CORE_ID_BP_DEFAULT_SIGNATORIES = List.of(
         new Signatory("Erika", "Müller", "+41776665544", CORE_ID_BP_DEFAULT_EMAIL)
@@ -103,7 +104,7 @@ public class CoreDemoData {
         "Doe",
         CORE_ID_BP_WANTS_TO_BE_TRUSTED_EMAIL,
         "+41548884441",
-        CORE_ID_BP_WANTS_TO_BE_TRUSTED_ADDRESS
+        Language.DE
     );
     public static final Signatory CORE_ID_BP_WANTS_TO_BE_TRUSTED_SIGNATORY = new Signatory(
         "John",
@@ -135,7 +136,7 @@ public class CoreDemoData {
         "Schmid",
         CORE_ID_BP_GOV_EMAIL,
         "+41216548497",
-        CORE_ID_BP_GOV_ADDRESS
+        Language.DE
     );
     public static final List<Signatory> CORE_ID_BP_GOV_SIGNATORIES = List.of(
         new Signatory("Sandra", "Schmid", "+41665554433", CORE_ID_BP_GOV_EMAIL),

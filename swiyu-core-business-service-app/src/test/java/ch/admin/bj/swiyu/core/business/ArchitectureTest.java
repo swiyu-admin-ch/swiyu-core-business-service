@@ -146,6 +146,7 @@ public class ArchitectureTest {
             GeneralCodingRules.NO_CLASSES_SHOULD_USE_JAVA_UTIL_LOGGING;
     }
 
+    @SuppressWarnings("java:S1135") // remove with EID-6624
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class ArchitectureRules {
 
@@ -201,10 +202,26 @@ public class ArchitectureTest {
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service.."),
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.identifier.service..")
             )
+            // management -> identifier.api (e.g. IdentifierEntryFilterDto used in getVerificationProgress)
+            .ignoreDependency(
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service.."),
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.identifier.api..")
+            )
+            // management -> trust (TrustOnboardingSubmissionRepository used to compute verification progress)
+            // TODO EID-6624: remove once deprecated trustVerificationStatus field is removed from BusinessPartnerDto
+            .ignoreDependency(
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service.."),
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.trust.domain..")
+            )
             // trust -> management
             .ignoreDependency(
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.trust.service.."),
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.[api|service]..")
+            )
+            // trust.service.bpi -> management.domain (BPI event processor builds BusinessPartnerIdentity)
+            .ignoreDependency(
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.trust.service.bpi.."),
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.domain..")
             )
             // status -> identifier
             .ignoreDependency(

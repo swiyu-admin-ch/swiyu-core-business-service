@@ -5,7 +5,9 @@ import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
 import ch.admin.bj.swiyu.core.business.common.security.AuthSupport;
 import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerDto;
 import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerListItemDto;
+import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerUpdateDto;
 import ch.admin.bj.swiyu.core.business.modules.management.api.CreatePartnerDto;
+import ch.admin.bj.swiyu.core.business.modules.management.api.IdentityVerificationProgressDto;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -105,5 +107,37 @@ class BusinessPartnerInternalV2Controller {
     )
     public BusinessPartnerDto getBusinessPartner(@PathVariable @Valid UUID id) {
         return businessPartnerService.getBusinessPartner(id);
+    }
+
+    @PreAuthorize("hasRoleForPartner('businesspartner','update',#id)")
+    @PutMapping("/{id}")
+    @ApiResponse(responseCode = "200", description = "Success")
+    @ApiResponse(responseCode = "400", description = "Validation failed")
+    @ApiResponse(responseCode = "401", description = "Missing authorization token")
+    @ApiResponse(responseCode = "404", description = "Business partner not found")
+    @Operation(
+        summary = "Update a business partner.",
+        description = "If the partner's identity is ACTIVE (trusted), only address and contact can be updated. " +
+            "Name and uid can only be changed while the identity is not yet ACTIVE."
+    )
+    public BusinessPartnerDto updateBusinessPartner(
+        @PathVariable @Valid UUID id,
+        @RequestBody @Valid BusinessPartnerUpdateDto updateDto
+    ) {
+        return businessPartnerService.updateBusinessPartnerFromPortal(id, updateDto);
+    }
+
+    @PreAuthorize("hasRoleForPartner('businesspartner','read',#businessPartnerId)")
+    @GetMapping("/{businessPartnerId}/verification-progress")
+    @ApiResponse(responseCode = "200", description = "Success")
+    @ApiResponse(responseCode = "401", description = "Missing authorization token")
+    @ApiResponse(responseCode = "404", description = "Business partner not found")
+    @Operation(
+        summary = "Get the identity verification progress for a business partner.",
+        description = "Returns the current verification state. " +
+            "Verification can only be started if at least one DID with an uploaded DID document exists."
+    )
+    public IdentityVerificationProgressDto getVerificationProgress(@PathVariable @Valid UUID businessPartnerId) {
+        return businessPartnerService.getVerificationProgress(businessPartnerId);
     }
 }

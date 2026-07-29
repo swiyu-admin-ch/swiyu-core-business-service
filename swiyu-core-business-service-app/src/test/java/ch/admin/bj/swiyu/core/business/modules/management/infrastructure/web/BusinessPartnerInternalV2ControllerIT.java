@@ -280,6 +280,7 @@ class BusinessPartnerInternalV2ControllerIT {
         );
     }
 
+    @SuppressWarnings("java:S1874") // remove with EID-6624
     @Test
     @WithJeapAuthenticationToken(bpRoles = "deadbeef-0000-0000-0000-000000000000 = ti_@businesspartner_#read")
     void testGetBusinessPartners_thenSuccess() throws Exception {
@@ -299,7 +300,7 @@ class BusinessPartnerInternalV2ControllerIT {
         // THEN
         assertThat(businessEntities.getMetadata().totalElements()).isEqualTo(1);
         assertThat(businessEntities.getContent()).hasSize(1);
-        var dbInsertedBusinessPartner = businessEntities.getContent().get(0);
+        var dbInsertedBusinessPartner = businessEntities.getContent().getFirst();
         assertThat(dbInsertedBusinessPartner.id()).isEqualTo(UUID.fromString("deadbeef-0000-0000-0000-000000000000"));
         assertThat(dbInsertedBusinessPartner.name()).isEqualTo("Hello World AG");
         assertThat(LocalizedMapUtil.getDefaultValue(dbInsertedBusinessPartner.entityName())).isEqualTo(
@@ -388,6 +389,7 @@ class BusinessPartnerInternalV2ControllerIT {
             .andExpect(status().isForbidden());
     }
 
+    @SuppressWarnings("java:S1874") // remove with EID-6624
     @Test
     @WithJeapAuthenticationToken(bpRoles = BusinessEntityTestData.ENTITY_A_S + " = ti_@businesspartner_#read")
     void testGetBusinessPartner_byId_thenSuccess() throws Exception {

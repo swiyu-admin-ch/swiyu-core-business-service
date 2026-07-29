@@ -11,7 +11,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import ch.admin.bj.swiyu.antivirus.client.api.ScanApi;
 import ch.admin.bj.swiyu.antivirus.client.model.ScanResult;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
-import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
 import ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData;
@@ -413,7 +412,7 @@ class TrustOnboardingSubmissionDocumentsInternalControllerIT {
             .lastName(base.getContactPerson().getLastName())
             .email(base.getContactPerson().getEmail())
             .phone(base.getContactPerson().getPhone())
-            .address(Address.builder().street("Test Street").city("Test City").postalCode("1234").country("CH").build())
+            .correspondingLanguage(base.getContactPerson().getCorrespondingLanguage())
             .build();
 
         return new TrustOnboardingSubmission(

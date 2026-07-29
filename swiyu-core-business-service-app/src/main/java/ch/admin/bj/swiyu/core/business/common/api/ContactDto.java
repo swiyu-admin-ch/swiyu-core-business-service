@@ -12,7 +12,10 @@ public record ContactDto(
     @NotBlank String lastName,
     @NotBlank String email,
     @NotBlank @ValidPhone String phone,
+    LanguageDto correspondingLanguage,
 
-    // To be removed with EID-6303
+    @SuppressWarnings("java:S1133") // remove with EID-6303
+    @Deprecated(since = "3.42.5")
+    @Schema(deprecated = true)
     AddressDto address
 ) {}

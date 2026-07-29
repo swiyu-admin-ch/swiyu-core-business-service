@@ -75,7 +75,23 @@ class DefaultPamsClient implements PamsClient {
                 .getApiClient()
                 .addDefaultHeader("Authorization", "Bearer %s".formatted(pamsProperties.createToken()));
             var bp = new ApiBusinesspartnersForeignIDPutRequest();
-            bp.setName(LocalizedMapUtil.getDefaultValue(businessPartner.getEntityName()));
+
+            // If BPI is ACTIVE the trust management service owns the canonical name.
+            // Otherwise use the self-declared entity name.
+            var bpi = businessPartner.getBusinessPartnerIdentity();
+            String nameForPams;
+            if (
+                bpi != null &&
+                bpi.getStatus() ==
+                ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus.ACTIVE &&
+                bpi.getEntityName() != null
+            ) {
+                nameForPams = LocalizedMapUtil.getDefaultValue(bpi.getEntityName());
+            } else {
+                nameForPams = LocalizedMapUtil.getDefaultValue(businessPartner.getEntityName());
+            }
+            bp.setName(nameForPams);
+
             var response = businessPartnerApi.apiBusinesspartnersForeignIDPut(
                 businessPartner.getId().toString(),
                 0,

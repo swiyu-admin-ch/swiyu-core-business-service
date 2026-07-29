@@ -5,7 +5,8 @@ import static ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil.fr
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
-import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntityTrustStatus;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentity;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
 import java.util.Map;
 import java.util.UUID;
@@ -93,7 +94,9 @@ public class BusinessEntityTestData {
         entityA.setId(ENTITY_A);
         entityA.payedForTrustVerification();
         entityA.addPayedForDidSlots(100);
-        entityA.setTrustVerificationStatus(BusinessEntityTrustStatus.VERIFIED, null);
+        // Note: no BPI set — BPI only arrives via TMS events (TiBusinessPartnerIdentityActivatedEvent).
+        // Tests that require a partner with an ACTIVE or DEACTIVATED BPI must set it explicitly
+        // using applyBusinessPartnerIdentityEvent(activeBusinessPartnerIdentity()).
         return entityA;
     }
 
@@ -140,5 +143,21 @@ public class BusinessEntityTestData {
             "Test Entity Name EN",
             "Test Entity Name RM"
         );
+    }
+
+    public static BusinessPartnerIdentity activeBusinessPartnerIdentity() {
+        return BusinessPartnerIdentity.builder()
+            .status(BusinessPartnerIdentityStatus.ACTIVE)
+            .uid("CHE-123.456.789")
+            .entityName(Map.of("default", "Hello World AG"))
+            .build();
+    }
+
+    public static BusinessPartnerIdentity deactivatedBusinessPartnerIdentity() {
+        return BusinessPartnerIdentity.builder()
+            .status(BusinessPartnerIdentityStatus.DEACTIVATED)
+            .uid("CHE-123.456.789")
+            .entityName(Map.of("default", "Hello World AG"))
+            .build();
     }
 }

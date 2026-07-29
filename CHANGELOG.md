@@ -5,11 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.42.7
+
+### Changed
+
+- Upgrade used business partner identity event version
+- Fix sonar findings
+
+## 3.42.6
+
+### Added
+
+  - Replace flat `contactEmail` / `contactPhone` / `trustVerificationStatus` fields on `BusinessEntity` with an embedded `Contact` (shared with `TrustOnboardingSubmission`) and a new `BusinessPartnerIdentity` embeddable.
+  - `Contact` gains `correspondingLanguage : Language`; the deprecated `address` field is removed from the embeddable (address overlap with `TrustOnboardingSubmission.contactPerson` handled via `@AttributeOverride`).
+  - New `BusinessPartnerIdentity` embeddable holds `status`, `validUntil`, `trustedIdentifier`, `lastActivated`, `uid`, `entityName`, `tmsVersion` — all owned by the Trust Management Service.
+  - Flyway migration `V1_24_0` adds BPI columns to `business_entity`, seeds `BusinessPartnerIdentity` from the latest SUCCEEDED `TrustOnboardingSubmission` (including DIDs from `TrustAdditionalDidsSubmission`), and drops the old `trust_verification_status` / `max_date_for_trust_verification_status` columns.
+  - New Kafka consumers `TiBusinessPartnerIdentityEventConsumer` + `TiBusinessPartnerIdentityEventProcessor` subscribe to TMS events `TiBusinessPartnerIdentityActivatedEvent`, `TiBusinessPartnerIdentityUpdatedEvent`, `TiBusinessPartnerIdentityDeactivatedEvent` and apply changes to `BusinessPartnerIdentity`.
+  - New endpoint `PUT /api/v2/internal/management/business-partners/{id}` — updates address and contact (always); also updates name and uid when the partner's identity is not yet ACTIVE.
+  - New endpoint `GET /api/v2/internal/management/business-partners/{businessPartnerId}/verification-progress` — returns `IdentityVerificationProgressDto` computed on the fly from `BusinessPartnerIdentity` + `TrustOnboardingSubmission` history.
+  - New enum `IdentityVerificationProgressDto` with 11 states covering the full first-time and re-verification lifecycle (`VERIFICATION_NOT_STARTED`, `VERIFICATION_STARTED`, `VERIFICATION_IN_PROGRESS`, `VERIFICATION_INFORMATION_REQUESTED`, `VERIFICATION_SUCCEEDED`, `RE_VERIFICATION_REQUIRED`, `RE_VERIFICATION_STARTED`, `RE_VERIFICATION_IN_PROGRESS`, and reserved `REJECTED`/`RE_VERIFICATION_SUCCEEDED` for EID-6620).
+  - `BusinessPartnerDto` gains new fields `contact : ContactDto` and `businessPartnerIdentity : BusinessPartnerIdentityDto`; deprecated fields `name`, `contactPhone`, `contactEmailAddress`, `trustVerificationStatus`, `maxDateForTrustVerificationStatus` are retained for backward compatibility.
+  - `ContactDto` gains `correspondingLanguage : LanguageDto`; deprecated `address` field is kept.
+  - The deprecated `trustVerificationStatus` in `BusinessPartnerDto` is now **computed on every read** (never persisted) from `BusinessPartnerIdentity` + submission history — no DB column required. The `PAMS` update call uses the TMS-owned `BusinessPartnerIdentity.entityName` when the identity is ACTIVE, and the self-declared `entityName` otherwise.
+
+
 ## 3.42.5
 
 ### Fixed
 
 - Fixed migration script conflict
+
 
 ## 3.42.4
 

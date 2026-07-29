@@ -6,11 +6,9 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.springframework.util.CollectionUtils.isEmpty;
 
-import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
 import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
 import ch.admin.bj.swiyu.core.business.common.api.MultiLanguageTextDto;
-import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
 import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
@@ -41,6 +39,7 @@ public class TrustOnboardingMapper {
         };
     }
 
+    @SuppressWarnings("java:S2637") // Remove with EID-6762
     public static TrustOnboardingSubmissionDto toTrustOnboardingSubmissionDto(TrustOnboardingSubmission source) {
         return new TrustOnboardingSubmissionDto(
             source.getId(),
@@ -126,24 +125,15 @@ public class TrustOnboardingMapper {
             return null;
         }
 
-        Address address = contact.getAddress();
-        AddressDto addressDto =
-            address == null
-                ? null
-                : new AddressDto(
-                      address.getStreet(),
-                      address.getCity(),
-                      address.getPostalCode(),
-                      address.getCountry(),
-                      address.getRegion()
-                  );
-
         return new ContactDto(
             contact.getFirstName(),
             contact.getLastName(),
             contact.getEmail(),
             contact.getPhone(),
-            addressDto
+            contact.getCorrespondingLanguage() != null
+                ? LanguageDto.valueOf(contact.getCorrespondingLanguage().name())
+                : null,
+            null // address field is deprecated and no longer stored on Contact
         );
     }
 
@@ -152,23 +142,14 @@ public class TrustOnboardingMapper {
             return null;
         }
 
-        AddressDto addressDto = dto.address();
-        Address address =
-            addressDto == null
-                ? null
-                : Address.builder()
-                      .street(addressDto.street())
-                      .city(addressDto.city())
-                      .postalCode(addressDto.postalCode())
-                      .country(addressDto.country())
-                      .build();
-
         return Contact.builder()
             .firstName(dto.firstName())
             .lastName(dto.lastName())
             .email(dto.email())
             .phone(dto.phone())
-            .address(address)
+            .correspondingLanguage(
+                dto.correspondingLanguage() != null ? Language.valueOf(dto.correspondingLanguage().name()) : null
+            )
             .build();
     }
 

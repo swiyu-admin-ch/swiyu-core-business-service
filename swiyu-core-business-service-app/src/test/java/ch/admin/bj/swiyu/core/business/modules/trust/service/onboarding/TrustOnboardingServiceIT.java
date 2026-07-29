@@ -507,13 +507,7 @@ class TrustOnboardingServiceIT {
             Map.of("default", "de", "de-CH", "de", "fr-CH", "fr", "it-CH", "it", "en-CH", "en", "rm-CH", "rm"),
             new Address("street", "city", "postal", "country", "region"),
             "valid@example.org",
-            new Contact(
-                "first",
-                "last",
-                "first.last@example.com",
-                "+41 79 123 45 67",
-                new Address("street", "city", "postal", "country", "region")
-            ),
+            new Contact("first", "last", "first.last@example.com", "+41 79 123 45 67", Language.DE),
             Language.DE,
             "uid",
             List.of(new ProofOfPossession("did:example:123", UUID.randomUUID().toString()).toValid()),
@@ -541,13 +535,7 @@ class TrustOnboardingServiceIT {
             Map.of("default", "de", "de-CH", "de", "fr-CH", "fr", "it-CH", "it", "en-CH", "en", "rm-CH", "rm"),
             new Address("street", "city", "postal", "country", "region"),
             "valid@example.org",
-            new Contact(
-                "first",
-                "last",
-                "first.last@example.com",
-                "+41 79 123 45 67",
-                new Address("street", "city", "postal", "country", "region")
-            ),
+            new Contact("first", "last", "first.last@example.com", "+41 79 123 45 67", Language.DE),
             Language.DE,
             "uid",
             List.of(new ProofOfPossession("did:example:123", UUID.randomUUID().toString()).toValid()),
@@ -650,6 +638,7 @@ class TrustOnboardingServiceIT {
         assertEquals(TrustOnboardingSubmissionStatus.SUCCEEDED, refreshed.getStatus());
     }
 
+    @SuppressWarnings("java:S1874") // remove with EID-6624
     @Test
     void markAsSucceeded_updatesBusinessPartnerWithSubmissionDetails() {
         // GIVEN
@@ -672,7 +661,7 @@ class TrustOnboardingServiceIT {
             newNameLocalizedMap,
             newAddress,
             newEmail,
-            new Contact("First", "Last", "contact@example.com", newPhone, newAddress),
+            new Contact("First", "Last", "contact@example.com", newPhone, Language.DE),
             Language.DE,
             newUid,
             List.of(new ProofOfPossession("did:example:123", UUID.randomUUID().toString()).toValid()),
@@ -785,6 +774,7 @@ class TrustOnboardingServiceIT {
         assertNull(refreshed.getDeclarationOfIntent());
     }
 
+    @SuppressWarnings("java:S1874") // remove with EID-6624
     @ParameterizedTest
     @MethodSource(
         "ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTestData#provideUpdateTrustStatus_aggregation_validation"
@@ -799,10 +789,8 @@ class TrustOnboardingServiceIT {
             repos.trustOnboardingSubmission.save(tos);
         }
 
-        // update aggregation
-        service.aggregateTrustVerificationStatus(BusinessEntityTestData.DEFAULT_ENTITY);
-
-        // validate target status
+        // trustVerificationStatus is now computed on-the-fly in getBusinessPartner —
+        // no explicit aggregation call needed.
         var updatedBusinessPartner = businessPartnerService.getBusinessPartner(BusinessEntityTestData.DEFAULT_ENTITY);
         assertEquals(targetStatus, updatedBusinessPartner.trustVerificationStatus());
     }

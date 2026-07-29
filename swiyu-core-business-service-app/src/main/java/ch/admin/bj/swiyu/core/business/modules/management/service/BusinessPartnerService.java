@@ -16,15 +16,19 @@ import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessDataIntegrityViolationException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
+import ch.admin.bj.swiyu.core.business.modules.identifier.api.IdentifierEntryFilterDto;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
 import ch.admin.bj.swiyu.core.business.modules.management.api.*;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentity;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper;
+import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
+import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionRepository;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
-import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,6 +38,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +56,7 @@ public class BusinessPartnerService {
         "defaultEntityName"
     );
     private final BusinessPartnerRepository businessPartnerRepository;
+    private final TrustOnboardingSubmissionRepository trustOnboardingSubmissionRepository;
     private final PamsClient pamsClient;
     private final IdentifierEntryService identifierEntryService;
     private final AuditPublisher auditPublisher;
@@ -133,6 +139,7 @@ public class BusinessPartnerService {
         return toBusinessPartnerDto(businessPartner);
     }
 
+    @SuppressWarnings("java:S1874") // Remove with EID-6624: uses deprecated UpdateBusinessEntityDto fields and getContactPhone()
     @Transactional
     public BusinessEntityDto updateBusinessEntity(
         UUID businessEntityId,
@@ -165,6 +172,267 @@ public class BusinessPartnerService {
             AuditMapper.toAuditJson(businessPartner)
         );
         return toBusinessEntityDto(businessPartner);
+    }
+
+    /**
+     * Updates a business partner from the new PUT endpoint.
+     * If the partner's BPI is ACTIVE (trusted), only address and contact are updated.
+     * If not ACTIVE (not yet verified), name and uid can also be changed.
+     */
+    @Transactional
+    public BusinessPartnerDto updateBusinessPartnerFromPortal(UUID businessPartnerId, BusinessPartnerUpdateDto dto) {
+        log.info("Updating business partner with id '{}' from portal", businessPartnerId);
+
+        BusinessEntity businessPartner = businessPartnerRepository
+            .findById(businessPartnerId)
+            .orElseThrow(throwNotFoundException(businessPartnerId));
+
+        var contact = BusinessPartnerMapper.toContact(dto.contact());
+        var address = toAddress(dto.address());
+
+        if (businessPartner.isBusinessPartnerIdentityActive()) {
+            // BPI is ACTIVE: only irrelevant info (address + contact) can be changed
+            businessPartner.updateIrrelevantInfo(contact, address);
+        } else {
+            // BPI not yet ACTIVE: also allow name and uid updates
+            var entityName = hasText(dto.name())
+                ? LocalizedMapUtil.fromSingleName(dto.name())
+                : businessPartner.getEntityName();
+            businessPartner.updateAllEditableInfo(entityName, dto.uid(), contact, address);
+        }
+
+        pamsClient.updateBusinessPartner(businessPartner);
+        businessPartner = businessPartnerRepository.saveAndFlush(businessPartner);
+        auditPublisher.businessPartnerUpdated(
+            businessPartner.getId().toString(),
+            String.valueOf(businessPartner.getVersion()),
+            AuditMapper.toAuditJson(businessPartner)
+        );
+        return toBusinessPartnerDto(businessPartner);
+    }
+
+    /**
+     * Returns the identity verification progress for a business partner.
+     *
+     * <p>Delegates to {@link #computeVerificationProgress(BusinessEntity, List)} and additionally
+     * enforces the rule that VERIFICATION_NOT_STARTED is returned instead of VERIFICATION_STARTED
+     * when no active DID document exists yet (verification cannot be started without a DID).
+     */
+    @Transactional(readOnly = true)
+    public IdentityVerificationProgressDto getVerificationProgress(UUID businessPartnerId) {
+        var businessPartner = businessPartnerRepository
+            .findById(businessPartnerId)
+            .orElseThrow(throwNotFoundException(businessPartnerId));
+
+        var submissions = trustOnboardingSubmissionRepository.findAllByPartnerIdOrderByInitiatedAtAsc(
+            businessPartnerId
+        );
+
+        var progress = computeVerificationProgress(businessPartner, submissions);
+
+        // If the computed state would be VERIFICATION_STARTED but no active DID exists yet,
+        // keep it as VERIFICATION_NOT_STARTED — the portal cannot start verification without a DID.
+        if (progress == IdentityVerificationProgressDto.VERIFICATION_STARTED) {
+            boolean hasActiveDid = identifierEntryService
+                .searchIdentifierEntries(
+                    IdentifierEntryFilterDto.builder().businessPartnerId(businessPartnerId).activeOnly(true).build(),
+                    PageRequest.ofSize(1)
+                )
+                .hasContent();
+            if (!hasActiveDid) {
+                return IdentityVerificationProgressDto.VERIFICATION_NOT_STARTED;
+            }
+        }
+
+        return progress;
+    }
+
+    /**
+     * Computes the {@link IdentityVerificationProgressDto} for a business partner purely from
+     * its {@link BusinessPartnerIdentity} (TMS-owned) and the history of its
+     * {@link TrustOnboardingSubmission}s. This value is never persisted.
+     *
+     * <h3>State derivation rules</h3>
+     * <pre>
+     * ── No BPI (partner never successfully onboarded) ─────────────────────────
+     *   No active submission             → VERIFICATION_NOT_STARTED
+     *   Latest active sub UNSUBMITTED    → VERIFICATION_STARTED
+     *   Latest active sub SUBMITTED      → VERIFICATION_IN_PROGRESS
+     *   Latest active sub INFO_REQUESTED → VERIFICATION_INFORMATION_REQUESTED
+     *
+     * ── BPI ACTIVE (partner is currently trusted, no new submission) ──────────
+     *   No active submission             → VERIFICATION_SUCCEEDED
+     *
+     * ── BPI exists (ACTIVE or DEACTIVATED) + new submission in flight ─────────
+     *   The existence of any BPI (regardless of ACTIVE/DEACTIVATED) signals a
+     *   "previously successfully onboarded" partner. Any new submission started
+     *   after that produces RE_* states:
+     *   Latest active sub UNSUBMITTED    → RE_VERIFICATION_STARTED
+     *   Latest active sub SUBMITTED      → RE_VERIFICATION_IN_PROGRESS
+     *   Latest active sub INFO_REQUESTED → VERIFICATION_INFORMATION_REQUESTED
+     *                                      (no RE_ prefix for this one — matches old model)
+     *
+     * ── BPI DEACTIVATED + no active submission ───────────────────────────────
+     *   No active submission             → RE_VERIFICATION_REQUIRED
+     * </pre>
+     *
+     * <h3>Note on VERIFICATION_NOT_STARTED vs VERIFICATION_STARTED</h3>
+     * This method returns VERIFICATION_NOT_STARTED whenever no active submission exists and
+     * the partner has no BPI. {@link #getVerificationProgress} additionally checks for the
+     * presence of an active DID before returning VERIFICATION_STARTED, because the portal
+     * cannot initiate verification without a DID document.
+     *
+     * <h3>RE_* state trigger — "previously succeeded" signal</h3>
+     * A partner is considered "previously successfully onboarded" when either:
+     * (a) a {@link BusinessPartnerIdentity} exists (set by a TMS BPI event), OR
+     * (b) a {@link TrustOnboardingSubmission} with status {@code SUCCEEDED} exists in history.
+     * Condition (b) covers the migration window before TMS sends BPI sync events (EID-6612).
+     * Once all partners have a BPI seeded, (a) alone is sufficient.
+     * When "previously succeeded", any in-flight submission produces RE_* states.
+     *
+     * <h3>SUCCEEDED submission + no active submission</h3>
+     * When the latest terminal state is SUCCEEDED and there is no BPI yet
+     * (migration window), the result is VERIFICATION_SUCCEEDED.
+     * UNSUBMITTED_TIMEOUT after a SUCCEEDED reverts to VERIFIED (same as old model).
+     */
+    IdentityVerificationProgressDto computeVerificationProgress(
+        BusinessEntity entity,
+        List<TrustOnboardingSubmission> submissions
+    ) {
+        var bpi = entity.getBusinessPartnerIdentity();
+
+        // Sort all submissions chronologically (oldest first)
+        var sorted = submissions
+            .stream()
+            .sorted(Comparator.comparing(TrustOnboardingSubmission::getInitiatedAt))
+            .toList();
+
+        // Walk all submissions in order, exactly as the old aggregateTrustVerificationStatus did.
+        // This produces the correct hasPreviouslySucceeded flag AND the correct final state from
+        // terminal submissions. We then overlay the active-submission state at the end.
+        var hasPreviouslySucceeded = bpi != null;
+        TrustOnboardingSubmission latestActiveSubmission = null;
+        for (var sub : sorted) {
+            switch (sub.getStatus()) {
+                case SUCCEEDED -> {
+                    hasPreviouslySucceeded = true;
+                    latestActiveSubmission = null; // terminal overrides any prior active
+                }
+                case REJECTED -> {
+                    hasPreviouslySucceeded = false;
+                    latestActiveSubmission = null;
+                }
+                case UNSUBMITTED_TIMEOUT -> latestActiveSubmission = null;
+                case UNSUBMITTED, SUBMITTED, INFORMATION_REQUESTED -> latestActiveSubmission = sub;
+            }
+        }
+        var latestActive = java.util.Optional.ofNullable(latestActiveSubmission);
+
+        // BPI ACTIVE + no in-flight submission → fully verified
+        if (bpi != null && bpi.getStatus() == BusinessPartnerIdentityStatus.ACTIVE && latestActive.isEmpty()) {
+            return IdentityVerificationProgressDto.VERIFICATION_SUCCEEDED;
+        }
+
+        // No BPI but previously succeeded (from submissions) + no active submission
+        // → treat as verified (migration window: BPI event not yet received from TMS)
+        if (bpi == null && hasPreviouslySucceeded && latestActive.isEmpty()) {
+            return IdentityVerificationProgressDto.VERIFICATION_SUCCEEDED;
+        }
+
+        // BPI DEACTIVATED + no active submission → re-verification required
+        if (bpi != null && bpi.getStatus() == BusinessPartnerIdentityStatus.DEACTIVATED && latestActive.isEmpty()) {
+            return IdentityVerificationProgressDto.RE_VERIFICATION_REQUIRED;
+        }
+
+        // Previously succeeded + active in-flight submission → RE_* states
+        if (hasPreviouslySucceeded && latestActive.isPresent()) {
+            return switch (latestActive.get().getStatus()) {
+                case UNSUBMITTED -> IdentityVerificationProgressDto.RE_VERIFICATION_STARTED;
+                case SUBMITTED -> IdentityVerificationProgressDto.RE_VERIFICATION_IN_PROGRESS;
+                case INFORMATION_REQUESTED -> IdentityVerificationProgressDto.VERIFICATION_INFORMATION_REQUESTED;
+                default -> IdentityVerificationProgressDto.VERIFICATION_SUCCEEDED; // unreachable
+            };
+        }
+
+        // No previous success — first-time verification path
+        if (latestActive.isEmpty()) {
+            return IdentityVerificationProgressDto.VERIFICATION_NOT_STARTED;
+        }
+        return switch (latestActive.get().getStatus()) {
+            case UNSUBMITTED -> IdentityVerificationProgressDto.VERIFICATION_STARTED;
+            case SUBMITTED -> IdentityVerificationProgressDto.VERIFICATION_IN_PROGRESS;
+            case INFORMATION_REQUESTED -> IdentityVerificationProgressDto.VERIFICATION_INFORMATION_REQUESTED;
+            default -> IdentityVerificationProgressDto.VERIFICATION_NOT_STARTED; // unreachable
+        };
+    }
+
+    /**
+     * Maps an {@link IdentityVerificationProgressDto} to the legacy
+     * {@link BusinessPartnerTrustStatusDto} that the portal still depends on
+     * for its action-button visibility checks (until EID-6624 removes it).
+     *
+     * <pre>
+     * VERIFICATION_NOT_STARTED         → NOT_VERIFIED
+     * VERIFICATION_STARTED             → VERIFICATION_STARTED
+     * VERIFICATION_IN_PROGRESS         → VERIFICATION_IN_PROGRESS
+     * VERIFICATION_INFORMATION_REQUESTED → INFORMATION_REQUESTED
+     * VERIFICATION_REJECTED            → NOT_VERIFIED  (placeholder, EID-6620)
+     * VERIFICATION_SUCCEEDED           → VERIFIED
+     * RE_VERIFICATION_REQUIRED         → NOT_VERIFIED
+     * RE_VERIFICATION_STARTED          → RE_VERIFICATION_STARTED
+     * RE_VERIFICATION_IN_PROGRESS      → RE_VERIFICATION_IN_PROGRESS
+     * RE_VERIFICATION_REJECTED         → NOT_VERIFIED  (placeholder, EID-6620)
+     * RE_VERIFICATION_SUCCEEDED        → VERIFIED      (placeholder, EID-6620)
+     * </pre>
+     */
+    private BusinessPartnerTrustStatusDto toLegacyTrustStatus(IdentityVerificationProgressDto progress) {
+        return switch (progress) {
+            case VERIFICATION_NOT_STARTED -> BusinessPartnerTrustStatusDto.NOT_VERIFIED;
+            case VERIFICATION_STARTED -> BusinessPartnerTrustStatusDto.VERIFICATION_STARTED;
+            case VERIFICATION_IN_PROGRESS -> BusinessPartnerTrustStatusDto.VERIFICATION_IN_PROGRESS;
+            case VERIFICATION_INFORMATION_REQUESTED -> BusinessPartnerTrustStatusDto.INFORMATION_REQUESTED;
+            case VERIFICATION_REJECTED -> BusinessPartnerTrustStatusDto.NOT_VERIFIED;
+            case VERIFICATION_SUCCEEDED -> BusinessPartnerTrustStatusDto.VERIFIED;
+            case RE_VERIFICATION_REQUIRED -> BusinessPartnerTrustStatusDto.NOT_VERIFIED;
+            case RE_VERIFICATION_STARTED -> BusinessPartnerTrustStatusDto.RE_VERIFICATION_STARTED;
+            case RE_VERIFICATION_IN_PROGRESS -> BusinessPartnerTrustStatusDto.RE_VERIFICATION_IN_PROGRESS;
+            case RE_VERIFICATION_REJECTED -> BusinessPartnerTrustStatusDto.NOT_VERIFIED;
+            case RE_VERIFICATION_SUCCEEDED -> BusinessPartnerTrustStatusDto.VERIFIED;
+        };
+    }
+
+    /**
+     * Applies a new BusinessPartnerIdentity received from a TMS BPI activated or updated event.
+     */
+    @Transactional
+    public void applyBusinessPartnerIdentity(UUID partnerId, BusinessPartnerIdentity bpi) {
+        log.info("Applying BusinessPartnerIdentity event for partner '{}'", partnerId);
+        BusinessEntity businessPartner = businessPartnerRepository
+            .findById(partnerId)
+            .orElseThrow(throwNotFoundException(partnerId));
+        businessPartner.applyBusinessPartnerIdentityEvent(bpi);
+        businessPartnerRepository.save(businessPartner);
+    }
+
+    /**
+     * Applies a deactivation event from TMS: sets BPI status to DEACTIVATED, preserving all other BPI data.
+     */
+    @Transactional
+    public void deactivateBusinessPartnerIdentity(UUID partnerId, long tmsVersion) {
+        log.info("Deactivating BusinessPartnerIdentity for partner '{}'", partnerId);
+        BusinessEntity businessPartner = businessPartnerRepository
+            .findById(partnerId)
+            .orElseThrow(throwNotFoundException(partnerId));
+        var currentBpi = businessPartner.getBusinessPartnerIdentity();
+        if (currentBpi != null) {
+            businessPartner.applyBusinessPartnerIdentityEvent(currentBpi.withDeactivated(tmsVersion));
+        } else {
+            log.warn(
+                "Received deactivation event for partner '{}' but no BusinessPartnerIdentity exists. Ignoring.",
+                partnerId
+            );
+        }
+        businessPartnerRepository.save(businessPartner);
     }
 
     @Transactional
@@ -269,25 +537,8 @@ public class BusinessPartnerService {
 
     @Transactional(readOnly = true)
     public BusinessPartnerDto getBusinessPartner(UUID id) {
-        return businessPartnerRepository
-            .findById(id)
-            .map(this::toBusinessPartnerDto)
-            .orElseThrow(throwNotFoundException(id));
-    }
-
-    @Transactional
-    public void changeTrustVerificationStatus(
-        @NotNull UUID businessPartnerId,
-        BusinessPartnerTrustStatusDto businessPartnerTrustStatusDto,
-        Instant maxDateForTrustVerificationStatus
-    ) {
-        BusinessEntity businessPartner = businessPartnerRepository
-            .findById(businessPartnerId)
-            .orElseThrow(throwNotFoundException(businessPartnerId));
-        businessPartner.setTrustVerificationStatus(
-            BusinessPartnerMapper.toTrustVerificationStatus(businessPartnerTrustStatusDto),
-            maxDateForTrustVerificationStatus
-        );
+        var entity = businessPartnerRepository.findById(id).orElseThrow(throwNotFoundException(id));
+        return toBusinessPartnerDto(entity);
     }
 
     @SuppressWarnings({ "java:S1874" }) // Remove with EID-6656
@@ -298,16 +549,20 @@ public class BusinessPartnerService {
             .orElse(BusinessPartnerType.UNKNOWN);
     }
 
-    private BusinessPartnerDto toBusinessPartnerDto(BusinessEntity businessPartner) {
-        return BusinessPartnerMapper.toBusinessPartnerDto(businessPartner);
+    private BusinessPartnerDto toBusinessPartnerDto(BusinessEntity entity) {
+        var submissions = trustOnboardingSubmissionRepository.findAllByPartnerIdOrderByInitiatedAtAsc(entity.getId());
+        var progress = computeVerificationProgress(entity, submissions);
+        return BusinessPartnerMapper.toBusinessPartnerDto(entity, toLegacyTrustStatus(progress));
     }
 
     private BusinessEntityDto toBusinessEntityDto(BusinessEntity businessPartner) {
         return BusinessPartnerMapper.toBusinessEntityDto(businessPartner);
     }
 
-    private BusinessPartnerListItemDto getBusinessPartnerListItemDto(BusinessEntity businessPartner) {
-        return BusinessPartnerMapper.toBusinessPartnerListItemDto(businessPartner);
+    private BusinessPartnerListItemDto getBusinessPartnerListItemDto(BusinessEntity entity) {
+        var submissions = trustOnboardingSubmissionRepository.findAllByPartnerIdOrderByInitiatedAtAsc(entity.getId());
+        var progress = computeVerificationProgress(entity, submissions);
+        return BusinessPartnerMapper.toBusinessPartnerListItemDto(entity, toLegacyTrustStatus(progress));
     }
 
     private Pageable toBusinessPartnerPageable(Class<? extends ListItemDto> dtoClass, Pageable pageable) {

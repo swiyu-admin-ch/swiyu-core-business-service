@@ -77,6 +77,7 @@ class BusinessPartnerServiceIT {
         assertThat(readEntity.get().id()).isEqualTo(partner.getId());
     }
 
+    @SuppressWarnings("java:S1874") // remove with EID-6624
     @Test
     void getBusinessPartners() {
         // GIVEN
@@ -144,7 +145,7 @@ class BusinessPartnerServiceIT {
             "addressCity",
             "addressCountry",
             "addressRegion",
-            "contactPhone",
+            "+41 78 1234567",
             "hello.world@example.com"
         ); // WHEN
         var businessEntity = businessPartnerService.createBusinessPartnerV2(
@@ -168,7 +169,7 @@ class BusinessPartnerServiceIT {
             "addressCity",
             "addressCountry",
             "addressRegion",
-            "contactPhone",
+            "+41 78 1234567",
             "hello.world@example.com"
         ); // WHEN
         var businessEntity = businessPartnerService.createBusinessPartnerV2(
@@ -207,6 +208,7 @@ class BusinessPartnerServiceIT {
         assertThat(LocalizedMapUtil.getDefaultValue(updatedEntity.getEntityName())).isEqualTo("example name");
     }
 
+    @SuppressWarnings("java:S1874") // remove with EID-6624
     @Test
     void updateBusinessPartner() {
         // GIVEN

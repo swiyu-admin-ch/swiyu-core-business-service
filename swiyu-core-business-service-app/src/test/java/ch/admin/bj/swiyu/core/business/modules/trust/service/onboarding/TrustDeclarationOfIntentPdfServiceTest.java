@@ -5,7 +5,6 @@ import static ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTest
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
-import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
@@ -364,7 +363,7 @@ class TrustDeclarationOfIntentPdfServiceTest {
             .lastName("Doe")
             .email("john.doe@example.com")
             .phone("+41 79 123 45 67")
-            .address(Address.builder().street("Test Street").city("Test City").postalCode("1234").country("CH").build())
+            .correspondingLanguage(ch.admin.bj.swiyu.core.business.common.domain.Language.DE)
             .build();
     }
 

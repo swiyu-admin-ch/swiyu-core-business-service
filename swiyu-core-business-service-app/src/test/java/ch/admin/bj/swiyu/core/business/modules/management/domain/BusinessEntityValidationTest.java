@@ -21,8 +21,13 @@ class BusinessEntityValidationTest {
         }
     }
 
+    /**
+     * Email format validation was moved to the API layer (ContactDto).
+     * At the domain level, Contact.email has no @Email constraint — only the
+     * entityName @NotNull/@ValidLocalizedMap constraint fires for a partial entity.
+     */
     @Test
-    void contactEmail_invalidFormat_failsValidation() {
+    void contactEmail_invalidFormat_doesNotFailAtDomainLevel() {
         var entity = new BusinessEntity(
             UUID.randomUUID(),
             "Valid Name",
@@ -32,10 +37,11 @@ class BusinessEntityValidationTest {
 
         var violations = validator.validate(entity);
 
+        // Domain validation does not include email format — no contact.email violation expected
         assertThat(violations)
             .extracting(v -> v.getPropertyPath().toString())
-            .filteredOn("contactEmail"::equals)
-            .isNotEmpty();
+            .isNotEmpty()
+            .doesNotContain("contact.email");
     }
 
     @Test
@@ -49,9 +55,9 @@ class BusinessEntityValidationTest {
 
         var violations = validator.validate(entity);
 
-        assertThat(violations).isNotEmpty();
         assertThat(violations)
             .extracting(v -> v.getPropertyPath().toString())
-            .doesNotContain("contactEmail");
+            .isNotEmpty()
+            .doesNotContain("contact.email");
     }
 }

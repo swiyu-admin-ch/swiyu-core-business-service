@@ -200,7 +200,6 @@ public class DemoDataImportService {
             )
         );
         sub.markAsSucceeded();
-        trustOnboardingService.aggregateTrustVerificationStatus(sub.getPartnerId());
         trustOnboardingSubmissionRepository.saveAndFlush(sub);
 
         sub = generateTrustOnboardingSubmission(
@@ -222,7 +221,6 @@ public class DemoDataImportService {
             )
         );
         sub.markAsInformationRequested(TrustOnboardingDeclineReason.MISSING_DOCUMENTS, "Test note data");
-        trustOnboardingService.aggregateTrustVerificationStatus(sub.getPartnerId());
         trustOnboardingSubmissionRepository.saveAndFlush(sub);
 
         sub = generateTrustOnboardingSubmission(
@@ -237,7 +235,6 @@ public class DemoDataImportService {
             List.of()
         );
         sub.markAsRejected(TrustOnboardingRejectReason.FRAUDULENT_ACTIVITY);
-        trustOnboardingService.aggregateTrustVerificationStatus(sub.getPartnerId());
         trustOnboardingSubmissionRepository.saveAndFlush(sub);
 
         sub = generateTrustOnboardingSubmission(
@@ -258,7 +255,6 @@ public class DemoDataImportService {
                 new MockMultipartFile("Declaration of intent from .pdf", "something")
             )
         );
-        trustOnboardingService.aggregateTrustVerificationStatus(sub.getPartnerId());
 
         sub = generateTrustOnboardingSubmission(
             CoreDemoData.CORE_ID_TOS_SUBMITTED,
@@ -298,7 +294,6 @@ public class DemoDataImportService {
         }
 
         sub.markAsSubmitted();
-        trustOnboardingService.aggregateTrustVerificationStatus(sub.getPartnerId());
         trustOnboardingSubmissionRepository.save(sub);
     }
 

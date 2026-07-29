@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.core.business.modules.management.api;
 
 import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
+import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
 import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -13,15 +14,22 @@ import java.util.UUID;
 @Schema(name = "BusinessPartner")
 public record BusinessPartnerDto(
     @Schema(description = "Key of the partner under which it is registered with ePortal") @NotBlank UUID id,
-    // To be removed in EID-6303
+
+    @SuppressWarnings("java:S1133") // remove with EID-6624
+    @Deprecated(since = "3.42.5")
     @Schema(description = "Unique name of the partner. Deprecated: use entityName.", deprecated = true)
-    @NotBlank
     String name,
+
     @Schema(description = "Localized entity name map with required default key and BCP-47 locale keys")
     @NotNull
     @ValidLocalizedMap
     Map<String, String> entityName,
-    @NotBlank String contactEmailAddress,
+
+    @SuppressWarnings("java:S1133") // remove with EID-6624
+    @Deprecated(since = "3.42.5")
+    @Schema(description = "Contact email address. Deprecated: use contact.email.", deprecated = true)
+    String contactEmailAddress,
+
     @Schema(description = "Type of the partner") @NotNull BusinessPartnerTypeDto type,
     @Schema(description = "User paid for trust onboarding") boolean payedForTrustVerification,
     @Schema(description = "Number of DID slots the user paid for already") int payedForDIDSlots,
@@ -29,9 +37,30 @@ public record BusinessPartnerDto(
     @Schema(example = "2024-10-29T09:35:16.809924Z") Instant updatedAt,
     @Schema(description = "Enterprise identification number of the partner") String uid,
     @Schema(description = "Address of the partner") AddressDto address,
-    @NotBlank String contactPhone,
-    @Schema(description = "Aggregated state of the trust process for this business partner")
+
+    @SuppressWarnings("java:S1133") // remove with EID-6624
+    @Deprecated(since = "3.42.5")
+    @Schema(description = "Contact phone number. Deprecated: use contact.phone.", deprecated = true)
+    String contactPhone,
+
+    @SuppressWarnings("java:S1133") // remove with EID-6624
+    @Deprecated(since = "3.42.5")
+    @Schema(
+        description = "Aggregated state of the trust process. Deprecated: use businessPartnerIdentity.status.",
+        deprecated = true
+    )
     BusinessPartnerTrustStatusDto trustVerificationStatus,
-    @Schema(description = "Time limit, if necessary, of the current aggregated state of the trust process")
-    Instant maxDateForTrustVerificationStatus
+
+    @SuppressWarnings("java:S1133") // remove with EID-6624
+    @Deprecated(since = "3.42.5")
+    @Schema(
+        description = "Time limit of the current trust process state. Deprecated: no longer used.",
+        deprecated = true
+    )
+    Instant maxDateForTrustVerificationStatus,
+
+    @Schema(description = "Contact person details") ContactDto contact,
+
+    @Schema(description = "Business partner identity as managed by the trust management service")
+    BusinessPartnerIdentityDto businessPartnerIdentity
 ) {}

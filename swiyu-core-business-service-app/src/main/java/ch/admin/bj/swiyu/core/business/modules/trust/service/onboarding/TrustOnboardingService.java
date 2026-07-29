@@ -14,7 +14,6 @@ import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
 import ch.admin.bj.swiyu.core.business.modules.documents.api.TrustOnboardingSubmissionDocumentListItemDto;
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
-import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerTrustStatusDto;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.*;
 import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionLimitProperties;
@@ -26,7 +25,6 @@ import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validati
 import com.fasterxml.jackson.databind.JsonNode;
 import com.querydsl.core.BooleanBuilder;
 import jakarta.persistence.OptimisticLockException;
-import jakarta.validation.constraints.NotNull;
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
 import java.util.List;
@@ -381,7 +379,6 @@ public class TrustOnboardingService {
             AuditMapper.toAuditJson(trustOnboardingSubmission),
             doiS3Keys
         );
-        aggregateTrustVerificationStatus(trustOnboardingSubmission.getPartnerId()); // NOSONAR invoking transactional method is fine here
         domainEventPublisher.publishTiTrustOnboardingSubmissionAcceptedEvent(
             EventMapper.mapToTiTrustOnboardingSubmissionAcceptedEvent(
                 trustOnboardingSubmission.getId(),
@@ -396,7 +393,6 @@ public class TrustOnboardingService {
             trustOnboardingSubmissionId
         );
         trustOnboardingSubmission.markAsRejected(toTrustOnboardingRejectReason(rejectReason));
-        aggregateTrustVerificationStatus(trustOnboardingSubmission.getPartnerId()); // NOSONAR invoking transactional method is fine here
     }
 
     @Transactional
@@ -408,7 +404,6 @@ public class TrustOnboardingService {
             toTrustOnboardingDeclineReason(declineReason),
             partnerNote
         );
-        aggregateTrustVerificationStatus(trustOnboardingSubmission.getPartnerId()); // NOSONAR invoking transactional method is fine here
     }
 
     @Transactional
@@ -419,8 +414,6 @@ public class TrustOnboardingService {
         trustOnboardingSubmission.markAsSucceeded();
 
         updateBusinessPartnerWithSubmissionDetails(trustOnboardingSubmission);
-
-        aggregateTrustVerificationStatus(trustOnboardingSubmission.getPartnerId()); // NOSONAR invoking transactional method is fine here
     }
 
     private void updateBusinessPartnerWithSubmissionDetails(TrustOnboardingSubmission trustOnboardingSubmission) {
@@ -440,72 +433,6 @@ public class TrustOnboardingService {
         TrustOnboardingSubmission trustOnboardingSubmission
     ) {
         return TrustOnboardingMapper.toTrustOnboardingSubmissionDto(trustOnboardingSubmission);
-    }
-
-    /**
-     * Calculates the TrustVerificationStatus of a BusinessPartner according to the TrustOnboardingSubmissions belonging to it
-     *
-     * @param partnerId The BusinessPartner to update
-     */
-    @Transactional
-    public void aggregateTrustVerificationStatus(@NotNull UUID partnerId) {
-        var trustOnboardingSubmissions = trustOnboardingSubmissionRepository.findAllByPartnerIdOrderByInitiatedAtAsc(
-            partnerId
-        );
-        BusinessPartnerTrustStatusDto aggregatedState = BusinessPartnerTrustStatusDto.NOT_VERIFIED;
-        Instant maxDateForTrustVerificationStatus = null;
-
-        var hasPreviouslySucceeded = false;
-        for (var trustOnboardingSubmission : trustOnboardingSubmissions) {
-            switch (trustOnboardingSubmission.getStatus()) {
-                case SUCCEEDED: {
-                    aggregatedState = BusinessPartnerTrustStatusDto.VERIFIED;
-                    hasPreviouslySucceeded = true;
-                    break;
-                }
-                case REJECTED: {
-                    aggregatedState = BusinessPartnerTrustStatusDto.NOT_VERIFIED;
-                    hasPreviouslySucceeded = false;
-                    break;
-                }
-                case UNSUBMITTED: {
-                    // mark the time limit to submit the trust onboarding submission
-                    maxDateForTrustVerificationStatus = trustOnboardingSubmission
-                        .getInitiatedAt()
-                        .plus(limitProperties.maxAgeInUnsubmitted());
-                    if (hasPreviouslySucceeded) {
-                        aggregatedState = BusinessPartnerTrustStatusDto.RE_VERIFICATION_STARTED;
-                    } else {
-                        aggregatedState = BusinessPartnerTrustStatusDto.VERIFICATION_STARTED;
-                    }
-                    break;
-                }
-                case UNSUBMITTED_TIMEOUT: {
-                    if (hasPreviouslySucceeded) {
-                        aggregatedState = BusinessPartnerTrustStatusDto.VERIFIED;
-                    } else {
-                        aggregatedState = BusinessPartnerTrustStatusDto.NOT_VERIFIED;
-                    }
-                    break;
-                }
-                case INFORMATION_REQUESTED: {
-                    aggregatedState = BusinessPartnerTrustStatusDto.INFORMATION_REQUESTED;
-                    break;
-                }
-                case SUBMITTED: {
-                    if (hasPreviouslySucceeded) {
-                        aggregatedState = BusinessPartnerTrustStatusDto.RE_VERIFICATION_IN_PROGRESS;
-                    } else {
-                        aggregatedState = BusinessPartnerTrustStatusDto.VERIFICATION_IN_PROGRESS;
-                    }
-                }
-            }
-        }
-        businessPartnerService.changeTrustVerificationStatus(
-            partnerId,
-            aggregatedState,
-            maxDateForTrustVerificationStatus
-        );
     }
 
     @Transactional

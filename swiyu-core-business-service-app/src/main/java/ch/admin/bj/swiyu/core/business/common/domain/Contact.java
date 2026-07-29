@@ -2,8 +2,8 @@ package ch.admin.bj.swiyu.core.business.common.domain;
 
 import ch.admin.bj.swiyu.core.business.common.validation.ValidPhone;
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.Embedded;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.*;
 
 @Embeddable
@@ -18,12 +18,13 @@ public class Contact {
     String lastName;
     String email;
 
-    @NotBlank
+    // Phone is optional at the domain level — BusinessEntity contacts may not have a phone.
+    // Validation of mandatory phone is enforced at the API layer via ContactDto.
     @ValidPhone
     String phone;
 
-    @Embedded
-    Address address;
+    @Enumerated(EnumType.STRING)
+    Language correspondingLanguage;
 
     public String getFullName() {
         return firstName + " " + lastName;

@@ -97,6 +97,15 @@ public class DemoDataImportService {
                 null,
                 null,
                 null
+            ),
+            new BusinessEntity(
+                CoreDemoData.CORE_ID_BP_OVERDUE,
+                LocalizedMapUtil.getDefaultValue(CoreDemoData.CORE_ID_BP_OVERDUE_NAMES),
+                CoreDemoData.CORE_ID_BP_OVERDUE_EMAIL,
+                BusinessPartnerType.BUSINESS,
+                null,
+                null,
+                null
             )
         );
         for (var d : data) {
@@ -170,11 +179,13 @@ public class DemoDataImportService {
         deleteAllDocumentsByPartner(CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED);
         deleteAllDocumentsByPartner(CoreDemoData.CORE_ID_BP_GOV);
         deleteAllDocumentsByPartner(CoreDemoData.CORE_ID_BP_BASE_ONBOARDING_ONLY);
+        deleteAllDocumentsByPartner(CoreDemoData.CORE_ID_BP_OVERDUE);
 
         trustOnboardingSubmissionRepository.deleteByPartnerId(CoreDemoData.CORE_ID_BP_DEFAULT);
         trustOnboardingSubmissionRepository.deleteByPartnerId(CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED);
         trustOnboardingSubmissionRepository.deleteByPartnerId(CoreDemoData.CORE_ID_BP_GOV);
         trustOnboardingSubmissionRepository.deleteByPartnerId(CoreDemoData.CORE_ID_BP_BASE_ONBOARDING_ONLY);
+        trustOnboardingSubmissionRepository.deleteByPartnerId(CoreDemoData.CORE_ID_BP_OVERDUE);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -295,6 +306,27 @@ public class DemoDataImportService {
 
         sub.markAsSubmitted();
         trustOnboardingSubmissionRepository.save(sub);
+
+        sub = generateTrustOnboardingSubmission(
+            CoreDemoData.CORE_ID_TOS_OVERDUE,
+            CoreDemoData.CORE_ID_BP_OVERDUE,
+            CoreDemoData.CORE_ID_BP_OVERDUE_NAMES,
+            CoreDemoData.CORE_ID_BP_OVERDUE_ADDRESS,
+            CoreDemoData.CORE_ID_BP_OVERDUE_CONTACT,
+            CoreDemoData.CORE_ID_BP_OVERDUE_EMAIL,
+            BusinessPartnerType.BUSINESS,
+            SigningRule.SINGLE_SIGNATURE,
+            CoreDemoData.CORE_ID_BP_OVERDUE_SIGNATORIES
+        );
+        trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
+            CoreDemoData.CORE_ID_TOS_OVERDUE,
+            new TrustOnboardingSubmissionDocumentUploadRequestDto(
+                TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                new MockMultipartFile("Declaration of intent.pdf", "something overdue")
+            )
+        );
+        sub.markAsSubmitted();
+        trustOnboardingSubmissionRepository.saveAndFlush(sub);
     }
 
     private TrustOnboardingSubmission generateTrustOnboardingSubmission( // NOSONAR

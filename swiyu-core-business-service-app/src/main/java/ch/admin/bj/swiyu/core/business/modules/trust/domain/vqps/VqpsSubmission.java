@@ -2,7 +2,6 @@ package ch.admin.bj.swiyu.core.business.modules.trust.domain.vqps;
 
 import ch.admin.bj.swiyu.core.business.common.domain.AuditMetadata;
 import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
-import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -14,6 +13,7 @@ import lombok.Getter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import tools.jackson.databind.JsonNode;
 
 @Entity
 @Getter

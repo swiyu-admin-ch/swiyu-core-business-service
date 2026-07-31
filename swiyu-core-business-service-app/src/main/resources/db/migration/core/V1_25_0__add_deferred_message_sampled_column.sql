@@ -1,0 +1,1 @@
+ALTER TABLE deferred_message ADD COLUMN IF NOT EXISTS sampled BOOLEAN;

@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.common.api;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -54,6 +55,7 @@ public enum ApiErrorCodeDto {
     // Keep lowercase values for backwards compatibility.
     private final String code;
 
+    @JsonCreator
     ApiErrorCodeDto(String code) {
         this.code = code;
     }

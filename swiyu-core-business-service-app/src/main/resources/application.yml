@@ -69,9 +69,8 @@ spring:
     virtual:
       enabled: true
   http:
-    client:
-      connect-timeout: 10000 # 10 seconds
-      read-timeout: 30000 # 30 seconds
+      clients.connect-timeout: 10000
+      clients.read-timeout: 30000 # 30 seconds
   jpa:
     open-in-view: false
     properties:
@@ -79,6 +78,8 @@ spring:
         physical_naming_strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
         default_schema: data
         hbm2ddl.auto: validate
+        type:
+          json_format_mapper: jackson3
   datasource:
     core-db:
       type: com.zaxxer.hikari.HikariDataSource
@@ -102,6 +103,15 @@ spring:
       enabled: true
       max-file-size: ${app.limits.trust-onboarding-submission.documents.max-file-size}
       max-request-size: ${app.limits.trust-onboarding-submission.documents.max-file-size}
+  jackson:
+    deserialization:
+      # TODO: Jackson 3 changed FAIL_ON_NULL_FOR_PRIMITIVES default to true - evaluate if you want stricter null-for-primitives validation
+      fail-on-null-for-primitives: false
+    datatype:
+      enum:
+        # Jackson 3 changed WRITE_ENUMS_USING_TO_STRING default to true, which breaks e.g. HttpStatus
+        # (whose toString() is "410 GONE" instead of the enum name "GONE") - restore the pre-Jackson-3 behavior
+        write-enums-using-to-string: false
 
 jeap:
   vault:

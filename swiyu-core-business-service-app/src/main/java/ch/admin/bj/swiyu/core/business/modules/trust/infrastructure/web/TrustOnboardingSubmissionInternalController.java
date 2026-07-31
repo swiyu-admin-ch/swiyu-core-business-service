@@ -36,7 +36,7 @@ public class TrustOnboardingSubmissionInternalController {
     private final AuthSupport authSupport;
 
     @PostMapping
-    @PreAuthorize("hasRoleForPartner('trustonboardingsubmission','write', #submission.partnerId())")
+    @PreAuthorize("hasRoleForPartner('trustonboardingsubmission','write', #submission.partnerId().toString())")
     @ApiResponse(responseCode = "200", description = "Success")
     @ApiResponse(
         responseCode = "400",
@@ -91,13 +91,13 @@ public class TrustOnboardingSubmissionInternalController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('trustonboardingsubmission','read')")
-    @PostAuthorize("hasRoleForPartner('trustonboardingsubmission','read', returnObject.partnerId())")
+    @PostAuthorize("hasRoleForPartner('trustonboardingsubmission','read', returnObject.partnerId().toString())")
     @Operation(summary = "Get specific TrustOnboardingSubmission by ID")
     public TrustOnboardingSubmissionDto getTrustOnboardingSubmission(@PathVariable @Valid UUID id) {
         return trustOnboardingService.getTrustOnboardingSubmission(id);
     }
 
-    @PreAuthorize("hasRoleForPartner('trustonboardingsubmission','write', #submission.partnerId())")
+    @PreAuthorize("hasRoleForPartner('trustonboardingsubmission','write', #submission.partnerId().toString())")
     @PutMapping("/{id}")
     @Operation(summary = "Update")
     @ApiResponse(responseCode = "200", description = "Success")

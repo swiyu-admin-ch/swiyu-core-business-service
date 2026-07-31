@@ -28,7 +28,7 @@ class IdentifierB2BController {
     private final IdentifierEntryService identifierEntryService;
 
     @GetMapping(value = "business-entities/{partnerId}/identifier/")
-    @PreAuthorize("hasRoleForPartner('identifier', 'read', #partnerId)")
+    @PreAuthorize("hasRoleForPartner('identifier', 'read', #partnerId.toString())")
     @Operation(summary = "Get all entries for the identifier registry.")
     @PageableAsQueryParam
     public PagedModel<IdentifierEntryDto> getAllIdentifierEntries(
@@ -49,7 +49,7 @@ class IdentifierB2BController {
     }
 
     @PostMapping(value = "business-entities/{partnerId}/identifier-entries/")
-    @PreAuthorize("hasRoleForPartner('identifier', 'write', #partnerId)")
+    @PreAuthorize("hasRoleForPartner('identifier', 'write', #partnerId.toString())")
     @Operation(summary = "Create a new entry on the identifier registry to store a did:tdw including key material.")
     public IdentifierEntryDto createIdentifierEntry(
         @PathVariable @Parameter(
@@ -64,7 +64,7 @@ class IdentifierB2BController {
         value = "business-entities/{partnerId}/identifier-entries/{identifierRegistryEntryId}",
         consumes = "application/jsonl+json"
     )
-    @PreAuthorize("hasRoleForPartner('identifier', 'write', #partnerId)")
+    @PreAuthorize("hasRoleForPartner('identifier', 'write', #partnerId.toString())")
     @Operation(summary = "Update the entry on the identifier registry to store an updated did:tdw.")
     public void updateIdentifierEntry(
         @PathVariable @Parameter(

@@ -28,7 +28,7 @@ class StatusB2BController {
     private final StatusListEntryService statusListEntryService;
 
     @PostMapping(value = "business-entities/{businessEntityId}/status-list-entries/")
-    @PreAuthorize("hasRoleForPartner('status', 'write', #businessEntityId)")
+    @PreAuthorize("hasRoleForPartner('status', 'write', #businessEntityId.toString())")
     @Operation(summary = "Create a new entry on the status registry to store a status list.")
     public StatusListEntryCreationDto createStatusListEntry(
         @PathVariable @Parameter(
@@ -40,7 +40,7 @@ class StatusB2BController {
     }
 
     @GetMapping(value = "business-entities/{businessEntityId}/status-list-entries/")
-    @PreAuthorize("hasRoleForPartner('status', 'read', #businessEntityId)")
+    @PreAuthorize("hasRoleForPartner('status', 'read', #businessEntityId.toString())")
     @Operation(summary = "Get all entries for the status registry.")
     @PageableAsQueryParam
     public Page<StatusListEntryDto> getAllStatusListEntries(
@@ -64,7 +64,7 @@ class StatusB2BController {
         value = "business-entities/{businessEntityId}/status-list-entries/{statusRegistryEntryId}",
         consumes = "application/statuslist+jwt"
     )
-    @PreAuthorize("hasRoleForPartner('status', 'write', #businessEntityId)")
+    @PreAuthorize("hasRoleForPartner('status', 'write', #businessEntityId.toString())")
     @Operation(
         summary = "Upload a status list to the status registry.",
         deprecated = true,

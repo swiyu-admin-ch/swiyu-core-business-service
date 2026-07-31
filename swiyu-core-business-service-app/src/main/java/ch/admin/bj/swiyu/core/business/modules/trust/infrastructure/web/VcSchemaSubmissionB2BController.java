@@ -33,7 +33,7 @@ public class VcSchemaSubmissionB2BController {
     private final AuthSupport authSupport;
 
     @PreAuthorize("hasRole('vcschemasubmission', 'write')")
-    @PostAuthorize("hasRoleForPartner('vcschemasubmission', 'write', returnObject.getPartnerId())")
+    @PostAuthorize("hasRoleForPartner('vcschemasubmission', 'write', returnObject.getPartnerId().toString())")
     @PostMapping("/vc-schema-submissions")
     public VcSchemaSubmissionDto createVcSchemaSubmission(@Valid @RequestBody CreateVcMetadataTypeDto request) {
         var partnerId = authSupport.getPartnerIdForRole("vcschemasubmission", "write");
@@ -57,7 +57,7 @@ public class VcSchemaSubmissionB2BController {
     }
 
     @PreAuthorize("hasRole('vcschemasubmission', 'read')")
-    @PostAuthorize("hasRoleForPartner('vcschemasubmission', 'read', returnObject.getPartnerId())")
+    @PostAuthorize("hasRoleForPartner('vcschemasubmission', 'read', returnObject.getPartnerId().toString())")
     @GetMapping("/vc-schema-submissions/{id}")
     public VcSchemaSubmissionDto getVcSchemaSubmission(@PathVariable @Valid UUID id) {
         return service.getVcSchemaSubmission(id);

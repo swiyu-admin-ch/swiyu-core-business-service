@@ -11,22 +11,23 @@ import ch.admin.bj.swiyu.core.business.test.RestResponsePage;
 import ch.admin.bj.swiyu.core.business.test.TestRepositories;
 import ch.admin.bj.swiyu.core.business.test.WithExtendedJeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -220,12 +221,11 @@ class TrustOnboardingSubmissionInternalControllerIT {
             .andExpect(status().isBadRequest());
     }
 
-    private String asJsonString(Object object) throws JsonProcessingException {
-        return new ObjectMapper().writeValueAsString(object);
+    private String asJsonString(Object object) throws JacksonException {
+        return new JsonMapper().writeValueAsString(object);
     }
 
-    private TrustOnboardingSubmissionDto toTrustOnboardingSubmissionDto(String responseString)
-        throws JsonProcessingException {
+    private TrustOnboardingSubmissionDto toTrustOnboardingSubmissionDto(String responseString) throws JacksonException {
         return objectMapper.readValue(responseString, TrustOnboardingSubmissionDto.class);
     }
 }

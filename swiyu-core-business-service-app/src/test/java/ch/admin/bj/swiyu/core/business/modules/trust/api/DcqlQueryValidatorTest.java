@@ -5,19 +5,21 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ch.admin.bj.swiyu.core.business.modules.trust.exceptions.DcqlQueryValidationFailedException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import jakarta.validation.Validation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /** DCQL {@code query} validation. HTTP integration: {@code VqpsSubmissionB2BControllerIT}. */
 class DcqlQueryValidatorTest {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = tools.jackson.databind.json.JsonMapper.builder()
+        .findAndAddModules()
+        .build();
 
     private DcqlQueryValidator validator;
 
@@ -37,7 +39,7 @@ class DcqlQueryValidatorTest {
     }
 
     @Test
-    void validateDcqlQuery_withMinimalValidQuery_doesNotThrow() throws JsonProcessingException {
+    void validateDcqlQuery_withMinimalValidQuery_doesNotThrow() throws JacksonException {
         var queryJson = """
             {
               "credentials": [
@@ -75,7 +77,7 @@ class DcqlQueryValidatorTest {
         }
     )
     void validateVqpsSubmission_withInvalidDcqlStructure_throwsDcqlQueryValidationFailedException(String queryJson)
-        throws JsonProcessingException {
+        throws JacksonException {
         var query = OBJECT_MAPPER.readTree(queryJson);
 
         assertThatThrownBy(() -> validator.validateDcqlQuery(query)).isInstanceOf(
@@ -85,7 +87,7 @@ class DcqlQueryValidatorTest {
 
     @Test
     void validateVqpsSubmission_withCredentialsNotAnArray_throwsDcqlQueryValidationFailedException()
-        throws JsonProcessingException {
+        throws JacksonException {
         var queryJson = """
             {"credentials": "not-an-array"}
             """;

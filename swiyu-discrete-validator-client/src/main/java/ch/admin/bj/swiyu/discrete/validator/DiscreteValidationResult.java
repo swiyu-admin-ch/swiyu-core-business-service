@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.discrete.validator;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Represents the result of a discrete validation.

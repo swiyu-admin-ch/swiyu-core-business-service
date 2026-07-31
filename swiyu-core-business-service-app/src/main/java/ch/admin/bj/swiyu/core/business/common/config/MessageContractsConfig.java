@@ -30,6 +30,9 @@ import org.springframework.context.annotation.Configuration;
         TiTrustAddDidSubmissionRejectedEvent.TypeRef.class,
         TiVqpsPublicationSucceededEvent.TypeRef.class,
         TiVqpsPublicationFailedEvent.TypeRef.class,
+        TiBusinessPartnerIdentityUpdatedEvent.TypeRef.class,
+        TiBusinessPartnerIdentityActivatedEvent.TypeRef.class,
+        TiBusinessPartnerIdentityDeactivatedEvent.TypeRef.class,
     }
 )
 @Configuration

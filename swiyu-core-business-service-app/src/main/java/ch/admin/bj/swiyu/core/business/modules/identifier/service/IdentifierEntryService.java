@@ -17,7 +17,6 @@ import ch.admin.bj.swiyu.core.business.modules.identifier.config.IdentifierLimit
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.*;
 import ch.admin.bj.swiyu.core.business.modules.identifier.exceptions.IdentifierValidationFailedException;
 import ch.admin.bj.swiyu.registry.identifier.service.IdentifierRegistryService;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.querydsl.core.BooleanBuilder;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -28,6 +27,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 @AllArgsConstructor

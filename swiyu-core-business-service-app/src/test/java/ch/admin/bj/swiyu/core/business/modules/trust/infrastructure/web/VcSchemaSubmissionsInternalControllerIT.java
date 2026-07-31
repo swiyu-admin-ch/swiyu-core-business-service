@@ -7,20 +7,20 @@ import ch.admin.bj.swiyu.core.business.modules.trust.api.VcSchemaSubmissionDto;
 import ch.admin.bj.swiyu.core.business.test.TestRepositories;
 import ch.admin.bj.swiyu.core.business.test.WithExtendedJeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -83,7 +83,7 @@ class VcSchemaSubmissionsInternalControllerIT {
     }
 
     private VcSchemaSubmissionDto readVcSchemaSubmissionDto(MvcResult result)
-        throws UnsupportedEncodingException, JsonProcessingException {
+        throws UnsupportedEncodingException, JacksonException {
         var jsonResponse = result.getResponse().getContentAsString();
         return objectMapper.readValue(jsonResponse, VcSchemaSubmissionDto.class);
     }

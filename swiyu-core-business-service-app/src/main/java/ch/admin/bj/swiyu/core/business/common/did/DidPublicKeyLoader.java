@@ -11,8 +11,6 @@ import ch.admin.bj.swiyu.core.business.common.exceptions.MaxSizeApiException;
 import ch.admin.bj.swiyu.registry.identifier.IdentifierRegistryProperties;
 import ch.admin.eid.did_sidekicks.Jwk;
 import ch.admin.eid.didresolver.DidKt;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
@@ -24,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * This class is responsible for loading the public key of an issuer from a JWT Token. The issuer is identified by its
@@ -144,7 +144,7 @@ public class DidPublicKeyLoader {
         try {
             String json = objectMapper.writeValueAsString(jwk);
             return ECKey.parse(json).toECPublicKey();
-        } catch (JsonProcessingException | JOSEException | ParseException e) {
+        } catch (JacksonException | JOSEException | ParseException e) {
             throw new IllegalArgumentException("Failed to parse json web token", e);
         }
     }

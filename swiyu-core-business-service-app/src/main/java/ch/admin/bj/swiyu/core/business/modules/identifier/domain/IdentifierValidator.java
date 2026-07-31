@@ -11,10 +11,7 @@ import ch.admin.bj.swiyu.registry.identifier.IdentifierRegistryProperties;
 import ch.admin.bj.swiyu.registry.identifier.service.IdentifierRegistryService;
 import ch.admin.eid.did_sidekicks.DidDoc;
 import ch.admin.eid.didresolver.DidResolveException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.networknt.schema.InputFormat;
 import com.networknt.schema.JsonSchema;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -25,6 +22,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientResponseException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
 
 @Service
 @RequiredArgsConstructor
@@ -91,7 +92,10 @@ public class IdentifierValidator {
     private JsonNode validateDidTdwEntry(JsonNode didLogEntry) {
         // Validate that the did log conforms to the JSON schema
         // and the swiyu limitations.
-        var validationResultDidWebvh = didTdwSchema.validate(didLogEntry).stream().toList();
+        var validationResultDidWebvh = didTdwSchema
+            .validate(didLogEntry.toString(), InputFormat.JSON)
+            .stream()
+            .toList();
 
         if (!validationResultDidWebvh.isEmpty()) {
             throw new IdentifierValidationFailedException(validationResultDidWebvh.toString(), null);
@@ -102,7 +106,10 @@ public class IdentifierValidator {
     private JsonNode validateDidWebvhEntry(JsonNode didLogEntry) {
         // Validate that the did log conforms to the JSON schema
         // and the swiyu limitations.
-        var validationResultDidWebvh = didWebvhSchema.validate(didLogEntry).stream().toList();
+        var validationResultDidWebvh = didWebvhSchema
+            .validate(didLogEntry.toString(), InputFormat.JSON)
+            .stream()
+            .toList();
 
         if (!validationResultDidWebvh.isEmpty()) {
             throw new IdentifierValidationFailedException(validationResultDidWebvh.toString(), null);
@@ -115,7 +122,7 @@ public class IdentifierValidator {
         try {
             // Validate JSON structure
             didLogEntry = schemaValidatorObjectMapper.readTree(didLogEntryLine);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IdentifierValidationFailedException(e.getMessage(), e);
         }
 
@@ -150,7 +157,10 @@ public class IdentifierValidator {
 
             // Validate that the did doc conforms to the JSON schema
             // and the swiyu limitations.
-            var validationResult = didDocSchema.validate(didDocJsonParsed).stream().toList();
+            var validationResult = didDocSchema
+                .validate(didDocJsonParsed.toString(), InputFormat.JSON)
+                .stream()
+                .toList();
             if (!validationResult.isEmpty()) {
                 List<String> validationResults = new ArrayList<>();
                 validationResult.forEach(result -> validationResults.add(result.getMessage()));
@@ -159,7 +169,7 @@ public class IdentifierValidator {
             validateDidPointsToBaseRegistry(entry, didDoc);
 
             validateDidIsOnlyControlledByItself(didDocJsonParsed);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IdentifierValidationFailedException("Cannot parse DIDDoc. " + e.getMessage(), e);
         } catch (Exception e) {
             // Generic exception handling is required as the RUST lib throws exceptions
@@ -203,7 +213,7 @@ public class IdentifierValidator {
     }
 
     private void validateDidIsOnlyControlledByItself(JsonNode didDoc) {
-        var did = didDoc.get("id").asText();
+        var did = didDoc.get("id").stringValue();
 
         for (var controllerField : didDoc.findValues("controller")) {
             String controllerId;
@@ -217,9 +227,9 @@ public class IdentifierValidator {
                         null
                     );
                 }
-                controllerId = controllerArray.get(0).asText();
+                controllerId = controllerArray.get(0).stringValue();
             } else {
-                controllerId = controllerField.asText();
+                controllerId = controllerField.stringValue();
             }
 
             if (did.compareTo(controllerId) != 0) throw new IdentifierValidationFailedException(

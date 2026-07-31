@@ -18,7 +18,6 @@ import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.SigningRu
 import ch.admin.bj.swiyu.core.business.modules.trust.exceptions.DeclarationOfIntentValidationException;
 import ch.admin.bj.swiyu.discrete.validator.DiscreteValidationResult;
 import ch.admin.bj.swiyu.discrete.validator.DiscreteValidatorClient;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
@@ -26,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import tools.jackson.databind.node.JsonNodeFactory;
 
 @ExtendWith(MockitoExtension.class)
 class DeclarationOfIntentValidatorTest {

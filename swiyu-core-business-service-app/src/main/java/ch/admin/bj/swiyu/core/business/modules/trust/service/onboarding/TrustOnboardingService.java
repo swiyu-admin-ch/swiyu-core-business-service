@@ -22,7 +22,6 @@ import ch.admin.bj.swiyu.core.business.modules.trust.domain.publisher.DomainEven
 import ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.EventMapper;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.TrustOnboardingMapper;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.*;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.querydsl.core.BooleanBuilder;
 import jakarta.persistence.OptimisticLockException;
 import java.io.ByteArrayOutputStream;
@@ -41,6 +40,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.Errors;
+import tools.jackson.databind.JsonNode;
 
 @Slf4j
 @Service

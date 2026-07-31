@@ -3,13 +3,13 @@ package ch.admin.bj.swiyu.core.business.modules.trust.api;
 import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.dcql.DcqlQueryDto;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.Map;
+import tools.jackson.databind.JsonNode;
 
 @Schema(name = "VqpsSubmissionCreateRequest")
 public record VqpsSubmissionCreateRequestDto(

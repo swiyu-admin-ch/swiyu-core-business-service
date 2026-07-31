@@ -15,12 +15,12 @@ import static org.mockito.Mockito.when;
 import ch.admin.bj.swiyu.core.business.common.exceptions.DidResolveException;
 import ch.admin.bj.swiyu.core.business.test.StatusTestData;
 import ch.admin.bj.swiyu.registry.identifier.IdentifierRegistryProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.springframework.web.client.RestClient;
+import tools.jackson.databind.json.JsonMapper;
 
 class DidPublicKeyLoaderTest {
 
@@ -35,7 +35,7 @@ class DidPublicKeyLoaderTest {
         mockedDidResolverAdapter = mock(RestClient.class, Answers.RETURNS_DEEP_STUBS);
         var registryProperties = mock(IdentifierRegistryProperties.class);
         when(registryProperties.getPublicResolveUrlTemplates()).thenReturn(List.of(ALLOWED_REGISTRY_TEMPLATE));
-        publicKeyLoader = new DidPublicKeyLoader(mockedDidResolverAdapter, new ObjectMapper(), registryProperties);
+        publicKeyLoader = new DidPublicKeyLoader(mockedDidResolverAdapter, new JsonMapper(), registryProperties);
     }
 
     @Test

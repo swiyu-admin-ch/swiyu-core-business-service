@@ -9,9 +9,6 @@ import ch.admin.bj.swiyu.core.business.modules.trust.api.VqpsSubmissionStatusDto
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.vqps.VqpsSubmission;
 import ch.admin.bj.swiyu.messagetype.ti.TiVqpsPublicationSucceededEvent;
 import ch.admin.bj.swiyu.messagetype.ti.VqpsPublicationSucceededPayload;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -34,6 +31,8 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.experimental.UtilityClass;
 import org.jspecify.annotations.NonNull;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
 
 @UtilityClass
 public class VqpsSubmissionTestData {
@@ -125,10 +124,10 @@ public class VqpsSubmissionTestData {
 
     private static @Valid @NotNull JsonNode dqclQuery() {
         var json = dqlcQueryString();
-        var mapper = new ObjectMapper();
+        var mapper = tools.jackson.databind.json.JsonMapper.builder().findAndAddModules().build();
         try {
             return mapper.readValue(json, JsonNode.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("failed to parse json", e);
         }
     }

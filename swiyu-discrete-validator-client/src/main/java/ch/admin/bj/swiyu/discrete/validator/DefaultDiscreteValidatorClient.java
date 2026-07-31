@@ -7,9 +7,6 @@ import ch.admin.suis.client.core.service.ValidationServiceClientBuilder;
 import ch.admin.suis.client.core.service.to.FileRequest;
 import ch.admin.suis.validator.rest.to.ValidStatus;
 import ch.admin.suis.validator.rest.to.response.FileReport;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.intarsys.aaa.authenticate.impl.UserPasswordCredential;
 import de.intarsys.tools.crypto.Secret;
 import java.io.IOException;
@@ -22,6 +19,9 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.web.multipart.MultipartFile;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Client for Signature Validator of BIT. See <a href="https://www.bit.admin.ch/de/der-diskrete-validator">...</a>.
@@ -108,12 +108,12 @@ public class DefaultDiscreteValidatorClient implements DiscreteValidatorClient {
         String jsonString;
         try {
             jsonString = objectMapper.writeValueAsString(fileReport);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("failed to serialize FileReport from Discrete Validator API to JSON", e);
         }
         try {
             return objectMapper.readTree(jsonString);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("failed to deserialize FileReport JSON to JsonNode", e);
         }
     }

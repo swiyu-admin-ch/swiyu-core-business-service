@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.api;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -14,6 +15,7 @@ public enum DeclarationOfIntentValidatorErrorCodeDto {
 
     private final String code;
 
+    @JsonCreator
     DeclarationOfIntentValidatorErrorCodeDto(String code) {
         this.code = code;
     }

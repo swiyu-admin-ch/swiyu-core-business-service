@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.core.business;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -19,8 +20,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.kafka.test.context.EmbeddedKafka;
@@ -72,13 +73,11 @@ class HealthIT {
             .perform(MockMvcRequestBuilders.get("/actuator/health"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.status").value("UP"))
+            .andExpect(jsonPath("$.groups", containsInAnyOrder("liveness", "readiness")))
             .andReturn()
             .getResponse();
 
         assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(response.getContentAsString()).isEqualTo(
-            "{\"status\":\"UP\",\"groups\":[\"liveness\",\"readiness\"]}"
-        );
     }
 
     @Test

@@ -16,9 +16,6 @@ import ch.admin.bj.swiyu.core.business.test.TestRepositories;
 import ch.admin.bj.swiyu.core.business.test.WithExtendedJeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
 import ch.admin.bj.swiyu.messagetype.ti.TiVqpsSubmissionAcceptedEvent;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +25,8 @@ import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.kafka.support.Acknowledgment;
@@ -43,6 +40,9 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @ActiveProfiles("test")
@@ -300,7 +300,7 @@ class VqpsSubmissionB2BControllerIT {
         return () -> {};
     }
 
-    private VqpsSubmissionCreateRequestDto requestWithQuery(String queryJson) throws JsonProcessingException {
+    private VqpsSubmissionCreateRequestDto requestWithQuery(String queryJson) throws JacksonException {
         var base = vqpsSubmissionCreateRequestDto();
         JsonNode query = objectMapper.readTree(queryJson);
         return vqpsSubmissionCreateRequestDto(

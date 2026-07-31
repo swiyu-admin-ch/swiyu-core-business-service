@@ -10,9 +10,9 @@ import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.MockPamsCl
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.status.config.StatusListsLimitProperties;
 import java.util.Optional;
-import org.springframework.boot.autoconfigure.flyway.FlywayProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
+import org.springframework.boot.flyway.autoconfigure.FlywayProperties;
+import org.springframework.boot.micrometer.tracing.test.autoconfigure.AutoConfigureTracing;
 import org.springframework.boot.test.autoconfigure.json.AutoConfigureJson;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -24,7 +24,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  * Holds all necessary configurations for sliced @DataJpaTest integration tests which are common to all.
  */
 @Import({ TestRepositories.class, FlywayMigrationConfiguration.class, CorePersistenceConfig.class })
-@AutoConfigureObservability // since audit publisher uses trace-id
+@AutoConfigureTracing // since audit publisher uses trace-id
 @EnableJpaAuditing
 @AutoConfigureJson
 @EnableConfigurationProperties(

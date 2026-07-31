@@ -25,6 +25,7 @@ public class CoreDemoData {
     public static final UUID CORE_ID_BP_DEFAULT = UUID.fromString("9f425029-9775-4984-99ba-bacc60069502");
     public static final UUID CORE_ID_BP_GOV = UUID.fromString("39f92e48-619e-4e92-8958-468ae138d8a3");
     public static final UUID CORE_ID_BP_BASE_ONBOARDING_ONLY = UUID.fromString("e97e84e6-f40e-47ba-bdfe-d92f3d3dbc84");
+    public static final UUID CORE_ID_BP_OVERDUE = UUID.fromString("4b9f08ac-aa29-4bcf-97a4-88e73e49c3e1");
 
     public static final UUID CORE_ID_TOS_UNSUBMITTED = UUID.fromString(
         DemoDataConstants.TrustOnboardingSubmission.ID_UNSUBMITTED
@@ -35,6 +36,7 @@ public class CoreDemoData {
         DemoDataConstants.TrustOnboardingSubmission.ID_SUCCEEDED
     );
     public static final UUID CORE_ID_TOS_INFO_REQUESTED = UUID.fromString("dc828a98-ffb1-4ae4-8f07-b35d2818ac87");
+    public static final UUID CORE_ID_TOS_OVERDUE = UUID.fromString("161d56d8-0999-46e5-a618-ba922414382a");
     public static final String CORE_ID_BP_BASE_ONBOARDING_ONLY_PHONE = "+41791234567";
     public static final String CORE_ID_BP_DEFAULT_PHONE = "+41791234567";
 
@@ -162,4 +164,31 @@ public class CoreDemoData {
     public static final String CORE_ID_BP_BASE_ONBOARDING_ONLY_EMAIL = "helvetica@demo-comp.com";
     static final String CORE_ID_BP_WANTS_TO_BE_TRUSTED_S = "897edd6b-2e3e-4cc2-95a8-5b759c301df8";
     public static final UUID CORE_ID_BP_WANTS_TO_BE_TRUSTED = UUID.fromString(CORE_ID_BP_WANTS_TO_BE_TRUSTED_S);
+    // CORE_ID_BP_OVERDUE
+    public static final Map<String, String> CORE_ID_BP_OVERDUE_NAMES = fromLanguages(
+        "Schleppende Logistik AG",
+        "Schleppende Logistik AG",
+        "Logistique Lente SA",
+        "Logistica Lenta S.r.l.",
+        "Sluggish Logistics AG",
+        "S.L. AG"
+    );
+    public static final Address CORE_ID_BP_OVERDUE_ADDRESS = new Address(
+        "Lagerstrasse 27",
+        "Demohausen",
+        "1111",
+        "Schweiz",
+        "Democanton"
+    );
+    public static final String CORE_ID_BP_OVERDUE_EMAIL = "p.keller@schleppende-logistik.ch";
+    public static final Contact CORE_ID_BP_OVERDUE_CONTACT = new Contact(
+        "Peter",
+        "Keller",
+        CORE_ID_BP_OVERDUE_EMAIL,
+        "+41548884442",
+        Language.DE
+    );
+    public static final List<Signatory> CORE_ID_BP_OVERDUE_SIGNATORIES = List.of(
+        new Signatory("Peter", "Keller", "+41776665546", CORE_ID_BP_OVERDUE_EMAIL)
+    );
 }

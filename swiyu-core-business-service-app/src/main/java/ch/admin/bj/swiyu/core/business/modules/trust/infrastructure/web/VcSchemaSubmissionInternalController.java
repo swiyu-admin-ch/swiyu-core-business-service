@@ -24,7 +24,7 @@ public class VcSchemaSubmissionInternalController {
     private final VcSchemaSubmissionService service;
 
     @PreAuthorize("hasRole('vcschemasubmission', 'read')")
-    @PostAuthorize("hasRoleForPartner('vcschemasubmission', 'read', returnObject.getPartnerId())")
+    @PostAuthorize("hasRoleForPartner('vcschemasubmission', 'read', returnObject.getPartnerId().toString())")
     @GetMapping("/vc-schema-submissions/{id}")
     public VcSchemaSubmissionDto getVcSchemaSubmission(@PathVariable @Valid UUID id) {
         return service.getVcSchemaSubmission(id);

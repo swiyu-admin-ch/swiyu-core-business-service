@@ -3,14 +3,14 @@ package ch.admin.bj.swiyu.core.business.modules.trust.config;
 import ch.admin.bj.swiyu.discrete.validator.DefaultDiscreteValidatorClient;
 import ch.admin.bj.swiyu.discrete.validator.DiscreteValidationResult;
 import ch.admin.bj.swiyu.discrete.validator.DiscreteValidatorClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.JsonNodeFactory;
 
 @Slf4j
 @Configuration

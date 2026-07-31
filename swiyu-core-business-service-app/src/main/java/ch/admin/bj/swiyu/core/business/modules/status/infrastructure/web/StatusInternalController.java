@@ -24,7 +24,7 @@ public class StatusInternalController {
     private final StatusListEntryService statusListEntryService;
 
     @GetMapping(value = "business-partner/{businessPartnerId}/limits")
-    @PreAuthorize("hasRoleForPartner('status', 'read', #businessPartnerId)")
+    @PreAuthorize("hasRoleForPartner('status', 'read', #businessPartnerId.toString())")
     @Operation(summary = "Get current limits in the scope of the status registry.")
     public StatusListEntryLimitsDto getStatusListEntryLimits(
         @PathVariable @Parameter(

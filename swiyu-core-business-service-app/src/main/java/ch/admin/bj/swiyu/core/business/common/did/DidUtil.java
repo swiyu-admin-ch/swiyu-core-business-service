@@ -3,9 +3,6 @@ package ch.admin.bj.swiyu.core.business.common.did;
 import ch.admin.eid.did_sidekicks.DidDoc;
 import ch.admin.eid.didresolver.Did;
 import ch.admin.eid.didresolver.DidResolveException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import jakarta.validation.constraints.NotNull;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -14,11 +11,19 @@ import java.net.URL;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import lombok.experimental.UtilityClass;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @UtilityClass
 public class DidUtil {
 
-    private static final JsonMapper MAPPER = JsonMapper.builder().build();
+    // FAIL_ON_TRAILING_TOKENS must stay disabled: getDidDoc() relies on readTree() stopping
+    // after the first JSON value in a multi-entry DIDLog, ignoring the rest as trailing content.
+    private static final JsonMapper MAPPER = JsonMapper.builder()
+        .disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+        .build();
 
     public static String getScid(JsonNode didLogEntry) {
         try {
@@ -38,8 +43,8 @@ public class DidUtil {
         if (scidNode.isMissingNode() || scidNode.isNull()) {
             throw new IllegalArgumentException("Missing required 'scid' in first entry of DIDLog");
         }
-        String scid = scidNode.asText();
-        if (scid.isBlank()) {
+        String scid = scidNode.stringValue();
+        if (scid == null || scid.isBlank()) {
             throw new IllegalArgumentException("'scid' is present but blank");
         }
         return scid;
@@ -55,8 +60,8 @@ public class DidUtil {
         if (scidNode.isMissingNode() || scidNode.isNull()) {
             throw new IllegalArgumentException("Missing required 'scid' in didLogEntry[2]");
         }
-        String scid = scidNode.asText();
-        if (scid.isBlank()) {
+        String scid = scidNode.stringValue();
+        if (scid == null || scid.isBlank()) {
             throw new IllegalArgumentException("'scid' is present but blank");
         }
         return scid;
@@ -73,7 +78,7 @@ public class DidUtil {
 
         try {
             jsonMapper.readTree(firstDidLogEntry);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("DIDLogEntry needs to be JSON formatted.", e);
         }
         String did;
@@ -93,7 +98,7 @@ public class DidUtil {
         JsonNode firstEntry;
         try {
             firstEntry = MAPPER.readTree(didLog);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("Cannot parse first DIDLog entry", e);
         }
         var method = detectDidMethod(didLog);
@@ -151,8 +156,8 @@ public class DidUtil {
     // (did:tdw was the original name, renamed to did:webvh from v0.5 onwards)
     private static String extractDid(DidMethod method, JsonNode firstEntry) {
         String id = switch (method) {
-            case DID_TDW -> firstEntry.path(3).path("value").path("id").asText(null);
-            case DID_WEBVH -> firstEntry.path("state").path("id").asText(null);
+            case DID_TDW -> firstEntry.path(3).path("value").path("id").stringValue(null);
+            case DID_WEBVH -> firstEntry.path("state").path("id").stringValue(null);
         };
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("Cannot extract DID from first log entry");

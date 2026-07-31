@@ -97,7 +97,7 @@ class BusinessPartnerInternalV2Controller {
         }
     }
 
-    @PreAuthorize("hasRoleForPartner('businesspartner','read',#id)")
+    @PreAuthorize("hasRoleForPartner('businesspartner','read',#id.toString())")
     @GetMapping("/{id}")
     @ApiResponse(responseCode = "200", description = "Success")
     @ApiResponse(responseCode = "401", description = "Missing authorization token")

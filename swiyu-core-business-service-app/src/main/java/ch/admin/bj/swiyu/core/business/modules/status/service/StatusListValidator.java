@@ -10,10 +10,9 @@ import ch.admin.bj.swiyu.core.business.modules.status.domain.StatusListEntry;
 import ch.admin.bj.swiyu.core.business.modules.status.exceptions.StatusListValidationFailedException;
 import ch.admin.bj.swiyu.registry.status.service.StatusListRegistryService;
 import ch.admin.eid.didresolver.DidKt;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.networknt.schema.InputFormat;
 import com.networknt.schema.JsonSchema;
+import com.networknt.schema.ValidationMessage;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jwt.SignedJWT;
 import java.io.ByteArrayInputStream;
@@ -22,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Set;
 import java.util.UUID;
 import java.util.zip.InflaterInputStream;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,6 @@ public class StatusListValidator {
     private static final String REQUIRED_TYP = "statuslist+jwt";
     private static final String REQUIRED_PROFILE_VERSION = "swiss-profile-vc:1.0.0";
 
-    private final JsonMapper schemaValidatorObjectMapper;
     private final JsonSchema statusListSchema;
     private final StatusListsLimitProperties statusListsLimitProperties;
     private final StatusListRegistryService statusListRegistryService;
@@ -168,16 +167,16 @@ public class StatusListValidator {
     }
 
     private void checkStatusListConformsToSchema(SignedJWT statusListVc) {
-        try {
-            var payload = statusListVc.getPayload().toString();
+        var payload = statusListVc.getPayload().toString();
 
-            JsonNode statusVc = schemaValidatorObjectMapper.readTree(payload);
-            var validationResult = statusListSchema.validate(statusVc);
-            if (!validationResult.isEmpty()) {
-                throw new StatusListValidationFailedException(validationResult.toString(), null);
-            }
-        } catch (JsonProcessingException e) {
+        Set<ValidationMessage> validationResult;
+        try {
+            validationResult = statusListSchema.validate(payload, InputFormat.JSON);
+        } catch (RuntimeException e) {
             throw new StatusListValidationFailedException(e.getMessage(), e);
+        }
+        if (!validationResult.isEmpty()) {
+            throw new StatusListValidationFailedException(validationResult.toString(), null);
         }
     }
 

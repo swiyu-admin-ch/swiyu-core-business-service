@@ -24,7 +24,7 @@ class StatusB2BV2Controller {
         value = "business-entities/{businessEntityId}/status-list-entries/{statusRegistryEntryId}",
         consumes = "application/statuslist+jwt"
     )
-    @PreAuthorize("hasRoleForPartner('status', 'write', #businessEntityId)")
+    @PreAuthorize("hasRoleForPartner('status', 'write', #businessEntityId.toString())")
     @Operation(
         summary = "Upload a status list with Swiss profile conformity validation.",
         description = """

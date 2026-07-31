@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.api;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -16,6 +17,7 @@ public enum ProofOfPossessionValidatorErrorCodeDto {
 
     private final String code;
 
+    @JsonCreator
     ProofOfPossessionValidatorErrorCodeDto(String code) {
         this.code = code;
     }

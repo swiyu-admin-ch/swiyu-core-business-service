@@ -2,14 +2,14 @@ package ch.admin.bj.swiyu.core.business.modules.trust.api;
 
 import ch.admin.bj.swiyu.core.business.modules.trust.api.dcql.DcqlQueryDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.exceptions.DcqlQueryValidationFailedException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service
 @AllArgsConstructor
@@ -26,7 +26,7 @@ public class DcqlQueryValidator {
         DcqlQueryDto dcqlQuery;
         try {
             dcqlQuery = schemaValidatorObjectMapper.treeToValue(dcqlQueryJson, DcqlQueryDto.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new DcqlQueryValidationFailedException("Invalid JSON in query: " + e.getMessage(), e);
         }
 

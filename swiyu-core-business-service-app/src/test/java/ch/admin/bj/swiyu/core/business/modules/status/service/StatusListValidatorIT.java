@@ -33,8 +33,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -187,7 +187,7 @@ class StatusListValidatorIT {
         // THEN Throw general exception
         assertThat(exception.getMessage()).contains("Provided status list resource is invalid");
         assertThat(exception.getAdditionalDetails()).hasSize(1);
-        assertThat(exception.getAdditionalDetails().getFirst()).contains("Unrecognized token");
+        assertThat(exception.getAdditionalDetails().getFirst()).contains("Invalid input");
     }
 
     @Test

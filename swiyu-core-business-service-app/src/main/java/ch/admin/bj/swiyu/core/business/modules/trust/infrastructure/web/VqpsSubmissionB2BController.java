@@ -37,7 +37,7 @@ public class VqpsSubmissionB2BController {
 
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('vqpssubmission', 'write')")
-    @PostAuthorize("hasRoleForPartner('vqpssubmission', 'write', returnObject.getPartnerId())")
+    @PostAuthorize("hasRoleForPartner('vqpssubmission', 'write', returnObject.getPartnerId().toString())")
     @Operation(
         summary = "Request a new VQPS publication into the Trust Registry by submitting a VqpsSubmission and " +
             "waits for the publication into the trust registry. "
@@ -62,7 +62,7 @@ public class VqpsSubmissionB2BController {
     }
 
     @PreAuthorize("hasRole('vqpssubmission', 'read')")
-    @PostAuthorize("hasRoleForPartner('vqpssubmission', 'read', returnObject.getPartnerId())")
+    @PostAuthorize("hasRoleForPartner('vqpssubmission', 'read', returnObject.getPartnerId().toString())")
     @Operation(summary = "Get a VqpsSubmission by id")
     @GetMapping("/vqps-submissions/{id}")
     public VqpsSubmissionB2BDto getVqpsSubmission(@PathVariable @Valid UUID id) {
@@ -83,7 +83,7 @@ public class VqpsSubmissionB2BController {
         return new PagedModel<>(vqpsSubmissionService.getVqpsSubmissionsB2B(partnerId, pageable));
     }
 
-    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
     @ExceptionHandler(VqpsPublicationFailedException.class)
     public VqpsSubmissionB2BDto handlePublicationFailedException(final VqpsPublicationFailedException e) {
         log.debug("Failed to publish vqps", e);

@@ -33,7 +33,7 @@ public class IdentifierInternalController {
     private final IdentifierEntryService identifierEntryService;
 
     @GetMapping(value = "business-entities/{partnerId}/limits")
-    @PreAuthorize("hasRoleForPartner('identifier', 'read', #partnerId)")
+    @PreAuthorize("hasRoleForPartner('identifier', 'read', #partnerId.toString())")
     @Operation(summary = "Get current limits in the scope of the identifier registry.")
     public IdentifierEntryLimitsDto getIdentifierEntryLimits(
         @PathVariable @Parameter(
@@ -45,7 +45,7 @@ public class IdentifierInternalController {
     }
 
     @GetMapping(value = "business-entities/{partnerId}/identifier/")
-    @PreAuthorize("hasRoleForPartner('identifier', 'read', #partnerId)")
+    @PreAuthorize("hasRoleForPartner('identifier', 'read', #partnerId.toString())")
     @ApiResponse(responseCode = "200", description = "Success")
     @ApiResponse(
         responseCode = "400",
@@ -83,7 +83,7 @@ public class IdentifierInternalController {
     }
 
     @GetMapping(value = "business-entities/{partnerId}/identifier/{identifierId}")
-    @PreAuthorize("hasRoleForPartner('identifier', 'read', #partnerId)")
+    @PreAuthorize("hasRoleForPartner('identifier', 'read', #partnerId.toString())")
     @Operation(summary = "Get all entries for the identifier registry.")
     public IdentifierEntryDto getIdentifierEntry(
         @PathVariable @Parameter(
@@ -99,7 +99,7 @@ public class IdentifierInternalController {
     }
 
     @PostMapping("/{partnerId}/identifier/{identifierId}/description")
-    @PreAuthorize("hasRoleForPartner('identifier', 'write', #partnerId)")
+    @PreAuthorize("hasRoleForPartner('identifier', 'write', #partnerId.toString())")
     @Operation(summary = "Update description of a specific identifier entry of partner")
     public void updateIdentifierDescription(
         @PathVariable UUID partnerId,

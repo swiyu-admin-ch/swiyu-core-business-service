@@ -8,14 +8,14 @@ import ch.admin.bj.swiyu.core.business.test.IdentifierTestData;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
 import ch.admin.eid.did_sidekicks.DidDoc;
 import ch.admin.eid.didresolver.DidResolveException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -29,7 +29,7 @@ class DidUtilIT {
     private JsonMapper jsonMapper;
 
     @Test
-    void getScid() throws JsonProcessingException {
+    void getScid() throws JacksonException {
         var didLog = identifierTestData.validDidTdwLog();
         var scid = DidUtil.getScid(jsonMapper.readTree(didLog));
 
@@ -88,7 +88,7 @@ class DidUtilIT {
     }
 
     @Test
-    void invalidDidDocShouldThrow_getScid() throws JsonProcessingException {
+    void invalidDidDocShouldThrow_getScid() throws JacksonException {
         assertThrows(IllegalArgumentException.class, () -> DidUtil.getScid(null));
         var emptyObject = jsonMapper.readTree("{}");
         assertThrows(IllegalArgumentException.class, () -> DidUtil.getScid(emptyObject));

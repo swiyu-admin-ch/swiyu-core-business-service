@@ -5,39 +5,39 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.support.TestPropertySourceUtils;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 @Slf4j
 public class PostgresSqlContainerInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
-    private static PostgreSQLContainer<?> coreDatabase;
-    private static PostgreSQLContainer<?> registryIdentifierDatabase;
-    private static PostgreSQLContainer<?> statusIdentifierDatabase;
+    private static PostgreSQLContainer coreDatabase;
+    private static PostgreSQLContainer registryIdentifierDatabase;
+    private static PostgreSQLContainer statusIdentifierDatabase;
 
-    private static PostgreSQLContainer<?> getCoreDatabase() {
+    private static PostgreSQLContainer getCoreDatabase() {
         if (coreDatabase == null) {
             coreDatabase = createPostgresTestContainer();
         }
         return coreDatabase;
     }
 
-    private static PostgreSQLContainer<?> getRegistryIdentifierDatabase() {
+    private static PostgreSQLContainer getRegistryIdentifierDatabase() {
         if (registryIdentifierDatabase == null) {
             registryIdentifierDatabase = createPostgresTestContainer();
         }
         return registryIdentifierDatabase;
     }
 
-    private static PostgreSQLContainer<?> getRegistryStatusDatabase() {
+    private static PostgreSQLContainer getRegistryStatusDatabase() {
         if (statusIdentifierDatabase == null) {
             statusIdentifierDatabase = createPostgresTestContainer();
         }
         return statusIdentifierDatabase;
     }
 
-    private static PostgreSQLContainer<?> createPostgresTestContainer() {
-        var container = new PostgreSQLContainer<>(
+    private static PostgreSQLContainer createPostgresTestContainer() {
+        var container = new PostgreSQLContainer(
             DockerImageName.parse("docker-hub.nexus.bit.admin.ch/postgres:17.8").asCompatibleSubstituteFor(
                 "postgres:17.8"
             )

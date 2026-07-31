@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.42.9
+
+### Added
+
+- Add overdue business partner and trust onboarding submission demo data
+- Add jeap consumer contract for BusinessPartnerIdentity events
+
+## 3.42.8
+
+### Fixed
+
+- Fix sonar findings from latest merge
+
 ## 3.42.7
 
 ### Changed
@@ -28,13 +41,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ContactDto` gains `correspondingLanguage : LanguageDto`; deprecated `address` field is kept.
   - The deprecated `trustVerificationStatus` in `BusinessPartnerDto` is now **computed on every read** (never persisted) from `BusinessPartnerIdentity` + submission history — no DB column required. The `PAMS` update call uses the TMS-owned `BusinessPartnerIdentity.entityName` when the identity is ACTIVE, and the self-declared `entityName` otherwise.
 
+### Changed
+
+- Migrate to Spring Boot 4 / Spring Framework 7 (jeap-spring-boot-parent 37.6.0)
+- Remove CVE overrides for logback-core, postgresql and tomcat-embed-core now that the parent BOM already supplies safe (or newer, in the tomcat-embed-core case) versions
+
+### Fixed
+
+- Fix custom `hasRole`/`hasRoleForPartner` `@PreAuthorize` SpEL expressions no longer resolving (required bumping past jeap-spring-boot-security-starter 23.10.1)
+- Add `spring-boot-security-test` dependency so `@WithJeapAuthenticationToken` works again with MockMvc-based integration tests
+- Add missing `deferred_message.sampled` column migration required by the newer jeap-messaging-outbox schema
+- Fix sliced `@DataJpaTest` context missing a `Tracer` bean by switching `@AutoConfigureMetrics` to `@AutoConfigureTracing`
+
 
 ## 3.42.5
 
 ### Fixed
 
 - Fixed migration script conflict
-
 
 ## 3.42.4
 

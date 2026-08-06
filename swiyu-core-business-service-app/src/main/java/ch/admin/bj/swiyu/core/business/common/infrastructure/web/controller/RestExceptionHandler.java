@@ -70,6 +70,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
             org.springframework.security.access.AccessDeniedException.class,
             org.springframework.security.authorization.AuthorizationDeniedException.class,
             PartnerIsNotGovernmentalException.class,
+            PartnerIsNotTrustedException.class,
         }
     )
     public ResponseEntity<ApiErrorDto> handleAccessDenied(final RuntimeException e) {

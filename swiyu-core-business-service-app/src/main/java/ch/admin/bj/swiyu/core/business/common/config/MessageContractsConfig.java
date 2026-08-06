@@ -19,6 +19,10 @@ import org.springframework.context.annotation.Configuration;
     encryptionKeyId = "messagingKey"
 )
 @JeapMessageProducerContract(value = TiVqpsSubmissionAcceptedEvent.TypeRef.class, encryptionKeyId = "messagingKey")
+@JeapMessageProducerContract(
+    value = TiProtectedVerificationSubmissionAcceptedEvent.TypeRef.class,
+    encryptionKeyId = "messagingKey"
+)
 @JeapMessageConsumerContracts(
     {
         TiVcSchemaPublicationSucceededEvent.TypeRef.class,
@@ -30,6 +34,8 @@ import org.springframework.context.annotation.Configuration;
         TiTrustAddDidSubmissionRejectedEvent.TypeRef.class,
         TiVqpsPublicationSucceededEvent.TypeRef.class,
         TiVqpsPublicationFailedEvent.TypeRef.class,
+        TiProtectedVerificationSubmissionApprovedEvent.TypeRef.class,
+        TiProtectedVerificationSubmissionRejectedEvent.TypeRef.class,
         TiBusinessPartnerIdentityUpdatedEvent.TypeRef.class,
         TiBusinessPartnerIdentityActivatedEvent.TypeRef.class,
         TiBusinessPartnerIdentityDeactivatedEvent.TypeRef.class,

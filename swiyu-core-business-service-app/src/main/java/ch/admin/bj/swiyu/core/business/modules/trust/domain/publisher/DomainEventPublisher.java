@@ -4,6 +4,7 @@ import static net.logstash.logback.argument.StructuredArguments.kv;
 
 import ch.admin.bit.jeap.messaging.avro.AvroMessage;
 import ch.admin.bit.jeap.messaging.transactionaloutbox.outbox.TransactionalOutbox;
+import ch.admin.bj.swiyu.messagetype.ti.TiProtectedVerificationSubmissionAcceptedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiTrustAddDidSubmissionSubmittedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiTrustOnboardingSubmissionAcceptedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiVcSchemaSubmissionAcceptedEvent;
@@ -80,6 +81,22 @@ public class DomainEventPublisher {
                 .setNamespace(TiVqpsSubmissionAcceptedEvent.TypeRef.SYSTEM_NAME)
                 .setName(topicName)
                 .setId(event.getPayload().getVqpsSubmissionId().toString())
+                .build(),
+            event
+        );
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void publishProtectedVerificationSubmissionAcceptedEvent(
+        @NonNull TiProtectedVerificationSubmissionAcceptedEvent event
+    ) {
+        var topicName = TiProtectedVerificationSubmissionAcceptedEvent.TypeRef.DEFAULT_TOPIC;
+        sendEvent(
+            topicName,
+            BeanReferenceMessageKey.newBuilder()
+                .setNamespace(TiProtectedVerificationSubmissionAcceptedEvent.TypeRef.SYSTEM_NAME)
+                .setName(topicName)
+                .setId(event.getPayload().getProtectedVerificationSubmissionId().toString())
                 .build(),
             event
         );

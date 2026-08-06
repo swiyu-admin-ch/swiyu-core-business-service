@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
            | resource_forbidden                          | Indicates that the requested data is not available with the permissions used.         |
            | action_forbidden                            | Indicates that the requested action could not be processed with the permissions used. |
            | partner_is_not_governmental                 | Indicates that the partner is not governmental.                                       |
+           | partner_is_not_trusted                      | Indicates that the partner is not trusted.                                            |
            | business_data_integrity_violation           | Indicates that a business data integrity violation occurred.                          |
            | crypto_integrity_validation_failed          | Indicates that the crypto integrity validation failed.                                |
            | did_resolve_failed                          | Indicates that the DID resolution failed.                                             |
@@ -37,6 +38,7 @@ public enum ApiErrorCodeDto {
     RESOURCE_FORBIDDEN("resource_forbidden"),
     ACTION_FORBIDDEN("action_forbidden"),
     PARTNER_IS_NOT_GOVERNMENTAL("partner_is_not_governmental"),
+    PARTNER_IS_NOT_TRUSTED("partner_is_not_trusted"),
     BUSINESS_DATA_INTEGRITY_VIOLATION("business_data_integrity_violation"),
     CRYPTO_INTEGRITY_VALIDATION_FAILED("crypto_integrity_validation_failed"),
     DID_RESOLVE_FAILED("did_resolve_failed"),

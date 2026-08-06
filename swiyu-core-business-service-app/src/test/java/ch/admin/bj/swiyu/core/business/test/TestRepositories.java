@@ -6,6 +6,7 @@ import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartner
 import ch.admin.bj.swiyu.core.business.modules.status.domain.StatusListEntryRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustAdditionalDidsSubmissionRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionRepository;
+import ch.admin.bj.swiyu.core.business.modules.trust.domain.protectedverification.ProtectedVerificationSubmissionRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.vcschema.VcSchemaSubmissionRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.vqps.VqpsSubmissionRepository;
 import lombok.AllArgsConstructor;
@@ -32,6 +33,7 @@ public class TestRepositories {
     public final TrustAdditionalDidsSubmissionRepository trustAdditionalDidsSubmission;
     public final PartnerDocumentsRepository partnerDocuments;
     public final StatusListEntryRepository statusListEntry;
+    public final ProtectedVerificationSubmissionRepository protectedVerificationSubmission;
 
     /**
      * Truncates all tables.
@@ -51,6 +53,7 @@ public class TestRepositories {
         trustAdditionalDidsSubmission.deleteAllInBatch();
         vqpsSubmission.deleteAllInBatch();
         statusListEntry.deleteAllInBatch();
+        protectedVerificationSubmission.deleteAllInBatch();
         if (activeTransaction) {
             // so all tests start with an open transaction
             startNewTransaction();

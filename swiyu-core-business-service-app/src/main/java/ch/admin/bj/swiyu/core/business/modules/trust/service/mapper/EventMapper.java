@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.mapper;
 
+import ch.admin.bj.swiyu.core.business.modules.trust.domain.event.TiProtectedVerificationSubmissionAcceptedEventBuilder;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.event.TiTrustAddDidSubmissionSubmittedEventBuilder;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.event.TiTrustOnboardingSubmissionAcceptedEventBuilder;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.event.TiVcSchemaSubmissionAcceptedEventBuilder;
@@ -41,5 +42,13 @@ public class EventMapper {
 
     public TiVqpsSubmissionAcceptedEvent mapToTiVqpsSubmissionAcceptedEvent(@NonNull UUID vqpsSubmissionId) {
         return TiVqpsSubmissionAcceptedEventBuilder.create().vqpsSubmissionId(vqpsSubmissionId).build();
+    }
+
+    public TiProtectedVerificationSubmissionAcceptedEvent mapToTiProtectedVerificationSubmissionAcceptedEvent(
+        @NonNull UUID protectedVerificationSubmissionId
+    ) {
+        return TiProtectedVerificationSubmissionAcceptedEventBuilder.create()
+            .protectedVerificationSubmissionId(protectedVerificationSubmissionId)
+            .build();
     }
 }

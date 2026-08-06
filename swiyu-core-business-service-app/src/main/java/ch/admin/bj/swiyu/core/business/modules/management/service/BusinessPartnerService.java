@@ -511,6 +511,17 @@ public class BusinessPartnerService {
         return GOVERNMENTAL_INSTITUTION.equals(partnerType);
     }
 
+    @Transactional(readOnly = true)
+    public boolean isTrusted(UUID partnerId) {
+        if (partnerId == null) {
+            return false;
+        }
+        return businessPartnerRepository
+            .findById(partnerId)
+            .map(BusinessEntity::isBusinessPartnerIdentityActive)
+            .orElse(false);
+    }
+
     @SuppressWarnings({ "java:S1874" }) // Remove with EID-6656
     @Transactional(readOnly = true)
     public BusinessPartnerTypeDto getBusinessPartnerType(UUID partnerId) {

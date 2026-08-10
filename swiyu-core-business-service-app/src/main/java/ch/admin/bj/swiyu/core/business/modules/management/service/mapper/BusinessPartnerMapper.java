@@ -15,6 +15,7 @@ import ch.admin.bj.swiyu.core.business.modules.management.api.*;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.jspecify.annotations.NonNull;
@@ -75,11 +76,14 @@ public class BusinessPartnerMapper {
      * @param source      the entity to map
      * @param trustStatus the computed trust verification status — must be passed in by the caller
      *                    (computed on-the-fly by BusinessPartnerService, never persisted)
+     * @param maxDateForTrustVerificationStatus the computed deadline for the current trust verification
+     *                    state, or {@code null} if not applicable
      */
     @SuppressWarnings("java:S1874") // Remove with EID-6624
     public static BusinessPartnerDto toBusinessPartnerDto(
         BusinessEntity source,
-        BusinessPartnerTrustStatusDto trustStatus
+        BusinessPartnerTrustStatusDto trustStatus,
+        Instant maxDateForTrustVerificationStatus
     ) {
         BusinessPartnerTypeDto type = toBusinessPartnerTypeDto(source.getType());
         return new BusinessPartnerDto(
@@ -100,8 +104,7 @@ public class BusinessPartnerMapper {
             source.getContactPhone(),
             // deprecated: computed on-the-fly from BPI + submission history (never persisted)
             trustStatus,
-            // deprecated: always null — column removed
-            null,
+            maxDateForTrustVerificationStatus,
             toContactDto(source.getContact()),
             toBusinessPartnerIdentityDto(source.getBusinessPartnerIdentity())
         );
@@ -113,11 +116,14 @@ public class BusinessPartnerMapper {
      * @param source      the entity to map
      * @param trustStatus the computed trust verification status — must be passed in by the caller
      *                    (computed on-the-fly by BusinessPartnerService, never persisted)
+     * @param maxDateForTrustVerificationStatus the computed deadline for the current trust verification
+     *                    state, or {@code null} if not applicable
      */
     @SuppressWarnings("java:S1874") // Remove with EID-6624
     public static BusinessPartnerListItemDto toBusinessPartnerListItemDto(
         BusinessEntity source,
-        BusinessPartnerTrustStatusDto trustStatus
+        BusinessPartnerTrustStatusDto trustStatus,
+        Instant maxDateForTrustVerificationStatus
     ) {
         BusinessPartnerTypeDto type = toBusinessPartnerTypeDto(source.getType());
         return new BusinessPartnerListItemDto(
@@ -130,7 +136,7 @@ public class BusinessPartnerMapper {
             source.getAuditMetadata().getCreatedAt(),
             source.getAuditMetadata().getLastModifiedAt(),
             trustStatus,
-            null
+            maxDateForTrustVerificationStatus
         );
     }
 

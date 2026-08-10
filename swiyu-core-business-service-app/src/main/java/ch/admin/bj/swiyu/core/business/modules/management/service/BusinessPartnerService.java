@@ -25,9 +25,11 @@ import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartner
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper;
+import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionLimitProperties;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionRepository;
 import jakarta.validation.Valid;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +59,7 @@ public class BusinessPartnerService {
     );
     private final BusinessPartnerRepository businessPartnerRepository;
     private final TrustOnboardingSubmissionRepository trustOnboardingSubmissionRepository;
+    private final TrustOnboardingSubmissionLimitProperties trustOnboardingSubmissionLimitProperties;
     private final PamsClient pamsClient;
     private final IdentifierEntryService identifierEntryService;
     private final AuditPublisher auditPublisher;
@@ -232,7 +235,7 @@ public class BusinessPartnerService {
 
         // If the computed state would be VERIFICATION_STARTED but no active DID exists yet,
         // keep it as VERIFICATION_NOT_STARTED — the portal cannot start verification without a DID.
-        if (progress == IdentityVerificationProgressDto.VERIFICATION_STARTED) {
+        if (progress.status() == IdentityVerificationProgressStatusDto.VERIFICATION_STARTED) {
             boolean hasActiveDid = identifierEntryService
                 .searchIdentifierEntries(
                     IdentifierEntryFilterDto.builder().businessPartnerId(businessPartnerId).activeOnly(true).build(),
@@ -240,7 +243,9 @@ public class BusinessPartnerService {
                 )
                 .hasContent();
             if (!hasActiveDid) {
-                return IdentityVerificationProgressDto.VERIFICATION_NOT_STARTED;
+                return IdentityVerificationProgressDto.of(
+                    IdentityVerificationProgressStatusDto.VERIFICATION_NOT_STARTED
+                );
             }
         }
 
@@ -330,40 +335,42 @@ public class BusinessPartnerService {
 
         // BPI ACTIVE + no in-flight submission → fully verified
         if (bpi != null && bpi.getStatus() == BusinessPartnerIdentityStatus.ACTIVE && latestActive.isEmpty()) {
-            return IdentityVerificationProgressDto.VERIFICATION_SUCCEEDED;
+            return IdentityVerificationProgressDto.of(IdentityVerificationProgressStatusDto.VERIFICATION_SUCCEEDED);
         }
 
         // No BPI but previously succeeded (from submissions) + no active submission
         // → treat as verified (migration window: BPI event not yet received from TMS)
         if (bpi == null && hasPreviouslySucceeded && latestActive.isEmpty()) {
-            return IdentityVerificationProgressDto.VERIFICATION_SUCCEEDED;
+            return IdentityVerificationProgressDto.of(IdentityVerificationProgressStatusDto.VERIFICATION_SUCCEEDED);
         }
 
         // BPI DEACTIVATED + no active submission → re-verification required
         if (bpi != null && bpi.getStatus() == BusinessPartnerIdentityStatus.DEACTIVATED && latestActive.isEmpty()) {
-            return IdentityVerificationProgressDto.RE_VERIFICATION_REQUIRED;
+            return IdentityVerificationProgressDto.of(IdentityVerificationProgressStatusDto.RE_VERIFICATION_REQUIRED);
         }
 
         // Previously succeeded + active in-flight submission → RE_* states
         if (hasPreviouslySucceeded && latestActive.isPresent()) {
-            return switch (latestActive.get().getStatus()) {
-                case UNSUBMITTED -> IdentityVerificationProgressDto.RE_VERIFICATION_STARTED;
-                case SUBMITTED -> IdentityVerificationProgressDto.RE_VERIFICATION_IN_PROGRESS;
-                case INFORMATION_REQUESTED -> IdentityVerificationProgressDto.VERIFICATION_INFORMATION_REQUESTED;
-                default -> IdentityVerificationProgressDto.VERIFICATION_SUCCEEDED; // unreachable
+            var status = switch (latestActive.get().getStatus()) {
+                case UNSUBMITTED -> IdentityVerificationProgressStatusDto.RE_VERIFICATION_STARTED;
+                case SUBMITTED -> IdentityVerificationProgressStatusDto.RE_VERIFICATION_IN_PROGRESS;
+                case INFORMATION_REQUESTED -> IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED;
+                default -> IdentityVerificationProgressStatusDto.VERIFICATION_SUCCEEDED; // unreachable
             };
+            return new IdentityVerificationProgressDto(status, computeMaxDate(status, latestActive.get()));
         }
 
         // No previous success — first-time verification path
         if (latestActive.isEmpty()) {
-            return IdentityVerificationProgressDto.VERIFICATION_NOT_STARTED;
+            return IdentityVerificationProgressDto.of(IdentityVerificationProgressStatusDto.VERIFICATION_NOT_STARTED);
         }
-        return switch (latestActive.get().getStatus()) {
-            case UNSUBMITTED -> IdentityVerificationProgressDto.VERIFICATION_STARTED;
-            case SUBMITTED -> IdentityVerificationProgressDto.VERIFICATION_IN_PROGRESS;
-            case INFORMATION_REQUESTED -> IdentityVerificationProgressDto.VERIFICATION_INFORMATION_REQUESTED;
-            default -> IdentityVerificationProgressDto.VERIFICATION_NOT_STARTED; // unreachable
+        var status = switch (latestActive.get().getStatus()) {
+            case UNSUBMITTED -> IdentityVerificationProgressStatusDto.VERIFICATION_STARTED;
+            case SUBMITTED -> IdentityVerificationProgressStatusDto.VERIFICATION_IN_PROGRESS;
+            case INFORMATION_REQUESTED -> IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED;
+            default -> IdentityVerificationProgressStatusDto.VERIFICATION_NOT_STARTED; // unreachable
         };
+        return new IdentityVerificationProgressDto(status, computeMaxDate(status, latestActive.get()));
     }
 
     /**
@@ -386,7 +393,7 @@ public class BusinessPartnerService {
      * </pre>
      */
     private BusinessPartnerTrustStatusDto toLegacyTrustStatus(IdentityVerificationProgressDto progress) {
-        return switch (progress) {
+        return switch (progress.status()) {
             case VERIFICATION_NOT_STARTED -> BusinessPartnerTrustStatusDto.NOT_VERIFIED;
             case VERIFICATION_STARTED -> BusinessPartnerTrustStatusDto.VERIFICATION_STARTED;
             case VERIFICATION_IN_PROGRESS -> BusinessPartnerTrustStatusDto.VERIFICATION_IN_PROGRESS;
@@ -398,6 +405,31 @@ public class BusinessPartnerService {
             case RE_VERIFICATION_IN_PROGRESS -> BusinessPartnerTrustStatusDto.RE_VERIFICATION_IN_PROGRESS;
             case RE_VERIFICATION_REJECTED -> BusinessPartnerTrustStatusDto.NOT_VERIFIED;
             case RE_VERIFICATION_SUCCEEDED -> BusinessPartnerTrustStatusDto.VERIFIED;
+        };
+    }
+
+    /**
+     * Computes the deadline for the given status based on the active submission's {@code initiatedAt}
+     * plus the configured {@code max-age-in-unsubmitted} duration.
+     *
+     * <p>Applies to {@link IdentityVerificationProgressStatusDto#VERIFICATION_STARTED},
+     * {@link IdentityVerificationProgressStatusDto#RE_VERIFICATION_STARTED}, and (temporarily)
+     * {@link IdentityVerificationProgressStatusDto#VERIFICATION_INFORMATION_REQUESTED}.
+     * For {@code VERIFICATION_INFORMATION_REQUESTED} this is an approximation; the correct
+     * calculation will be introduced with EID-6376 based on the future {@code resubmitRequiredUntil}
+     * property of {@link TrustOnboardingSubmission}.
+     *
+     * @return the computed deadline, or {@code null} if no deadline applies for the given status
+     */
+    private Instant computeMaxDate(
+        IdentityVerificationProgressStatusDto status,
+        TrustOnboardingSubmission activeSubmission
+    ) {
+        return switch (status) {
+            case VERIFICATION_STARTED, RE_VERIFICATION_STARTED, VERIFICATION_INFORMATION_REQUESTED -> activeSubmission
+                .getInitiatedAt()
+                .plus(trustOnboardingSubmissionLimitProperties.maxAgeInUnsubmitted());
+            default -> null;
         };
     }
 
@@ -563,7 +595,11 @@ public class BusinessPartnerService {
     private BusinessPartnerDto toBusinessPartnerDto(BusinessEntity entity) {
         var submissions = trustOnboardingSubmissionRepository.findAllByPartnerIdOrderByInitiatedAtAsc(entity.getId());
         var progress = computeVerificationProgress(entity, submissions);
-        return BusinessPartnerMapper.toBusinessPartnerDto(entity, toLegacyTrustStatus(progress));
+        return BusinessPartnerMapper.toBusinessPartnerDto(
+            entity,
+            toLegacyTrustStatus(progress),
+            progress.maxDateForStatus()
+        );
     }
 
     private BusinessEntityDto toBusinessEntityDto(BusinessEntity businessPartner) {
@@ -573,7 +609,11 @@ public class BusinessPartnerService {
     private BusinessPartnerListItemDto getBusinessPartnerListItemDto(BusinessEntity entity) {
         var submissions = trustOnboardingSubmissionRepository.findAllByPartnerIdOrderByInitiatedAtAsc(entity.getId());
         var progress = computeVerificationProgress(entity, submissions);
-        return BusinessPartnerMapper.toBusinessPartnerListItemDto(entity, toLegacyTrustStatus(progress));
+        return BusinessPartnerMapper.toBusinessPartnerListItemDto(
+            entity,
+            toLegacyTrustStatus(progress),
+            progress.maxDateForStatus()
+        );
     }
 
     private Pageable toBusinessPartnerPageable(Class<? extends ListItemDto> dtoClass, Pageable pageable) {

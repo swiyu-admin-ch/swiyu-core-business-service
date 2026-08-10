@@ -1,17 +1,22 @@
 package ch.admin.bj.swiyu.core.business.modules.dataimport.domain;
 
-import static ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil.fromLanguages;
-
 import ch.admin.bj.swiyu.core.business.common.demodata.DemoDataConstants;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
+import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.Signatory;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.experimental.UtilityClass;
 
+/*
+ * This class must be kept synchronized between CBS and TMS.
+ * If something change on one side, it must be pushed on the other.
+ * CBS: ch.admin.bj.swiyu.trust.management.modules.dataimport.service.CoreDemoData
+ * TMS: ch.admin.bj.swiyu.core.business.modules.dataimport.domain.CoreDemoData
+ */
 @SuppressWarnings(
     {
         "java:S1192", // Allow text repeats in demo data
@@ -23,7 +28,10 @@ public class CoreDemoData {
 
     // Keep in sync with DemoDataConstants
     public static final UUID CORE_ID_BP_DEFAULT = UUID.fromString("9f425029-9775-4984-99ba-bacc60069502");
+    public static final String CORE_ID_BP_WANTS_TO_BE_TRUSTED_S = "897edd6b-2e3e-4cc2-95a8-5b759c301df8";
+    public static final UUID CORE_ID_BP_WANTS_TO_BE_TRUSTED = UUID.fromString(CORE_ID_BP_WANTS_TO_BE_TRUSTED_S);
     public static final UUID CORE_ID_BP_GOV = UUID.fromString("39f92e48-619e-4e92-8958-468ae138d8a3");
+    public static final UUID CORE_ID_BP_GOV_TRUSTED = UUID.fromString("77054cd8-6fe6-44eb-be22-b56ebf9c8622");
     public static final UUID CORE_ID_BP_BASE_ONBOARDING_ONLY = UUID.fromString("e97e84e6-f40e-47ba-bdfe-d92f3d3dbc84");
     public static final UUID CORE_ID_BP_OVERDUE = UUID.fromString("4b9f08ac-aa29-4bcf-97a4-88e73e49c3e1");
 
@@ -35,10 +43,11 @@ public class CoreDemoData {
     public static final UUID CORE_ID_TOS_SUCCEEDED = UUID.fromString(
         DemoDataConstants.TrustOnboardingSubmission.ID_SUCCEEDED
     );
+    public static final UUID CORE_ID_BP_GOV_TRUSTED_TOS_SUCCEEDED = UUID.fromString(
+        "77cd5ae5-c553-4440-b1b7-57cb8f4af6f4"
+    );
     public static final UUID CORE_ID_TOS_INFO_REQUESTED = UUID.fromString("dc828a98-ffb1-4ae4-8f07-b35d2818ac87");
     public static final UUID CORE_ID_TOS_OVERDUE = UUID.fromString("161d56d8-0999-46e5-a618-ba922414382a");
-    public static final String CORE_ID_BP_BASE_ONBOARDING_ONLY_PHONE = "+41791234567";
-    public static final String CORE_ID_BP_DEFAULT_PHONE = "+41791234567";
 
     public static final UUID CORE_ID_BP_E2ETESTS = UUID.fromString("7b24f978-afe7-4f60-af2f-57ae5a01d303");
     public static final UUID CORE_ID_IDENTIFIER_E2ETESTS_LOCAL = UUID.fromString(
@@ -47,18 +56,8 @@ public class CoreDemoData {
     public static final String CORE_ID_IDENTIFIER_E2ETESTS_LOCAL_DIDLOG =
         "{\"versionId\":\"1-QmStVvgLKv3oVnerc74p54pt8UcF8urHH32t9LvDVYLhMu\",\"versionTime\":\"2026-07-07T15:10:31Z\",\"parameters\":{\"method\":\"did:webvh:1.0\",\"scid\":\"QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy\",\"updateKeys\":[\"z6MknJEsZ8hynVFFF1oFFrJEdtsgTtSjuaE3k3RtpJfzLK9G\"],\"portable\":false},\"state\":{\"id\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672\",\"profile_version\":\"swiss-profile-anchor:1.0.0\",\"authentication\":[\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#auth-key-01\"],\"assertionMethod\":[\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#assert-key-01\"],\"verificationMethod\":[{\"id\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#auth-key-01\",\"controller\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672\",\"type\":\"JsonWebKey2020\",\"publicKeyJwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"lJHTz-hxyWyudXR-Ik3n59Njh0ZDe67LOAC4rWtGwVI\",\"y\":\"UQ-GiYrC3ZPwVhKNc00u1-QHYXRU1tIz8_KtkC-MGSs\",\"kid\":\"auth-key-01\"}},{\"id\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#assert-key-01\",\"controller\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672\",\"type\":\"JsonWebKey2020\",\"publicKeyJwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"b8iC-SjRKmuoSIGDhD7C7GTiSq06aIyx07yI9WlryF4\",\"y\":\"GsyVRZcIyc6pcXKClxTiwXGTCcXZf6sWXA8tQmWgRBI\",\"kid\":\"assert-key-01\"}}]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"created\":\"2026-07-07T15:10:31Z\",\"verificationMethod\":\"did:key:z6MknJEsZ8hynVFFF1oFFrJEdtsgTtSjuaE3k3RtpJfzLK9G#z6MknJEsZ8hynVFFF1oFFrJEdtsgTtSjuaE3k3RtpJfzLK9G\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4FaBXsyaD4ZXY3WYTsjiPLp4N2HDGfz6ax2sELpxLMrJrTFyk5T6MhgEUCrfyPPxPsicNdqPRSiXFMLFWREpoYkp\"}]}";
 
-    public static final Map<String, String> CORE_ID_BP_E2ETESTS_NAMES = fromLanguages(
-        "E2e GmbH (DE)",
-        "E2e GmbH (DE)",
-        "E2e GmbH (FR)",
-        "E2e S.r.l. (IT)",
-        "E2e GmbH (EN)",
-        "E2e GmbH (RM)"
-    );
-    public static final String CORE_ID_BP_E2ETESTS_EMAIL = "erika.mueller@e2e.test";
-
     // CORE_ID_BP_DEFAULT
-    public static final Map<String, String> CORE_ID_BP_DEFAULT_NAMES = fromLanguages(
+    public static final Map<String, String> CORE_ID_BP_DEFAULT_NAMES = LocalizedMapUtil.fromLanguages(
         "Vertrau mir Beratung GmbH",
         "Vertrau mir Beratung GmbH (DE)",
         "Confiance Conseil GmbH (FR)",
@@ -73,6 +72,8 @@ public class CoreDemoData {
         "Schweiz",
         "Democanton"
     );
+    public static final String CORE_ID_BP_DEFAULT_CORRESPONDING_LANG = "de-CH";
+    public static final String CORE_ID_BP_DEFAULT_PHONE = "+41791234567";
     public static final String CORE_ID_BP_DEFAULT_EMAIL = "erika.mueller@trusty-consulting.com";
     public static final Contact CORE_ID_BP_DEFAULT_CONTACT = new Contact(
         "erika",
@@ -84,8 +85,9 @@ public class CoreDemoData {
     public static final List<Signatory> CORE_ID_BP_DEFAULT_SIGNATORIES = List.of(
         new Signatory("Erika", "Müller", "+41776665544", CORE_ID_BP_DEFAULT_EMAIL)
     );
+
     // CORE_ID_BP_WANTS_TO_BE_TRUSTED
-    public static final Map<String, String> CORE_ID_BP_WANTS_TO_BE_TRUSTED_NAMES = fromLanguages(
+    public static final Map<String, String> CORE_ID_BP_WANTS_TO_BE_TRUSTED_NAMES = LocalizedMapUtil.fromLanguages(
         "Böswilliges Umzugsunternehmen GmbH",
         "Böswilliges Umzugsunternehmen GmbH",
         "Déménageurs malveillants GmbH",
@@ -114,8 +116,9 @@ public class CoreDemoData {
         "+41548884441",
         CORE_ID_BP_WANTS_TO_BE_TRUSTED_EMAIL
     );
+
     // CORE_ID_BP_GOV
-    public static final Map<String, String> CORE_ID_BP_GOV_NAMES = fromLanguages(
+    public static final Map<String, String> CORE_ID_BP_GOV_NAMES = LocalizedMapUtil.fromLanguages(
         "Demo Kanton",
         "Demo Kanton",
         "Demo Canton",
@@ -145,8 +148,44 @@ public class CoreDemoData {
         new Signatory("John", "Doe", "+41776665544", CORE_ID_BP_GOV_EMAIL_JOHN),
         new Signatory("Erika", "Müller", "+41554443322", CORE_ID_BP_GOV_EMAIL_ERIKA)
     );
+
+    // CORE_ID_BP_GOV_TRUSTED
+    public static final Map<String, String> CORE_ID_BP_GOV_TRUSTED_NAMES = LocalizedMapUtil.fromLanguages(
+        "Trusted Gov Partner",
+        "Trusted Gov Partner (DE)",
+        "Trusted Gov Partner (FR)",
+        "Trusted Gov Partner (IT)",
+        "Trusted Gov Partner (EN)",
+        "Trusted Gov Partner (RM)"
+    );
+    public static final Address CORE_ID_BP_GOV_TRUSTED_ADDRESS = new Address(
+        "Geschäftsstraße 13",
+        "Demohausen",
+        "1111",
+        "Schweiz",
+        "Democanton"
+    );
+    public static final String CORE_ID_BP_GOV_TRUSTED_CORRESPONDING_LANG = "de-CH";
+    public static final String CORE_ID_BP_GOV_TRUSTED_PHONE = "+41791234567";
+    public static final String CORE_ID_BP_GOV_TRUSTED_EMAIL = "helvetica@trusting-gov.com";
+    public static final Contact CORE_ID_BP_GOV_TRUSTED_CONTACT = new Contact(
+        "erika",
+        "müller",
+        CORE_ID_BP_GOV_TRUSTED_EMAIL,
+        "+41548884440",
+        Language.DE
+    );
+    public static final List<Signatory> CORE_ID_BP_GOV_TRUSTED_SIGNATORIES = List.of(
+        new Signatory("Erika", "Müller", "+41776665544", CORE_ID_BP_GOV_TRUSTED_EMAIL)
+    );
+    public static final UUID CORE_ID_BP_GOV_TRUSTED_IDENTIFIER_DATASTORE_ID = UUID.fromString(
+        "effaab62-ab2d-4794-ba7f-48cbbe3ea383"
+    );
+    public static final String CORE_ID_BP_GOV_TRUSTED_DIDLOG_LOCAL =
+        "{\"versionId\":\"1-QmSfpPzd7kBQ6DPuccaJjBW9m6nScfNYnPuEduoxSFkD26\",\"versionTime\":\"2026-08-06T11:08:35Z\",\"parameters\":{\"method\":\"did:webvh:1.0\",\"scid\":\"QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty\",\"updateKeys\":[\"z6Mkozy1Dpit4opQXbfLthUM5KdZDoQLzMGzN3jLes6KahrQ\"],\"portable\":false},\"state\":{\"id\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383\",\"profile_version\":\"swiss-profile-anchor:1.0.0\",\"authentication\":[\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383#auth-key-01\"],\"assertionMethod\":[\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383#assert-key-01\"],\"verificationMethod\":[{\"id\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383#auth-key-01\",\"controller\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383\",\"type\":\"JsonWebKey2020\",\"publicKeyJwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"1rj9SCVfrol4JSYUXPFH50MSl28QuP1lRslb9C3jvi8\",\"y\":\"Pmit2QvqFNEAT9kKhVpfN7vSLk0sbzTVsun4OKO8o9g\",\"kid\":\"auth-key-01\"}},{\"id\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383#assert-key-01\",\"controller\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383\",\"type\":\"JsonWebKey2020\",\"publicKeyJwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"hfLUyfOj8tNfzKybUKCUfUh7WWvxdQCbZiYn94kmYFY\",\"y\":\"ITknv43a5zNcSIR5pL3XZLzru905EuUAdMZyC4a5Bz4\",\"kid\":\"assert-key-01\"}}]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"created\":\"2026-08-06T11:08:35Z\",\"verificationMethod\":\"did:key:z6Mkozy1Dpit4opQXbfLthUM5KdZDoQLzMGzN3jLes6KahrQ#z6Mkozy1Dpit4opQXbfLthUM5KdZDoQLzMGzN3jLes6KahrQ\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z2AoWEb9hZ7CQVdvvFMxEQn2NkZRd8K6xx4UPx9nJahYvmAy1LaDcfNQJ9DmAAKvTbEkKwun2BgfSMoFm81MxDDzS\"}]}";
+
     // CORE_ID_BP_BASE_ONBOARDING_ONLY
-    public static final Map<String, String> CORE_ID_BP_BASE_ONBOARDING_ONLY_NAMES = fromLanguages(
+    public static final Map<String, String> CORE_ID_BP_BASE_ONBOARDING_ONLY_NAMES = LocalizedMapUtil.fromLanguages(
         "Demo Unternehmen",
         "Demo Unternehmen",
         "Démonstration Entreprise",
@@ -161,11 +200,11 @@ public class CoreDemoData {
         "Schweiz",
         "Democanton"
     );
+    public static final String CORE_ID_BP_BASE_ONBOARDING_ONLY_PHONE = "+41791234567";
     public static final String CORE_ID_BP_BASE_ONBOARDING_ONLY_EMAIL = "helvetica@demo-comp.com";
-    static final String CORE_ID_BP_WANTS_TO_BE_TRUSTED_S = "897edd6b-2e3e-4cc2-95a8-5b759c301df8";
-    public static final UUID CORE_ID_BP_WANTS_TO_BE_TRUSTED = UUID.fromString(CORE_ID_BP_WANTS_TO_BE_TRUSTED_S);
+
     // CORE_ID_BP_OVERDUE
-    public static final Map<String, String> CORE_ID_BP_OVERDUE_NAMES = fromLanguages(
+    public static final Map<String, String> CORE_ID_BP_OVERDUE_NAMES = LocalizedMapUtil.fromLanguages(
         "Schleppende Logistik AG",
         "Schleppende Logistik AG",
         "Logistique Lente SA",
@@ -191,4 +230,15 @@ public class CoreDemoData {
     public static final List<Signatory> CORE_ID_BP_OVERDUE_SIGNATORIES = List.of(
         new Signatory("Peter", "Keller", "+41776665546", CORE_ID_BP_OVERDUE_EMAIL)
     );
+
+    // CORE_ID_BP_E2ETESTS
+    public static final Map<String, String> CORE_ID_BP_E2ETESTS_NAMES = LocalizedMapUtil.fromLanguages(
+        "E2e GmbH (DE)",
+        "E2e GmbH (DE)",
+        "E2e GmbH (FR)",
+        "E2e S.r.l. (IT)",
+        "E2e GmbH (EN)",
+        "E2e GmbH (RM)"
+    );
+    public static final String CORE_ID_BP_E2ETESTS_EMAIL = "erika.mueller@e2e.test";
 }

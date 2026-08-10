@@ -54,7 +54,9 @@ public record BusinessPartnerDto(
     @SuppressWarnings("java:S1133") // remove with EID-6624
     @Deprecated(since = "3.42.5")
     @Schema(
-        description = "Time limit of the current trust process state. Deprecated: no longer used.",
+        description = "Time limit of the current trust process state. " +
+            "Deprecated: will be removed once EID-6624 (contract story) is implemented; " +
+            "retrieve via IdentityVerificationProgress.maxDateForStatus instead.",
         deprecated = true
     )
     Instant maxDateForTrustVerificationStatus,

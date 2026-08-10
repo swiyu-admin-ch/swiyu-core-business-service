@@ -72,6 +72,15 @@ public class DemoDataImportService {
                 CoreDemoData.CORE_ID_BP_DEFAULT_PHONE
             ),
             new BusinessEntity(
+                CoreDemoData.CORE_ID_BP_GOV_TRUSTED,
+                LocalizedMapUtil.getDefaultValue(CoreDemoData.CORE_ID_BP_GOV_TRUSTED_NAMES),
+                CoreDemoData.CORE_ID_BP_GOV_TRUSTED_EMAIL,
+                BusinessPartnerType.BUSINESS,
+                null,
+                null,
+                CoreDemoData.CORE_ID_BP_GOV_TRUSTED_PHONE
+            ),
+            new BusinessEntity(
                 CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED,
                 LocalizedMapUtil.getDefaultValue(CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_NAMES),
                 CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED_EMAIL,
@@ -139,30 +148,46 @@ public class DemoDataImportService {
             UUID.fromString("ff8757d8-9de8-4cde-a538-1e0e6fc73e5e")
         );
 
-        var identifierDatastoreEntityOpt = identifierDatastoreEntityRepository.findById(
-            CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL
+        addDidIdentifier(
+            CoreDemoData.CORE_ID_BP_E2ETESTS,
+            CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL,
+            CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL_DIDLOG,
+            "DID for local E2E tests"
         );
-        var identifierDatastoreEntity = identifierDatastoreEntityOpt.orElseGet(() ->
-            identifierDatastoreEntityRepository.save(
-                new IdentifierDatastoreEntity(CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL)
-            )
+        addDidIdentifier(
+            CoreDemoData.CORE_ID_BP_GOV_TRUSTED,
+            CoreDemoData.CORE_ID_BP_GOV_TRUSTED_IDENTIFIER_DATASTORE_ID,
+            CoreDemoData.CORE_ID_BP_GOV_TRUSTED_DIDLOG_LOCAL,
+            "Did for gov trusted"
         );
+    }
+
+    private void addDidIdentifier(
+        UUID businessPartnerId,
+        UUID identifierRegistryDatastoreId,
+        String didLog,
+        String description
+    ) {
+        // get or create Datastore
+        var identifierDatastoreEntity = identifierDatastoreEntityRepository
+            .findById(identifierRegistryDatastoreId)
+            .orElseGet(() ->
+                identifierDatastoreEntityRepository.save(new IdentifierDatastoreEntity(identifierRegistryDatastoreId))
+            );
         identifierDatastoreEntity.changeStatus(DatastoreStatus.ACTIVE);
         identifierDatastoreEntityRepository.save(identifierDatastoreEntity);
 
-        var identifierEntryOpt = identifierEntryRepository.findById(CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL);
-        var identifierEntry = identifierEntryOpt.orElseGet(() ->
-            identifierEntryRepository.save(
-                new IdentifierEntry(CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL, CoreDemoData.CORE_ID_BP_E2ETESTS)
-            )
-        );
-        identifierEntry.setDescription("DID for local E2E tests");
+        // get or create identifier entry
+        var identifierEntry = identifierEntryRepository
+            .findById(identifierRegistryDatastoreId)
+            .orElseGet(() ->
+                identifierEntryRepository.save(new IdentifierEntry(identifierRegistryDatastoreId, businessPartnerId))
+            );
+        identifierEntry.setDescription(description);
         identifierEntryRepository.save(identifierEntry);
-        identifierEntryService.updateIdentifierEntry(
-            CoreDemoData.CORE_ID_BP_E2ETESTS,
-            CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL,
-            CoreDemoData.CORE_ID_IDENTIFIER_E2ETESTS_LOCAL_DIDLOG
-        );
+
+        // add did log
+        identifierEntryService.updateIdentifierEntry(businessPartnerId, identifierRegistryDatastoreId, didLog);
     }
 
     private void addExampleIdentifier(UUID partnerId, UUID identifierId) {
@@ -178,12 +203,14 @@ public class DemoDataImportService {
         deleteAllDocumentsByPartner(CoreDemoData.CORE_ID_BP_DEFAULT);
         deleteAllDocumentsByPartner(CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED);
         deleteAllDocumentsByPartner(CoreDemoData.CORE_ID_BP_GOV);
+        deleteAllDocumentsByPartner(CoreDemoData.CORE_ID_BP_GOV_TRUSTED);
         deleteAllDocumentsByPartner(CoreDemoData.CORE_ID_BP_BASE_ONBOARDING_ONLY);
         deleteAllDocumentsByPartner(CoreDemoData.CORE_ID_BP_OVERDUE);
 
         trustOnboardingSubmissionRepository.deleteByPartnerId(CoreDemoData.CORE_ID_BP_DEFAULT);
         trustOnboardingSubmissionRepository.deleteByPartnerId(CoreDemoData.CORE_ID_BP_WANTS_TO_BE_TRUSTED);
         trustOnboardingSubmissionRepository.deleteByPartnerId(CoreDemoData.CORE_ID_BP_GOV);
+        trustOnboardingSubmissionRepository.deleteByPartnerId(CoreDemoData.CORE_ID_BP_GOV_TRUSTED);
         trustOnboardingSubmissionRepository.deleteByPartnerId(CoreDemoData.CORE_ID_BP_BASE_ONBOARDING_ONLY);
         trustOnboardingSubmissionRepository.deleteByPartnerId(CoreDemoData.CORE_ID_BP_OVERDUE);
     }
@@ -205,6 +232,27 @@ public class DemoDataImportService {
         );
         trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
             CoreDemoData.CORE_ID_TOS_SUCCEEDED,
+            new TrustOnboardingSubmissionDocumentUploadRequestDto(
+                TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                new MockMultipartFile("Declaration of intent.pdf", "something new")
+            )
+        );
+        sub.markAsSucceeded();
+        trustOnboardingSubmissionRepository.saveAndFlush(sub);
+
+        sub = generateTrustOnboardingSubmission(
+            CoreDemoData.CORE_ID_BP_GOV_TRUSTED_TOS_SUCCEEDED,
+            CoreDemoData.CORE_ID_BP_GOV_TRUSTED,
+            CoreDemoData.CORE_ID_BP_GOV_TRUSTED_NAMES,
+            CoreDemoData.CORE_ID_BP_GOV_TRUSTED_ADDRESS,
+            CoreDemoData.CORE_ID_BP_GOV_TRUSTED_CONTACT,
+            CoreDemoData.CORE_ID_BP_GOV_TRUSTED_EMAIL,
+            BusinessPartnerType.GOVERNMENTAL_INSTITUTION,
+            SigningRule.SINGLE_SIGNATURE,
+            CoreDemoData.CORE_ID_BP_GOV_TRUSTED_SIGNATORIES
+        );
+        trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
+            CoreDemoData.CORE_ID_BP_GOV_TRUSTED_TOS_SUCCEEDED,
             new TrustOnboardingSubmissionDocumentUploadRequestDto(
                 TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
                 new MockMultipartFile("Declaration of intent.pdf", "something new")
@@ -266,6 +314,7 @@ public class DemoDataImportService {
                 new MockMultipartFile("Declaration of intent from .pdf", "something")
             )
         );
+        trustOnboardingSubmissionRepository.saveAndFlush(sub);
 
         sub = generateTrustOnboardingSubmission(
             CoreDemoData.CORE_ID_TOS_SUBMITTED,

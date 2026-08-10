@@ -9,6 +9,7 @@ import ch.admin.bj.swiyu.core.business.modules.identifier.config.IdentifierLimit
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.MockPamsClient;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.status.config.StatusListsLimitProperties;
+import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionLimitProperties;
 import java.util.Optional;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.flyway.autoconfigure.FlywayProperties;
@@ -28,7 +29,12 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @EnableJpaAuditing
 @AutoConfigureJson
 @EnableConfigurationProperties(
-    { FlywayProperties.class, IdentifierLimitProperties.class, StatusListsLimitProperties.class }
+    {
+        FlywayProperties.class,
+        IdentifierLimitProperties.class,
+        StatusListsLimitProperties.class,
+        TrustOnboardingSubmissionLimitProperties.class,
+    }
 )
 public class DataJpaTestConfiguration {
 

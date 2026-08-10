@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.42.13
+
+### Fix
+
+- Add missing delection for test data wich lead to error during mock data injection
+
+## 3.42.12
+
+### Fix
+
+- Provide max data for verification for the BusinessPartner status values BusinessPartnerTrustStatus.ReVerificationStarted, BusinessPartnerTrustStatus.VerificationStarted
+- For the partner status IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED temporarily the same value is used like for 
+
+## 3.42.11
+
+### Added
+
+- Add Demo Data for Trusted Gov Business Partner
+
 ## 3.42.10
 
 ### Added

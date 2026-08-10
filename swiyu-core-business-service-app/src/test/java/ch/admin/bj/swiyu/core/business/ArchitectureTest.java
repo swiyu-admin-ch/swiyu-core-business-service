@@ -213,6 +213,12 @@ public class ArchitectureTest {
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service.."),
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.trust.domain..")
             )
+            // management -> trust.config (TrustOnboardingSubmissionLimitProperties used to compute maxDateForTrustVerificationStatus)
+            // TODO EID-6624: remove once deprecated maxDateForTrustVerificationStatus field is removed from BusinessPartnerDto
+            .ignoreDependency(
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service.."),
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.trust.config..")
+            )
             // trust -> management
             .ignoreDependency(
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.trust.service.."),

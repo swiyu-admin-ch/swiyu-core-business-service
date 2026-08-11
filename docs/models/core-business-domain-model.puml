@@ -21,35 +21,29 @@ package "Management" #E8F5E9 {
         UNKNOWN
     }
 
-    enum BusinessEntityTrustStatus {
-        NOT_VERIFIED
-        VERIFICATION_STARTED
-        VERIFICATION_IN_PROGRESS
-        INFORMATION_REQUESTED
-        VERIFIED
-        RE_VERIFICATION_STARTED
-        RE_VERIFICATION_IN_PROGRESS
+    enum BusinessPartnerIdentityStatus {
+        ACTIVE
+        DEACTIVATED
     }
 
     entity BusinessEntity <<entity>> {
         + id : UUID <<PK>>
-        + name : String
-        + contactEmail : String
         + type : BusinessPartnerType
         + version : Long
         + payedForDidSlots : int
         + payedForTrustVerification : boolean
-        + trustVerificationStatus : BusinessEntityTrustStatus
-        + maxDateForTrustVerificationStatus : Instant
         + uid : String
-        + contactPhone : String
+        -- jsonb --
+        + entityName : Map<String,String>
         -- embedded --
         + address : Address
+        + contact : Contact
+        + businessPartnerIdentity : BusinessPartnerIdentity
         + auditMetadata : AuditMetadata
     }
 
     BusinessEntity --> BusinessPartnerType : type
-    BusinessEntity --> BusinessEntityTrustStatus : trustVerificationStatus
+    BusinessEntity --> BusinessPartnerIdentityStatus : businessPartnerIdentity.status
 }
 
 ' ========================
@@ -225,11 +219,11 @@ package "Trust" #E0F7FA {
         -- jsonb --
         + proofOfPossessions : List<ProofOfPossession>
         + signatories : List<Signatory>
-        + declarationOfIntent : DeclarationOfIntent
         -- embedded --
-        + entityName : MultiLanguageText
+        + entityName : Map<String,String>
         + entityAddress : Address
         + contactPerson : Contact
+        + declarationOfIntent : DeclarationOfIntent
         + auditMetadata : AuditMetadata
     }
 
@@ -322,20 +316,12 @@ package "Common Value Objects" #EEEEFF {
         + region : String
     }
 
-    class MultiLanguageText <<embeddable>> {
-        + de : String
-        + fr : String
-        + it : String
-        + en : String
-        + rm : String
-    }
-
     class Contact <<embeddable>> {
         + firstName : String
         + lastName : String
         + email : String
         + phone : String
-        + address : Address
+        + correspondingLanguage : Language
     }
 
     class ProofOfPossession <<json>> {
@@ -361,6 +347,16 @@ package "Common Value Objects" #EEEEFF {
         + jti : UUID
         + jwt : String
         + expiresAt : Instant
+    }
+
+    class BusinessPartnerIdentity <<embeddable>> {
+        + validUntil : Instant
+        + trustedIdentifier : List<String>
+        + status : BusinessPartnerIdentityStatus
+        + lastActivated : Instant
+        + uid : String
+        + entityName : Map<String,String>
+        + tmsVersion : Long
     }
 }
 

@@ -25,9 +25,10 @@ component "DataImport" as dataimport #F5F5F5
 ' ========================
 
 management --> identifier
-management --> status
+management --> trust
 
 status --> identifier
+status --> management
 
 trust --> management
 trust --> identifier

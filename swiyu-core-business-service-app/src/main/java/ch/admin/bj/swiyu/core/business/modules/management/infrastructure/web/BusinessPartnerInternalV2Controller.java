@@ -58,9 +58,7 @@ class BusinessPartnerInternalV2Controller {
             schema = @Schema(implementation = ch.admin.bj.swiyu.core.business.common.api.ApiErrorDto.class)
         )
     )
-    @Operation(
-        summary = "Create a new business entity controlled by the signed in user. Only one business entity is allowed per user."
-    )
+    @Operation(summary = "Create a new business entity controlled by the signed in user.")
     public BusinessPartnerDto createBusinessPartner(
         JeapAuthenticationToken token,
         @RequestBody @Valid CreatePartnerDto createPartnerDto

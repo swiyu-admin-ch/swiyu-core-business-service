@@ -1,22 +1,21 @@
 package ch.admin.bj.swiyu.core.business.modules.dataimport.domain;
 
-import ch.admin.bj.swiyu.core.business.common.demodata.DemoDataConstants;
-import ch.admin.bj.swiyu.core.business.common.domain.Address;
-import ch.admin.bj.swiyu.core.business.common.domain.Contact;
-import ch.admin.bj.swiyu.core.business.common.domain.Language;
-import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
-import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.Signatory;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import static ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil.fromLanguages;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.util.*;
+import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 
 /*
  * This class must be kept synchronized between CBS and TMS.
  * If something change on one side, it must be pushed on the other.
- * CBS: ch.admin.bj.swiyu.trust.management.modules.dataimport.service.CoreDemoData
- * TMS: ch.admin.bj.swiyu.core.business.modules.dataimport.domain.CoreDemoData
+ * (Code owner) CBS: ch.admin.bj.swiyu.core.business.modules.dataimport.domain.CoreDemoData
+ * TMS: ch.admin.bj.swiyu.trust.management.modules.dataimport.domain.CoreDemoData
  */
+
 @SuppressWarnings(
     {
         "java:S1192", // Allow text repeats in demo data
@@ -26,219 +25,500 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class CoreDemoData {
 
-    // Keep in sync with DemoDataConstants
-    public static final UUID CORE_ID_BP_DEFAULT = UUID.fromString("9f425029-9775-4984-99ba-bacc60069502");
-    public static final String CORE_ID_BP_WANTS_TO_BE_TRUSTED_S = "897edd6b-2e3e-4cc2-95a8-5b759c301df8";
-    public static final UUID CORE_ID_BP_WANTS_TO_BE_TRUSTED = UUID.fromString(CORE_ID_BP_WANTS_TO_BE_TRUSTED_S);
-    public static final UUID CORE_ID_BP_GOV = UUID.fromString("39f92e48-619e-4e92-8958-468ae138d8a3");
-    public static final UUID CORE_ID_BP_GOV_TRUSTED = UUID.fromString("77054cd8-6fe6-44eb-be22-b56ebf9c8622");
-    public static final UUID CORE_ID_BP_BASE_ONBOARDING_ONLY = UUID.fromString("e97e84e6-f40e-47ba-bdfe-d92f3d3dbc84");
-    public static final UUID CORE_ID_BP_OVERDUE = UUID.fromString("4b9f08ac-aa29-4bcf-97a4-88e73e49c3e1");
+    @RequiredArgsConstructor
+    public enum DemoCase {
+        /**
+         * Status:<br/>
+         * identifier registry: <font color="green">onboarded</font><br/>
+         * trust registry: <font color="green">onboarded</font><br/>
+         * <!-- Should be one of: -->
+         * <!-- <font color="green">onboarded</font> -->
+         * <!-- <font color="orange">ongoing</font> -->
+         * <!-- <font color="red">NOT onboarded</font> -->
+         * <p>
+         * Scenario:<br/>
+         * Governmental BP which is already onboarded to Trust Registry.<br/>
+         * Has authorization to issue a ProtectedIssuance.<br/>
+         * Has authorization to verify a ProtectedVerification.<br/>
+         */
+        GOV_BP_TRUST_ONBOARDING(
+            DemoBusinessPartner.of(
+                DemoBusinessPartner.DemoBusinessPartnerType.GOVERNMENTAL_INSTITUTION,
+                "77054cd8-6fe6-44eb-be22-b56ebf9c8622",
+                "erika.mueller@e2e.test",
+                fromLanguages(
+                    "Trusted Gov Partner",
+                    "Trusted Gov Partner (DE)",
+                    "Trusted Gov Partner (FR)",
+                    "Trusted Gov Partner (IT)",
+                    "Trusted Gov Partner (EN)",
+                    "Trusted Gov Partner (RM)"
+                ),
+                new DemoBusinessPartner.DemoAddress(
+                    "Geschäftsstraße 13",
+                    "Demohausen",
+                    "1111",
+                    "Schweiz",
+                    "Democanton"
+                ),
+                new DemoBusinessPartner.DemoContact(
+                    "erika",
+                    "müller",
+                    "erika.mueller@trusty-consulting.com",
+                    "+41548884440",
+                    DemoBusinessPartner.DemoContact.Language.DE
+                ),
+                DemoBusinessPartner.DemoSigningRule.SINGLE_SIGNATURE,
+                List.of(
+                    new DemoBusinessPartner.DemoSignatory(
+                        "Erika",
+                        "Müller",
+                        "+41776665544",
+                        "erika.mueller@trusty-consulting.com"
+                    )
+                ),
+                null,
+                "+41791234567",
+                null,
+                List.of(
+                    new DemoBusinessPartner.DemoIdentifier(
+                        UUID.fromString("effaab62-ab2d-4794-ba7f-48cbbe3ea383"),
+                        "did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383",
+                        "Did for gov trusted",
+                        "{\"versionId\":\"1-QmSfpPzd7kBQ6DPuccaJjBW9m6nScfNYnPuEduoxSFkD26\",\"versionTime\":\"2026-08-06T11:08:35Z\",\"parameters\":{\"method\":\"did:webvh:1.0\",\"scid\":\"QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty\",\"updateKeys\":[\"z6Mkozy1Dpit4opQXbfLthUM5KdZDoQLzMGzN3jLes6KahrQ\"],\"portable\":false},\"state\":{\"id\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383\",\"profile_version\":\"swiss-profile-anchor:1.0.0\",\"authentication\":[\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383#auth-key-01\"],\"assertionMethod\":[\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383#assert-key-01\"],\"verificationMethod\":[{\"id\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383#auth-key-01\",\"controller\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383\",\"type\":\"JsonWebKey2020\",\"publicKeyJwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"1rj9SCVfrol4JSYUXPFH50MSl28QuP1lRslb9C3jvi8\",\"y\":\"Pmit2QvqFNEAT9kKhVpfN7vSLk0sbzTVsun4OKO8o9g\",\"kid\":\"auth-key-01\"}},{\"id\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383#assert-key-01\",\"controller\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383\",\"type\":\"JsonWebKey2020\",\"publicKeyJwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"hfLUyfOj8tNfzKybUKCUfUh7WWvxdQCbZiYn94kmYFY\",\"y\":\"ITknv43a5zNcSIR5pL3XZLzru905EuUAdMZyC4a5Bz4\",\"kid\":\"assert-key-01\"}}]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"created\":\"2026-08-06T11:08:35Z\",\"verificationMethod\":\"did:key:z6Mkozy1Dpit4opQXbfLthUM5KdZDoQLzMGzN3jLes6KahrQ#z6Mkozy1Dpit4opQXbfLthUM5KdZDoQLzMGzN3jLes6KahrQ\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z2AoWEb9hZ7CQVdvvFMxEQn2NkZRd8K6xx4UPx9nJahYvmAy1LaDcfNQJ9DmAAKvTbEkKwun2BgfSMoFm81MxDDzS\"}]}"
+                    )
+                ),
+                Map.of(
+                    DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.SUCCEEDED,
+                    UUID.fromString("77cd5ae5-c553-4440-b1b7-57cb8f4af6f4")
+                )
+            )
+        ),
+        /**
+         * Status:<br/>
+         * identifier registry: <font color="green">onboarded</font><br/>
+         * trust registry: <font color="orange">NOT onboarded</font><br/>
+         * <!-- Should be one of: -->
+         * <!-- <font color="green">onboarded</font> -->
+         * <!-- <font color="orange">ongoing</font> -->
+         * <!-- <font color="red">NOT onboarded</font> -->
+         * <p>
+         * Scenario:<br/>
+         * A BP which is used in dynamic E2E tests.<br/>
+         */
+        E2ETEST_BP(
+            DemoBusinessPartner.of(
+                DemoBusinessPartner.DemoBusinessPartnerType.GOVERNMENTAL_INSTITUTION,
+                "7b24f978-afe7-4f60-af2f-57ae5a01d303",
+                "erika.mueller@e2e.test",
+                fromLanguages(
+                    "E2e GmbH (DE)",
+                    "E2e GmbH (DE)",
+                    "E2e GmbH (FR)",
+                    "E2e S.r.l. (IT)",
+                    "E2e GmbH (EN)",
+                    "E2e GmbH (RM)"
+                ),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of(
+                    new DemoBusinessPartner.DemoIdentifier(
+                        UUID.fromString("1133c5ee-f7b2-400c-a358-3bae4bba7672"),
+                        "did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672",
+                        "E2E Test DID for localhost",
+                        "{\"versionId\":\"1-QmStVvgLKv3oVnerc74p54pt8UcF8urHH32t9LvDVYLhMu\",\"versionTime\":\"2026-07-07T15:10:31Z\",\"parameters\":{\"method\":\"did:webvh:1.0\",\"scid\":\"QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy\",\"updateKeys\":[\"z6MknJEsZ8hynVFFF1oFFrJEdtsgTtSjuaE3k3RtpJfzLK9G\"],\"portable\":false},\"state\":{\"id\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672\",\"profile_version\":\"swiss-profile-anchor:1.0.0\",\"authentication\":[\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#auth-key-01\"],\"assertionMethod\":[\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#assert-key-01\"],\"verificationMethod\":[{\"id\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#auth-key-01\",\"controller\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672\",\"type\":\"JsonWebKey2020\",\"publicKeyJwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"lJHTz-hxyWyudXR-Ik3n59Njh0ZDe67LOAC4rWtGwVI\",\"y\":\"UQ-GiYrC3ZPwVhKNc00u1-QHYXRU1tIz8_KtkC-MGSs\",\"kid\":\"auth-key-01\"}},{\"id\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#assert-key-01\",\"controller\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672\",\"type\":\"JsonWebKey2020\",\"publicKeyJwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"b8iC-SjRKmuoSIGDhD7C7GTiSq06aIyx07yI9WlryF4\",\"y\":\"GsyVRZcIyc6pcXKClxTiwXGTCcXZf6sWXA8tQmWgRBI\",\"kid\":\"assert-key-01\"}}]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"created\":\"2026-07-07T15:10:31Z\",\"verificationMethod\":\"did:key:z6MknJEsZ8hynVFFF1oFFrJEdtsgTtSjuaE3k3RtpJfzLK9G#z6MknJEsZ8hynVFFF1oFFrJEdtsgTtSjuaE3k3RtpJfzLK9G\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4FaBXsyaD4ZXY3WYTsjiPLp4N2HDGfz6ax2sELpxLMrJrTFyk5T6MhgEUCrfyPPxPsicNdqPRSiXFMLFWREpoYkp\"}]}"
+                    )
+                ),
+                Map.of()
+            )
+        ),
+        /**
+         * Status:<br/>
+         * identifier registry: <font color="green">onboarded</font><br/>
+         * trust registry: <font color="orange">ongoing</font><br/>
+         * <!-- Should be one of: -->
+         * <!-- <font color="green">onboarded</font> -->
+         * <!-- <font color="orange">ongoing</font> -->
+         * <!-- <font color="red">NOT onboarded</font> -->
+         * <p>
+         * Scenario:<br/>
+         * A BP which already is onboarding to the trust registry but already send out a new Trust .<br/>
+         * TMS responded with a request for more information.<br/>
+         */
+        BUSINESS_BP_TRUST_ONBOARDING_RE_VERIFICATION(
+            DemoBusinessPartner.of(
+                DemoBusinessPartner.DemoBusinessPartnerType.BUSINESS,
+                // Keep ID in sync with
+                // ch.admin.bj.swiyu.core.business.common.demodata.DemoDataConstants.BusinessPartner#CORE_ID_BP_DEFAULT
+                "9f425029-9775-4984-99ba-bacc60069502",
+                "erika.mueller@trusty-consulting.com",
+                fromLanguages(
+                    "Vertrau mir Beratung GmbH",
+                    "Vertrau mir Beratung GmbH (DE)",
+                    "Confiance Conseil GmbH (FR)",
+                    "Trusty Consulting S.r.l. (IT)",
+                    "Trusty Consulting GmbH (EN)",
+                    "Trusty Consulting GmbH (RM)"
+                ),
+                new DemoBusinessPartner.DemoAddress(
+                    "Geschäftsstraße 13",
+                    "Demohausen",
+                    "1111",
+                    "Schweiz",
+                    "Democanton"
+                ),
+                new DemoBusinessPartner.DemoContact(
+                    "erika",
+                    "müller",
+                    "erika.mueller@trusty-consulting.com",
+                    "+41548884440",
+                    DemoBusinessPartner.DemoContact.Language.DE
+                ),
+                DemoBusinessPartner.DemoSigningRule.SINGLE_SIGNATURE,
+                List.of(
+                    new DemoBusinessPartner.DemoSignatory(
+                        "Erika",
+                        "Müller",
+                        "+41776665544",
+                        "erika.mueller@trusty-consulting.com"
+                    )
+                ),
+                null,
+                "+41791234567",
+                null,
+                null,
+                Map.of(
+                    DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.SUBMITTED,
+                    UUID.fromString("3299cd25-8bab-47b7-9d46-f740be76e57e"),
+                    DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.SUCCEEDED,
+                    // Keep in sync with
+                    // ch.admin.bj.swiyu.core.business.common.demodata.DemoDataConstants.TrustOnboardingSubmission#ID_SUCCEEDED
+                    UUID.fromString("8369160f-697c-4b12-80d3-91abff1a29ee")
+                )
+            )
+        ),
+        /**
+         * Status:<br/>
+         * identifier registry: <font color="green">onboarded</font><br/>
+         * trust registry: <font color="orange">ongoing</font><br/>
+         * <!-- Should be one of: -->
+         * <!-- <font color="green">onboarded</font> -->
+         * <!-- <font color="orange">ongoing</font> -->
+         * <!-- <font color="red">NOT onboarded</font> -->
+         * <p>
+         * Scenario:<br/>
+         * A Governmental BP which already send a Trust Onboarding submission to TMS.<br/>
+         * TMS responded with a request for more information.<br/>
+         */
+        BP_GOV_TRUST_ONBOARDING_MORE_INFO(
+            DemoBusinessPartner.of(
+                DemoBusinessPartner.DemoBusinessPartnerType.GOVERNMENTAL_INSTITUTION,
+                "39f92e48-619e-4e92-8958-468ae138d8a3",
+                "p.keller@schleppende-logistik.ch",
+                fromLanguages("Demo Kanton", "Demo Kanton", "Demo Canton", "Demo Cantone", "Demo Canton", "Demochaun"),
+                new DemoBusinessPartner.DemoAddress("Erfolgsstrasse 1", "Demohausen", "11111", "Schweiz", "Democanton"),
+                new DemoBusinessPartner.DemoContact(
+                    "Sandra",
+                    "Schmid",
+                    "s.schmid@democanton.admin.ch",
+                    "+41216548497",
+                    DemoBusinessPartner.DemoContact.Language.DE
+                ),
+                DemoBusinessPartner.DemoSigningRule.JOINT_SIGNATURE_THREE,
+                List.of(
+                    new DemoBusinessPartner.DemoSignatory(
+                        "Sandra",
+                        "Schmid",
+                        "+41665554433",
+                        "s.schmid@democanton.admin.ch"
+                    ),
+                    new DemoBusinessPartner.DemoSignatory("John", "Doe", "+41776665544", "j.doe@democanton.admin.ch"),
+                    new DemoBusinessPartner.DemoSignatory(
+                        "Erika",
+                        "Müller",
+                        "+41554443322",
+                        "e.mueller@democanton.admin.ch"
+                    )
+                ),
+                null,
+                null,
+                null,
+                null,
+                Map.of(
+                    DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.INFORMATION_REQUESTED,
+                    UUID.fromString("dc828a98-ffb1-4ae4-8f07-b35d2818ac87")
+                )
+            )
+        ),
+        /**
+         * Status:<br/>
+         * identifier registry: <font color="green">onboarded</font><br/>
+         * trust registry: <font color="red">NOT onboarded</font><br/>
+         * <!-- Should be one of: -->
+         * <!-- <font color="green">onboarded</font> -->
+         * <!-- <font color="orange">ongoing</font> -->
+         * <!-- <font color="red">NOT onboarded</font> -->
+         * <p>
+         * Scenario:<br/>
+         * BP is created, no interaction otherwise.<br/>
+         */
+        BUSINESS_BP_BASE_ONBOARDING_ONLY(
+            DemoBusinessPartner.of(
+                DemoBusinessPartner.DemoBusinessPartnerType.BUSINESS,
+                "e97e84e6-f40e-47ba-bdfe-d92f3d3dbc84",
+                "helvetica@demo-comp.com",
+                fromLanguages(
+                    "Demo Unternehmen",
+                    "Demo Unternehmen",
+                    "Démonstration Entreprise",
+                    "Demo Azienda",
+                    "Demo Company",
+                    "Demo Unternehmen"
+                ),
+                new DemoBusinessPartner.DemoAddress(
+                    "Geschäftsstraße 19",
+                    "Demohausen",
+                    "1111",
+                    "Schweiz",
+                    "Democanton"
+                ),
+                null,
+                null,
+                null,
+                null,
+                "+41791234567",
+                null,
+                null,
+                Map.of()
+            )
+        ),
+        /**
+         * Status:<br/>
+         * identifier registry: <font color="green">onboarded</font><br/>
+         * trust registry: <font color="orange">ongoing</font><br/>
+         * <!-- Should be one of: -->
+         * <!-- <font color="green">onboarded</font> -->
+         * <!-- <font color="orange">ongoing</font> -->
+         * <!-- <font color="red">NOT onboarded</font> -->
+         * <p>
+         * Scenario:<br/>
+         * BP did send a Trust Onboarding submission which is overdue to be processed on TMS side.<br/>
+         */
+        BP_TRUST_ONBOARDING_OVERDUE(
+            DemoBusinessPartner.of(
+                DemoBusinessPartner.DemoBusinessPartnerType.BUSINESS,
+                "4b9f08ac-aa29-4bcf-97a4-88e73e49c3e1",
+                "p.keller@schleppende-logistik.ch",
+                fromLanguages(
+                    "Schleppende Logistik AG",
+                    "Schleppende Logistik AG",
+                    "Logistique Lente SA",
+                    "Logistica Lenta S.r.l.",
+                    "Sluggish Logistics AG",
+                    "S.L. AG"
+                ),
+                new DemoBusinessPartner.DemoAddress("Lagerstrasse 27", "Demohausen", "1111", "Schweiz", "Democanton"),
+                new DemoBusinessPartner.DemoContact(
+                    "Peter",
+                    "Keller",
+                    "p.keller@schleppende-logistik.ch",
+                    "+41548884442",
+                    DemoBusinessPartner.DemoContact.Language.DE
+                ),
+                DemoBusinessPartner.DemoSigningRule.SINGLE_SIGNATURE,
+                List.of(
+                    new DemoBusinessPartner.DemoSignatory(
+                        "Peter",
+                        "Keller",
+                        "+41776665546",
+                        "p.keller@schleppende-logistik.ch"
+                    )
+                ),
+                null,
+                null,
+                null,
+                null,
+                Map.of(
+                    // Submitted TOS is always overdue in TMS
+                    DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.SUBMITTED,
+                    UUID.fromString("161d56d8-0999-46e5-a618-ba922414382a")
+                )
+            )
+        ),
+        /**
+         * Status:<br/>
+         * identifier registry: <font color="green">onboarded</font><br/>
+         * trust registry: <font color="red">NOT onboarded</font><br/>
+         * <!-- Should be one of: -->
+         * <!-- <font color="green">onboarded</font> -->
+         * <!-- <font color="orange">ongoing</font> -->
+         * <!-- <font color="red">NOT onboarded</font> -->
+         * <p>
+         * Scenario:<br/>
+         * BP already send a Trust Onboarding submission which is rejected.<br/>
+         * BP prepares a new Trust Onboarding submission which is ready to be submitted.<br/>
+         */
+        BP_WANTS_TO_BE_TRUSTED(
+            DemoBusinessPartner.of(
+                DemoBusinessPartner.DemoBusinessPartnerType.BUSINESS,
+                "897edd6b-2e3e-4cc2-95a8-5b759c301df8",
+                "ceo@m-m.com",
+                fromLanguages(
+                    "Böswilliges Umzugsunternehmen GmbH",
+                    "Böswilliges Umzugsunternehmen GmbH",
+                    "Déménageurs malveillants GmbH",
+                    "Traslocatori malintenzionati S.r.l.",
+                    "Malicious Movers GmbH",
+                    "M. M. GmbH"
+                ),
+                new DemoBusinessPartner.DemoAddress(
+                    "Glitterallee 42",
+                    "Demohausen",
+                    "1111",
+                    "Steueroase",
+                    "Democanton"
+                ),
+                new DemoBusinessPartner.DemoContact(
+                    "John",
+                    "Doe",
+                    "ceo@m-m.com",
+                    "+41548884441",
+                    DemoBusinessPartner.DemoContact.Language.DE
+                ),
+                DemoBusinessPartner.DemoSigningRule.SINGLE_SIGNATURE,
+                List.of(new DemoBusinessPartner.DemoSignatory("John", "Doe", "+41548884441", "ceo@m-m.com")),
+                null,
+                null,
+                List.of("f66469be-fb56-4ed3-be31-a2f5bd670ac9", "ff8757d8-9de8-4cde-a538-1e0e6fc73e5e"),
+                null,
+                Map.of(
+                    DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.REJECTED,
+                    UUID.fromString("913a09b4-6f6b-4703-a682-1046ccb26abb"),
+                    DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.UNSUBMITTED,
+                    // Keep in sync with
+                    // ch.admin.bj.swiyu.core.business.common.demodata.DemoDataConstants.TrustOnboardingSubmission#ID_UNSUBMITTED
+                    UUID.fromString("46ada91a-84ce-422b-b9b5-e0d2e3e8c46d")
+                )
+            )
+        );
 
-    public static final UUID CORE_ID_TOS_UNSUBMITTED = UUID.fromString(
-        DemoDataConstants.TrustOnboardingSubmission.ID_UNSUBMITTED
-    );
-    public static final UUID CORE_ID_TOS_REJECTED = UUID.fromString("913a09b4-6f6b-4703-a682-1046ccb26abb");
-    public static final UUID CORE_ID_TOS_SUBMITTED = UUID.fromString("3299cd25-8bab-47b7-9d46-f740be76e57e");
-    public static final UUID CORE_ID_TOS_SUCCEEDED = UUID.fromString(
-        DemoDataConstants.TrustOnboardingSubmission.ID_SUCCEEDED
-    );
-    public static final UUID CORE_ID_BP_GOV_TRUSTED_TOS_SUCCEEDED = UUID.fromString(
-        "77cd5ae5-c553-4440-b1b7-57cb8f4af6f4"
-    );
-    public static final UUID CORE_ID_TOS_INFO_REQUESTED = UUID.fromString("dc828a98-ffb1-4ae4-8f07-b35d2818ac87");
-    public static final UUID CORE_ID_TOS_OVERDUE = UUID.fromString("161d56d8-0999-46e5-a618-ba922414382a");
+        public final DemoBusinessPartner bp;
+    }
 
-    public static final UUID CORE_ID_BP_E2ETESTS = UUID.fromString("7b24f978-afe7-4f60-af2f-57ae5a01d303");
-    public static final UUID CORE_ID_IDENTIFIER_E2ETESTS_LOCAL = UUID.fromString(
-        "1133c5ee-f7b2-400c-a358-3bae4bba7672"
-    );
-    public static final String CORE_ID_IDENTIFIER_E2ETESTS_LOCAL_DIDLOG =
-        "{\"versionId\":\"1-QmStVvgLKv3oVnerc74p54pt8UcF8urHH32t9LvDVYLhMu\",\"versionTime\":\"2026-07-07T15:10:31Z\",\"parameters\":{\"method\":\"did:webvh:1.0\",\"scid\":\"QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy\",\"updateKeys\":[\"z6MknJEsZ8hynVFFF1oFFrJEdtsgTtSjuaE3k3RtpJfzLK9G\"],\"portable\":false},\"state\":{\"id\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672\",\"profile_version\":\"swiss-profile-anchor:1.0.0\",\"authentication\":[\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#auth-key-01\"],\"assertionMethod\":[\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#assert-key-01\"],\"verificationMethod\":[{\"id\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#auth-key-01\",\"controller\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672\",\"type\":\"JsonWebKey2020\",\"publicKeyJwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"lJHTz-hxyWyudXR-Ik3n59Njh0ZDe67LOAC4rWtGwVI\",\"y\":\"UQ-GiYrC3ZPwVhKNc00u1-QHYXRU1tIz8_KtkC-MGSs\",\"kid\":\"auth-key-01\"}},{\"id\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672#assert-key-01\",\"controller\":\"did:webvh:QmPidcC5K8DxBHUCTwn12YCYK6VAkAc3EyEZpsbMaHooyy:localhost%3A8190:api:v1:did:1133c5ee-f7b2-400c-a358-3bae4bba7672\",\"type\":\"JsonWebKey2020\",\"publicKeyJwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"b8iC-SjRKmuoSIGDhD7C7GTiSq06aIyx07yI9WlryF4\",\"y\":\"GsyVRZcIyc6pcXKClxTiwXGTCcXZf6sWXA8tQmWgRBI\",\"kid\":\"assert-key-01\"}}]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"created\":\"2026-07-07T15:10:31Z\",\"verificationMethod\":\"did:key:z6MknJEsZ8hynVFFF1oFFrJEdtsgTtSjuaE3k3RtpJfzLK9G#z6MknJEsZ8hynVFFF1oFFrJEdtsgTtSjuaE3k3RtpJfzLK9G\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4FaBXsyaD4ZXY3WYTsjiPLp4N2HDGfz6ax2sELpxLMrJrTFyk5T6MhgEUCrfyPPxPsicNdqPRSiXFMLFWREpoYkp\"}]}";
+    public record DemoBusinessPartner(
+        @NotNull DemoBusinessPartnerType type,
+        @NotNull String id_s,
+        @NotNull UUID id,
+        String email,
+        @NotNull Map<@NotBlank String, @NotBlank String> names,
+        DemoAddress address,
+        DemoContact contact,
+        DemoSigningRule signatoryRule,
+        List<@NotNull DemoSignatory> signatory,
+        String uid,
+        String contactPhone,
+        List<@NotNull DemoIdentifier> identifiers,
+        @NotNull Map<DemoTrustOnboardingSubmissionStatus, @NotNull UUID> trustOnboardings
+    ) {
+        static DemoBusinessPartner of(
+            @NotNull DemoBusinessPartnerType type,
+            @NotNull String id,
+            String email,
+            @NotNull Map<@NotBlank String, @NotBlank String> names,
+            DemoAddress address,
+            DemoContact contact,
+            DemoSigningRule signatoryRule,
+            List<@NotNull DemoSignatory> signatory,
+            String uid,
+            String contactPhone,
+            List<@NotNull String> exampleIdentifiers,
+            List<@NotNull DemoIdentifier> otherIdentifiers,
+            @NotNull Map<DemoTrustOnboardingSubmissionStatus, @NotNull UUID> trustOnboardings
+        ) {
+            return new DemoBusinessPartner(
+                type,
+                id,
+                UUID.fromString(id),
+                email,
+                names,
+                address,
+                contact,
+                signatoryRule,
+                signatory,
+                uid,
+                contactPhone,
+                Stream.concat(
+                    Stream.concat(
+                        // Every BP gets a did:example assigned
+                        Stream.of(
+                            new DemoIdentifier(UUID.fromString(id), "did:example:" + id + "-" + id, "Example DID", null)
+                        ),
+                        // Example DIDs
+                        Optional.ofNullable(exampleIdentifiers)
+                            .orElseGet(Collections::emptyList)
+                            .stream()
+                            .map(didSpaceId ->
+                                new DemoIdentifier(
+                                    UUID.fromString(didSpaceId),
+                                    "did:example:" + didSpaceId + "-" + id,
+                                    "Example DID",
+                                    null
+                                )
+                            )
+                    ),
+                    // Some BPs have extra / realistic DIDs
+                    Optional.ofNullable(otherIdentifiers).orElseGet(Collections::emptyList).stream()
+                ).toList(),
+                trustOnboardings
+            );
+        }
 
-    // CORE_ID_BP_DEFAULT
-    public static final Map<String, String> CORE_ID_BP_DEFAULT_NAMES = LocalizedMapUtil.fromLanguages(
-        "Vertrau mir Beratung GmbH",
-        "Vertrau mir Beratung GmbH (DE)",
-        "Confiance Conseil GmbH (FR)",
-        "Trusty Consulting S.r.l. (IT)",
-        "Trusty Consulting GmbH (EN)",
-        "Trusty Consulting GmbH (RM)"
-    );
-    public static final Address CORE_ID_BP_DEFAULT_ADDRESS = new Address(
-        "Geschäftsstraße 13",
-        "Demohausen",
-        "1111",
-        "Schweiz",
-        "Democanton"
-    );
-    public static final String CORE_ID_BP_DEFAULT_CORRESPONDING_LANG = "de-CH";
-    public static final String CORE_ID_BP_DEFAULT_PHONE = "+41791234567";
-    public static final String CORE_ID_BP_DEFAULT_EMAIL = "erika.mueller@trusty-consulting.com";
-    public static final Contact CORE_ID_BP_DEFAULT_CONTACT = new Contact(
-        "erika",
-        "müller",
-        CORE_ID_BP_DEFAULT_EMAIL,
-        "+41548884440",
-        Language.DE
-    );
-    public static final List<Signatory> CORE_ID_BP_DEFAULT_SIGNATORIES = List.of(
-        new Signatory("Erika", "Müller", "+41776665544", CORE_ID_BP_DEFAULT_EMAIL)
-    );
+        public enum DemoBusinessPartnerType {
+            GOVERNMENTAL_INSTITUTION,
+            BUSINESS,
+            INDIVIDUAL,
+        }
 
-    // CORE_ID_BP_WANTS_TO_BE_TRUSTED
-    public static final Map<String, String> CORE_ID_BP_WANTS_TO_BE_TRUSTED_NAMES = LocalizedMapUtil.fromLanguages(
-        "Böswilliges Umzugsunternehmen GmbH",
-        "Böswilliges Umzugsunternehmen GmbH",
-        "Déménageurs malveillants GmbH",
-        "Traslocatori malintenzionati S.r.l.",
-        "Malicious Movers GmbH",
-        "M. M. GmbH"
-    );
-    public static final Address CORE_ID_BP_WANTS_TO_BE_TRUSTED_ADDRESS = new Address(
-        "Glitterallee 42",
-        "Demohausen",
-        "1111",
-        "Steueroase",
-        "Democanton"
-    );
-    public static final String CORE_ID_BP_WANTS_TO_BE_TRUSTED_EMAIL = "ceo@m-m.com";
-    public static final Contact CORE_ID_BP_WANTS_TO_BE_TRUSTED_CONTACT = new Contact(
-        "John",
-        "Doe",
-        CORE_ID_BP_WANTS_TO_BE_TRUSTED_EMAIL,
-        "+41548884441",
-        Language.DE
-    );
-    public static final Signatory CORE_ID_BP_WANTS_TO_BE_TRUSTED_SIGNATORY = new Signatory(
-        "John",
-        "Doe",
-        "+41548884441",
-        CORE_ID_BP_WANTS_TO_BE_TRUSTED_EMAIL
-    );
+        public enum DemoSigningRule {
+            SINGLE_SIGNATURE,
+            JOINT_SIGNATURE_TWO,
+            JOINT_SIGNATURE_THREE,
+        }
 
-    // CORE_ID_BP_GOV
-    public static final Map<String, String> CORE_ID_BP_GOV_NAMES = LocalizedMapUtil.fromLanguages(
-        "Demo Kanton",
-        "Demo Kanton",
-        "Demo Canton",
-        "Demo Cantone",
-        "Demo Canton",
-        "Demochaun"
-    );
-    public static final Address CORE_ID_BP_GOV_ADDRESS = new Address(
-        "Erfolgsstrasse 1",
-        "Demohausen",
-        "11111",
-        "Schweiz",
-        "Democanton"
-    );
-    public static final String CORE_ID_BP_GOV_EMAIL = "s.schmid@democanton.admin.ch";
-    public static final String CORE_ID_BP_GOV_EMAIL_JOHN = "j.doe@democanton.admin.ch";
-    public static final String CORE_ID_BP_GOV_EMAIL_ERIKA = "e.mueller@democanton.admin.ch";
-    public static final Contact CORE_ID_BP_GOV_CONTACT = new Contact(
-        "Sandra",
-        "Schmid",
-        CORE_ID_BP_GOV_EMAIL,
-        "+41216548497",
-        Language.DE
-    );
-    public static final List<Signatory> CORE_ID_BP_GOV_SIGNATORIES = List.of(
-        new Signatory("Sandra", "Schmid", "+41665554433", CORE_ID_BP_GOV_EMAIL),
-        new Signatory("John", "Doe", "+41776665544", CORE_ID_BP_GOV_EMAIL_JOHN),
-        new Signatory("Erika", "Müller", "+41554443322", CORE_ID_BP_GOV_EMAIL_ERIKA)
-    );
+        public enum DemoTrustOnboardingSubmissionStatus {
+            UNSUBMITTED, // user can update at any time
+            UNSUBMITTED_TIMEOUT,
+            SUBMITTED,
+            SUCCEEDED, // approved and statements for all DIDs are published in trust registry
+            REJECTED,
+            INFORMATION_REQUESTED,
+        }
 
-    // CORE_ID_BP_GOV_TRUSTED
-    public static final Map<String, String> CORE_ID_BP_GOV_TRUSTED_NAMES = LocalizedMapUtil.fromLanguages(
-        "Trusted Gov Partner",
-        "Trusted Gov Partner (DE)",
-        "Trusted Gov Partner (FR)",
-        "Trusted Gov Partner (IT)",
-        "Trusted Gov Partner (EN)",
-        "Trusted Gov Partner (RM)"
-    );
-    public static final Address CORE_ID_BP_GOV_TRUSTED_ADDRESS = new Address(
-        "Geschäftsstraße 13",
-        "Demohausen",
-        "1111",
-        "Schweiz",
-        "Democanton"
-    );
-    public static final String CORE_ID_BP_GOV_TRUSTED_CORRESPONDING_LANG = "de-CH";
-    public static final String CORE_ID_BP_GOV_TRUSTED_PHONE = "+41791234567";
-    public static final String CORE_ID_BP_GOV_TRUSTED_EMAIL = "helvetica@trusting-gov.com";
-    public static final Contact CORE_ID_BP_GOV_TRUSTED_CONTACT = new Contact(
-        "erika",
-        "müller",
-        CORE_ID_BP_GOV_TRUSTED_EMAIL,
-        "+41548884440",
-        Language.DE
-    );
-    public static final List<Signatory> CORE_ID_BP_GOV_TRUSTED_SIGNATORIES = List.of(
-        new Signatory("Erika", "Müller", "+41776665544", CORE_ID_BP_GOV_TRUSTED_EMAIL)
-    );
-    public static final UUID CORE_ID_BP_GOV_TRUSTED_IDENTIFIER_DATASTORE_ID = UUID.fromString(
-        "effaab62-ab2d-4794-ba7f-48cbbe3ea383"
-    );
-    public static final String CORE_ID_BP_GOV_TRUSTED_DIDLOG_LOCAL =
-        "{\"versionId\":\"1-QmSfpPzd7kBQ6DPuccaJjBW9m6nScfNYnPuEduoxSFkD26\",\"versionTime\":\"2026-08-06T11:08:35Z\",\"parameters\":{\"method\":\"did:webvh:1.0\",\"scid\":\"QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty\",\"updateKeys\":[\"z6Mkozy1Dpit4opQXbfLthUM5KdZDoQLzMGzN3jLes6KahrQ\"],\"portable\":false},\"state\":{\"id\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383\",\"profile_version\":\"swiss-profile-anchor:1.0.0\",\"authentication\":[\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383#auth-key-01\"],\"assertionMethod\":[\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383#assert-key-01\"],\"verificationMethod\":[{\"id\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383#auth-key-01\",\"controller\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383\",\"type\":\"JsonWebKey2020\",\"publicKeyJwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"1rj9SCVfrol4JSYUXPFH50MSl28QuP1lRslb9C3jvi8\",\"y\":\"Pmit2QvqFNEAT9kKhVpfN7vSLk0sbzTVsun4OKO8o9g\",\"kid\":\"auth-key-01\"}},{\"id\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383#assert-key-01\",\"controller\":\"did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383\",\"type\":\"JsonWebKey2020\",\"publicKeyJwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"hfLUyfOj8tNfzKybUKCUfUh7WWvxdQCbZiYn94kmYFY\",\"y\":\"ITknv43a5zNcSIR5pL3XZLzru905EuUAdMZyC4a5Bz4\",\"kid\":\"assert-key-01\"}}]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"created\":\"2026-08-06T11:08:35Z\",\"verificationMethod\":\"did:key:z6Mkozy1Dpit4opQXbfLthUM5KdZDoQLzMGzN3jLes6KahrQ#z6Mkozy1Dpit4opQXbfLthUM5KdZDoQLzMGzN3jLes6KahrQ\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z2AoWEb9hZ7CQVdvvFMxEQn2NkZRd8K6xx4UPx9nJahYvmAy1LaDcfNQJ9DmAAKvTbEkKwun2BgfSMoFm81MxDDzS\"}]}";
+        public record DemoContact(
+            String firstName,
+            String lastName,
+            String email,
+            String phone,
+            Language correspondingLanguage
+        ) {
+            public enum Language {
+                EN,
+                DE,
+                FR,
+                IT,
+                RM,
+            }
+        }
 
-    // CORE_ID_BP_BASE_ONBOARDING_ONLY
-    public static final Map<String, String> CORE_ID_BP_BASE_ONBOARDING_ONLY_NAMES = LocalizedMapUtil.fromLanguages(
-        "Demo Unternehmen",
-        "Demo Unternehmen",
-        "Démonstration Entreprise",
-        "Demo Azienda",
-        "Demo Company",
-        "Demo Unternehmen"
-    );
-    public static final Address CORE_ID_BP_BASE_ONBOARDING_ONLY_ADDRESS = new Address(
-        "Geschäftsstraße 19",
-        "Demohausen",
-        "1111",
-        "Schweiz",
-        "Democanton"
-    );
-    public static final String CORE_ID_BP_BASE_ONBOARDING_ONLY_PHONE = "+41791234567";
-    public static final String CORE_ID_BP_BASE_ONBOARDING_ONLY_EMAIL = "helvetica@demo-comp.com";
+        public record DemoAddress(String street, String city, String postalCode, String country, String region) {}
 
-    // CORE_ID_BP_OVERDUE
-    public static final Map<String, String> CORE_ID_BP_OVERDUE_NAMES = LocalizedMapUtil.fromLanguages(
-        "Schleppende Logistik AG",
-        "Schleppende Logistik AG",
-        "Logistique Lente SA",
-        "Logistica Lenta S.r.l.",
-        "Sluggish Logistics AG",
-        "S.L. AG"
-    );
-    public static final Address CORE_ID_BP_OVERDUE_ADDRESS = new Address(
-        "Lagerstrasse 27",
-        "Demohausen",
-        "1111",
-        "Schweiz",
-        "Democanton"
-    );
-    public static final String CORE_ID_BP_OVERDUE_EMAIL = "p.keller@schleppende-logistik.ch";
-    public static final Contact CORE_ID_BP_OVERDUE_CONTACT = new Contact(
-        "Peter",
-        "Keller",
-        CORE_ID_BP_OVERDUE_EMAIL,
-        "+41548884442",
-        Language.DE
-    );
-    public static final List<Signatory> CORE_ID_BP_OVERDUE_SIGNATORIES = List.of(
-        new Signatory("Peter", "Keller", "+41776665546", CORE_ID_BP_OVERDUE_EMAIL)
-    );
+        public record DemoSignatory(String firstName, String lastName, String phone, String email) {}
 
-    // CORE_ID_BP_E2ETESTS
-    public static final Map<String, String> CORE_ID_BP_E2ETESTS_NAMES = LocalizedMapUtil.fromLanguages(
-        "E2e GmbH (DE)",
-        "E2e GmbH (DE)",
-        "E2e GmbH (FR)",
-        "E2e S.r.l. (IT)",
-        "E2e GmbH (EN)",
-        "E2e GmbH (RM)"
-    );
-    public static final String CORE_ID_BP_E2ETESTS_EMAIL = "erika.mueller@e2e.test";
+        public record DemoIdentifier(UUID id, String did, String description, String data) {}
+    }
 }

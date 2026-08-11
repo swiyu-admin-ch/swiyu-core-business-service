@@ -27,8 +27,8 @@ public class DemoDataAsyncExecutor {
                 // setting system auth for AuditMetadata
                 setSystemSecurityContext();
 
-                var partnerIds = demoDataImportService.generateBusinessPartners();
-                demoDataImportService.generateIdentifierEntries(partnerIds);
+                demoDataImportService.generateBusinessPartners();
+                demoDataImportService.generateIdentifierEntries();
                 demoDataImportService.deleteDemoTrustOnboardingSubmissions();
                 demoDataImportService.generateTrustOnboardingSubmissions();
                 log.debug("LOCAL TEST DATA INJECTION is done!");

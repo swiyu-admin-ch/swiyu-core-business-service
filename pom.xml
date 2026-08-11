@@ -5,7 +5,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-core-business-service</artifactId>
-    <version>3.42.13-SNAPSHOT</version>
+    <version>3.42.15-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
@@ -14,7 +14,7 @@
             Attention: when ever you update this version, check whether we can remove a CVE-OVERRIDE
             from the dependencyManagement section
          -->
-        <version>37.6.0</version>
+        <version>38.0.1</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 

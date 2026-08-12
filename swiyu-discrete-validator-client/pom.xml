@@ -7,7 +7,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-core-business-service</artifactId>
-        <version>3.42.15-SNAPSHOT</version>
+        <version>3.42.16-SNAPSHOT</version>
     </parent>
 
     <artifactId>swiyu-discrete-validator-client</artifactId>
@@ -23,8 +23,27 @@
 
     <dependencies>
 
-        <!-- eGov validation client -->
+        <!--
+          Current Jackson dependencies since we have JsonNode it in DiscreteValidationResult.
+          We want to use latest jackson there as it comes with spring boot instead of the
+          legacy version that is required by the Intarsys SDK.
+         -->
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
 
+        <dependency>
+            <groupId>tools.jackson.jakarta.rs</groupId>
+            <artifactId>jackson-jakarta-rs-json-provider</artifactId>
+        </dependency>
+
+        <!--
+            NOTE: from here all the libraries required for the discrete validator
+            intersys dependencies
+        -->
+
+        <!-- eGov validation client -->
         <dependency>
             <groupId>ch.admin.bj.vendor.intarsys</groupId>
             <artifactId>intarsys-egov-validationclient-api</artifactId>
@@ -246,19 +265,40 @@
         </dependency>
 
         <!-- Jackson JAX-RS provider -->
+
         <dependency>
-            <groupId>tools.jackson.jakarta.rs</groupId>
+            <groupId>com.fasterxml.jackson.jakarta.rs</groupId>
             <artifactId>jackson-jakarta-rs-json-provider</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>tools.jackson.jakarta.rs</groupId>
+            <groupId>com.fasterxml.jackson.jakarta.rs</groupId>
             <artifactId>jackson-jakarta-rs-base</artifactId>
+            <version>2.22.1</version>
         </dependency>
 
         <dependency>
-            <groupId>tools.jackson.module</groupId>
+            <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-jakarta-xmlbind-annotations</artifactId>
+            <version>2.22.1</version>
+        </dependency>
+
+        <!-- Apache HTTP client used by jersey-apache-connector -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.14</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>4.5.14</version>
         </dependency>
 
         <!-- Crypto -->
@@ -284,19 +324,16 @@
         <dependency>
             <groupId>jakarta.xml.bind</groupId>
             <artifactId>jakarta.xml.bind-api</artifactId>
-            <version>4.0.5</version>
         </dependency>
 
         <dependency>
             <groupId>jakarta.activation</groupId>
             <artifactId>jakarta.activation-api</artifactId>
-            <version>2.1.4</version>
         </dependency>
 
         <dependency>
             <groupId>jakarta.json</groupId>
             <artifactId>jakarta.json-api</artifactId>
-            <version>2.1.3</version>
         </dependency>
 
         <!-- Commons -->

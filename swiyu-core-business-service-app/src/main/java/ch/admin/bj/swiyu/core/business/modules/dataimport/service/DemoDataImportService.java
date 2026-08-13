@@ -4,15 +4,16 @@ import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
-import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.CoreDemoData;
+import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.DemoData;
 import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.MockMultipartFile;
 import ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocumentsRepository;
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntry;
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntryRepository;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
-import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentTypeDto;
+import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentUploadRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.TrustOnboardingService;
@@ -39,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DemoDataImportService {
 
     private final BusinessPartnerRepository businessEntityRepository;
+    private final BusinessPartnerService businessPartnerService;
     private final IdentifierEntryRepository identifierEntryRepository;
     private final IdentifierDatastoreEntityRepository identifierDatastoreEntityRepository;
     private final PartnerDocumentsRepository partnerDocumentsRepository;
@@ -51,7 +53,7 @@ public class DemoDataImportService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void generateBusinessPartners() {
         log.debug("Importing demo business partners...");
-        var data = Arrays.stream(CoreDemoData.DemoCase.values())
+        var data = Arrays.stream(DemoData.DemoCase.values())
             .map(demoCase -> DemoDataMapper.toBusinessEntity(demoCase.bp))
             .toList();
 
@@ -70,7 +72,7 @@ public class DemoDataImportService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void generateIdentifierEntries() {
         log.debug("Importing demo identifier entries ...");
-        Arrays.stream(CoreDemoData.DemoCase.values()).forEach(demoCase ->
+        Arrays.stream(DemoData.DemoCase.values()).forEach(demoCase ->
             demoCase.bp
                 .identifiers()
                 .forEach(identifier -> {
@@ -106,7 +108,7 @@ public class DemoDataImportService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void deleteDemoTrustOnboardingSubmissions() {
-        for (var demoCase : CoreDemoData.DemoCase.values()) {
+        for (var demoCase : DemoData.DemoCase.values()) {
             deleteAllDocumentsByPartner(demoCase.bp.id());
             trustOnboardingSubmissionRepository.deleteByPartnerId(demoCase.bp.id());
         }
@@ -114,156 +116,38 @@ public class DemoDataImportService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void generateTrustOnboardingSubmissions() {
-        TrustOnboardingSubmission sub;
-
-        sub = generateTrustOnboardingSubmission(
-            CoreDemoData.DemoCase.BUSINESS_BP_TRUST_ONBOARDING_RE_VERIFICATION.bp
+        Arrays.stream(DemoData.DemoCase.values()).forEach(demoCase ->
+            demoCase.bp
                 .trustOnboardings()
-                .get(CoreDemoData.DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.SUCCEEDED),
-            CoreDemoData.DemoCase.BUSINESS_BP_TRUST_ONBOARDING_RE_VERIFICATION.bp
+                .forEach(trustOnboarding -> {
+                    var sub = generateTrustOnboardingSubmission(trustOnboarding.submissionId(), demoCase.bp);
+                    for (var demoDocument : trustOnboarding.documents()) {
+                        trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
+                            trustOnboarding.submissionId(),
+                            new TrustOnboardingSubmissionDocumentUploadRequestDto(
+                                DemoDataMapper.toTrustOnboardingSubmissionDocumentTypeDto(demoDocument.type()),
+                                new MockMultipartFile(demoDocument.fileName(), demoDocument.content())
+                            )
+                        );
+                    }
+                    switch (trustOnboarding.status()) {
+                        case UNSUBMITTED_TIMEOUT -> sub.markAsExpired();
+                        case SUBMITTED -> sub.markAsSubmitted();
+                        case INFORMATION_REQUESTED -> sub.markAsInformationRequested(
+                            TrustOnboardingDeclineReason.MISSING_DOCUMENTS,
+                            "Test note data"
+                        );
+                        case SUCCEEDED -> sub.markAsSucceeded();
+                        case REJECTED -> sub.markAsRejected(TrustOnboardingRejectReason.FRAUDULENT_ACTIVITY);
+                    }
+                    trustOnboardingSubmissionRepository.saveAndFlush(sub);
+                })
         );
-        trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
-            CoreDemoData.DemoCase.BUSINESS_BP_TRUST_ONBOARDING_RE_VERIFICATION.bp
-                .trustOnboardings()
-                .get(CoreDemoData.DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.SUCCEEDED),
-            new TrustOnboardingSubmissionDocumentUploadRequestDto(
-                TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
-                new MockMultipartFile("Declaration of intent.pdf", "something new")
-            )
-        );
-        sub.markAsSucceeded();
-        trustOnboardingSubmissionRepository.saveAndFlush(sub);
-
-        sub = generateTrustOnboardingSubmission(
-            CoreDemoData.DemoCase.GOV_BP_TRUST_ONBOARDING.bp
-                .trustOnboardings()
-                .get(CoreDemoData.DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.SUCCEEDED),
-            CoreDemoData.DemoCase.GOV_BP_TRUST_ONBOARDING.bp
-        );
-        trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
-            CoreDemoData.DemoCase.GOV_BP_TRUST_ONBOARDING.bp
-                .trustOnboardings()
-                .get(CoreDemoData.DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.SUCCEEDED),
-            new TrustOnboardingSubmissionDocumentUploadRequestDto(
-                TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
-                new MockMultipartFile("Declaration of intent.pdf", "something new")
-            )
-        );
-        sub.markAsSucceeded();
-        trustOnboardingSubmissionRepository.saveAndFlush(sub);
-
-        sub = generateTrustOnboardingSubmission(
-            CoreDemoData.DemoCase.BP_GOV_TRUST_ONBOARDING_MORE_INFO.bp
-                .trustOnboardings()
-                .get(CoreDemoData.DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.INFORMATION_REQUESTED),
-            CoreDemoData.DemoCase.BP_GOV_TRUST_ONBOARDING_MORE_INFO.bp
-        );
-        trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
-            CoreDemoData.DemoCase.BP_GOV_TRUST_ONBOARDING_MORE_INFO.bp
-                .trustOnboardings()
-                .get(CoreDemoData.DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.INFORMATION_REQUESTED),
-            new TrustOnboardingSubmissionDocumentUploadRequestDto(
-                TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
-                new MockMultipartFile("Declaration of intent.pdf", "something different")
-            )
-        );
-        sub.markAsInformationRequested(TrustOnboardingDeclineReason.MISSING_DOCUMENTS, "Test note data");
-        trustOnboardingSubmissionRepository.saveAndFlush(sub);
-
-        sub = generateTrustOnboardingSubmission(
-            CoreDemoData.DemoCase.BP_WANTS_TO_BE_TRUSTED.bp
-                .trustOnboardings()
-                .get(CoreDemoData.DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.REJECTED),
-            CoreDemoData.DemoCase.BP_WANTS_TO_BE_TRUSTED.bp.id(),
-            CoreDemoData.DemoCase.BP_WANTS_TO_BE_TRUSTED.bp.names(),
-            DemoDataMapper.toAddress(CoreDemoData.DemoCase.BP_WANTS_TO_BE_TRUSTED.bp.address()),
-            DemoDataMapper.toContact(CoreDemoData.DemoCase.BP_WANTS_TO_BE_TRUSTED.bp.contact()),
-            CoreDemoData.DemoCase.BP_WANTS_TO_BE_TRUSTED.bp.email(),
-            DemoDataMapper.toBusinessPartnerType(CoreDemoData.DemoCase.BP_WANTS_TO_BE_TRUSTED.bp.type()),
-            null,
-            List.of()
-        );
-        sub.markAsRejected(TrustOnboardingRejectReason.FRAUDULENT_ACTIVITY);
-        trustOnboardingSubmissionRepository.saveAndFlush(sub);
-
-        sub = generateTrustOnboardingSubmission(
-            CoreDemoData.DemoCase.BP_WANTS_TO_BE_TRUSTED.bp
-                .trustOnboardings()
-                .get(CoreDemoData.DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.UNSUBMITTED),
-            CoreDemoData.DemoCase.BP_WANTS_TO_BE_TRUSTED.bp
-        );
-        trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
-            CoreDemoData.DemoCase.BP_WANTS_TO_BE_TRUSTED.bp
-                .trustOnboardings()
-                .get(CoreDemoData.DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.UNSUBMITTED),
-            new TrustOnboardingSubmissionDocumentUploadRequestDto(
-                TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
-                new MockMultipartFile("Declaration of intent from .pdf", "something")
-            )
-        );
-        trustOnboardingSubmissionRepository.saveAndFlush(sub);
-
-        sub = generateTrustOnboardingSubmission(
-            CoreDemoData.DemoCase.BUSINESS_BP_TRUST_ONBOARDING_RE_VERIFICATION.bp
-                .trustOnboardings()
-                .get(CoreDemoData.DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.SUBMITTED),
-            CoreDemoData.DemoCase.BUSINESS_BP_TRUST_ONBOARDING_RE_VERIFICATION.bp
-        );
-        trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
-            CoreDemoData.DemoCase.BUSINESS_BP_TRUST_ONBOARDING_RE_VERIFICATION.bp
-                .trustOnboardings()
-                .get(CoreDemoData.DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.SUBMITTED),
-            new TrustOnboardingSubmissionDocumentUploadRequestDto(
-                TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
-                new MockMultipartFile("Declaration of intent.pdf", "something else")
-            )
-        );
-        for (var filename : List.of(
-            "Handelsregister.pdf",
-            "Vertrag_Kaufvertrag_Musterfirma_AG_2025.pdf",
-            "Dienstleistungsvertrag_ProjektX_KundeABC_07-11-2025.pdf",
-            "Rahmenvertrag_LieferantXYZ_Version2.0.pdf",
-            "Mietvertrag_Bürofläche_Zürich_Unterschrieben.pdf",
-            "Kooperationsvertrag_Partnerfirma_Gültig_ab_01-01-2026.pdf",
-            "Arbeitsvertrag_Max_Muster_Unterschrift_2025.pdf",
-            "Geheimhaltungsvereinbarung_NDA_KundeGHI_ProjektY.pdf"
-        )) {
-            trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
-                CoreDemoData.DemoCase.BUSINESS_BP_TRUST_ONBOARDING_RE_VERIFICATION.bp
-                    .trustOnboardings()
-                    .get(CoreDemoData.DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.SUBMITTED),
-                new TrustOnboardingSubmissionDocumentUploadRequestDto(
-                    TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_OTHER,
-                    new MockMultipartFile(filename, "something with UID")
-                )
-            );
-        }
-
-        sub.markAsSubmitted();
-        trustOnboardingSubmissionRepository.save(sub);
-
-        sub = generateTrustOnboardingSubmission(
-            CoreDemoData.DemoCase.BP_TRUST_ONBOARDING_OVERDUE.bp
-                .trustOnboardings()
-                .get(CoreDemoData.DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.SUBMITTED),
-            CoreDemoData.DemoCase.BP_TRUST_ONBOARDING_OVERDUE.bp
-        );
-        trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
-            CoreDemoData.DemoCase.BP_TRUST_ONBOARDING_OVERDUE.bp
-                .trustOnboardings()
-                .get(CoreDemoData.DemoBusinessPartner.DemoTrustOnboardingSubmissionStatus.SUBMITTED),
-            new TrustOnboardingSubmissionDocumentUploadRequestDto(
-                TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
-                new MockMultipartFile("Declaration of intent.pdf", "something overdue")
-            )
-        );
-        sub.markAsSubmitted();
-        trustOnboardingSubmissionRepository.saveAndFlush(sub);
     }
 
     private TrustOnboardingSubmission generateTrustOnboardingSubmission(
         UUID tosId,
-        CoreDemoData.DemoBusinessPartner demoData
+        DemoData.DemoBusinessPartner demoData
     ) {
         return generateTrustOnboardingSubmission(
             tosId,
@@ -320,5 +204,36 @@ public class DemoDataImportService {
                 log.warn(e.getMessage(), e);
             }
         }
+    }
+
+    /**
+     * Activates the BusinessPartnerIdentity for demo partners with a SUCCEEDED trust onboarding submission.
+     * Normally set via a real TMS BPI event; demo data applies it directly instead, like the other generate*
+     * methods here.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void generateBusinessPartnerIdentities() {
+        log.debug("Activating demo business partner identities...");
+
+        Arrays.stream(DemoData.DemoCase.values())
+            .filter(demoCase -> demoCase.bp.bpi() != null)
+            .forEach(demoCase -> {
+                var bpi = BusinessPartnerIdentity.builder()
+                    .status(DemoDataMapper.toBusinessPartnerIdentityStatus(demoCase.bp.bpi().status()))
+                    .validUntil(demoCase.bp.bpi().validUntil())
+                    .uid(demoCase.bp.uid())
+                    .entityName(demoCase.bp.names())
+                    .trustedIdentifier(
+                        demoCase.bp
+                            .identifiers()
+                            .stream()
+                            .filter(DemoData.DemoBusinessPartner.DemoIdentifier::isTrustOnboarded)
+                            .map(DemoData.DemoBusinessPartner.DemoIdentifier::did)
+                            .toList()
+                    )
+                    .tmsVersion(0L)
+                    .build();
+                businessPartnerService.applyBusinessPartnerIdentity(demoCase.bp.id(), bpi);
+            });
     }
 }

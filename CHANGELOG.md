@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.42.18
+
+### Changed
+
+- Merge TMS and CBS demo data to create comprehensive demo data scenario descriptions
+
+## 3.42.17
+
+### Fixed
+
+- Activate BusinessPartnerIdentity for demo business partners with a succeeded trust onboarding submission, so
+  ProtectedVerification requests are no longer incorrectly rejected as untrusted
+
 ## 3.42.16
 
 ### Changed

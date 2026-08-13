@@ -28,6 +28,7 @@ public class DemoDataAsyncExecutor {
                 setSystemSecurityContext();
 
                 demoDataImportService.generateBusinessPartners();
+                demoDataImportService.generateBusinessPartnerIdentities();
                 demoDataImportService.generateIdentifierEntries();
                 demoDataImportService.deleteDemoTrustOnboardingSubmissions();
                 demoDataImportService.generateTrustOnboardingSubmissions();

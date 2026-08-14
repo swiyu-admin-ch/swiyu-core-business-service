@@ -77,6 +77,7 @@ public class VqpsSubmission {
     }
 
     public VqpsSubmission(
+        UUID id,
         UUID partnerId,
         String sub,
         Map<String, String> purposeName,
@@ -84,7 +85,7 @@ public class VqpsSubmission {
         String scope,
         JsonNode query
     ) {
-        this.id = UUID.randomUUID();
+        this.id = id;
         this.partnerId = partnerId;
         this.status = VqpsSubmissionStatus.ACCEPTED;
         this.sub = sub;

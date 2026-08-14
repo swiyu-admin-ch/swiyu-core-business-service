@@ -139,6 +139,9 @@ public class DemoDataImportService {
                         );
                         case SUCCEEDED -> sub.markAsSucceeded();
                         case REJECTED -> sub.markAsRejected(TrustOnboardingRejectReason.FRAUDULENT_ACTIVITY);
+                        case UNSUBMITTED -> {
+                            // Nothing to do (but sonar wants all cases handled)
+                        }
                     }
                     trustOnboardingSubmissionRepository.saveAndFlush(sub);
                 })

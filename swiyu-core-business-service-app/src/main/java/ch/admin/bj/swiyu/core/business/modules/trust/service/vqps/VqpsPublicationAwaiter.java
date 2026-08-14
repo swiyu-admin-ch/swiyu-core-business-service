@@ -21,11 +21,11 @@ public class VqpsPublicationAwaiter {
      * Maximum Time to wait for the publication process to finish before timing out.
      */
     private static final Duration DEFAULT_MAX_WAIT_TIME = Duration.ofSeconds(10);
-    private static final Duration AUTO_REMOVE_PENDING_REQUESTS_DURATION = Duration.ofSeconds(2);
 
     /**
      * Keeps for each incoming VqpsSubmission (its id) the completable future in cache with a Time-To-Live
-     * defined in AUTO_REMOVE_PENDING_REQUESTS_DURATION.
+     * slightly longer than the max wait time. This ensures entries are not evicted while they are still
+     * being waited on, while still providing an automatic cleanup safety net.
      */
     private final Cache<UUID, CompletableFuture<Void>> pendingRequests;
     private final VqpsSubmissionService submissionService;
@@ -40,23 +40,42 @@ public class VqpsPublicationAwaiter {
     VqpsPublicationAwaiter(VqpsSubmissionService submissionService, Duration maxWaitTime) {
         this.submissionService = submissionService;
         this.maxWaitTime = maxWaitTime;
-        // auto remove pending requests that are over a certian wait time
-        this.pendingRequests = Caffeine.newBuilder().expireAfterWrite(AUTO_REMOVE_PENDING_REQUESTS_DURATION).build();
+        // TTL must exceed maxWaitTime so futures are not evicted before the wait completes
+        this.pendingRequests = Caffeine.newBuilder().expireAfterWrite(maxWaitTime.plus(Duration.ofSeconds(5))).build();
+    }
+
+    /**
+     * Pre-registers a pending future for the given submission ID. Must be called <em>before</em>
+     * {@link VqpsSubmissionService#createVqpsSubmission} so that the future is in place before
+     * the Kafka event can be published and the notification can arrive.
+     *
+     * @return the submission ID for which the future was registered
+     */
+    public UUID registerNewSubmission() {
+        var submissionId = UUID.randomUUID();
+        pendingRequests.put(submissionId, new CompletableFuture<>());
+        return submissionId;
     }
 
     public VqpsSubmissionB2BDto waitForVqpsPublication(UUID submissionId) {
         log.debug("Waiting for VQPS publication to finish for submission id {}", submissionId);
-        // 1/2: check submission already completed, if so directly return the result
+
+        // Retrieve the pre-registered future. Fall back to creating a new one only when
+        // waitForVqpsPublication is called without a prior registerPendingSubmission call.
+        var future = pendingRequests.get(submissionId, ignored -> new CompletableFuture<>());
+
+        // Check whether publication already completed before we started waiting.
+        // If notifyVqpsPublicationProcessFinished was already called, the future is already
+        // completed so future.get() will return immediately below.
         var submission = submissionService.getVqpsSubmissionB2B(submissionId);
         if (submission.isSucceeded()) {
+            pendingRequests.invalidate(submissionId);
             return submission;
         } else if (submission.isFailed()) {
+            pendingRequests.invalidate(submissionId);
             throwPublicationFailedException(submission);
         }
 
-        // 2/2: not yet completed -> wait until handled
-        var future = new CompletableFuture<Void>();
-        pendingRequests.put(submissionId, future);
         try {
             future.get(maxWaitTime.toNanos(), TimeUnit.NANOSECONDS);
             log.debug(
@@ -89,7 +108,8 @@ public class VqpsPublicationAwaiter {
     public void notifyVqpsPublicationProcessFinished(UUID vqpsSubmissionId) {
         var future = pendingRequests.getIfPresent(vqpsSubmissionId);
         if (future != null) {
-            pendingRequests.invalidate(vqpsSubmissionId);
+            // Complete the future but do NOT invalidate here: waitForVqpsPublication still holds a
+            // reference and will invalidate after it reads the result.
             future.complete(null);
         }
     }

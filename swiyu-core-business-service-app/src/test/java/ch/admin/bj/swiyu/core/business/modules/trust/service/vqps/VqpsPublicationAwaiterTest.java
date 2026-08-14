@@ -30,7 +30,7 @@ class VqpsPublicationAwaiterTest {
     void notifyVqpsPublicationProcessFinished() {
         // GIVEN
         var awaiter = awaiterWithMaxWaitTimeOf(5000);
-        var submissionId = UUID.randomUUID();
+        var submissionId = awaiter.registerNewSubmission();
         var submission1 = vqpsSubmissionB2BDto(submissionId, ACCEPTED);
         var submission2 = vqpsSubmissionB2BDto(submissionId, PUBLICATION_SUCCEEDED);
         when(vqpsSubmissionService.getVqpsSubmissionB2B(submissionId))
@@ -50,6 +50,24 @@ class VqpsPublicationAwaiterTest {
             assertThat(updatedSubmission.status()).isEqualTo(PUBLICATION_SUCCEEDED);
             executor.shutdown();
         }
+    }
+
+    @Test
+    void notifyVqpsPublicationProcessFinished_whenNotificationArrivesBeforeWait_thenReturnsImmediately() {
+        // Simulates the race condition: Kafka event is processed and notifyVqpsPublicationProcessFinished
+        // is called BEFORE waitForVqpsPublication is invoked.
+        // GIVEN
+        var awaiter = awaiterWithMaxWaitTimeOf(5000);
+        var submissionId = awaiter.registerNewSubmission();
+        var succeededSubmission = vqpsSubmissionB2BDto(submissionId, PUBLICATION_SUCCEEDED);
+        when(vqpsSubmissionService.getVqpsSubmissionB2B(submissionId)).thenReturn(succeededSubmission);
+
+        // Simulate Kafka round-trip completing before waitForVqpsPublication is called
+        awaiter.notifyVqpsPublicationProcessFinished(submissionId);
+
+        // WHEN / THEN - must return immediately without blocking
+        var updatedSubmission = awaiter.waitForVqpsPublication(submissionId);
+        assertThat(updatedSubmission.status()).isEqualTo(PUBLICATION_SUCCEEDED);
     }
 
     @Test

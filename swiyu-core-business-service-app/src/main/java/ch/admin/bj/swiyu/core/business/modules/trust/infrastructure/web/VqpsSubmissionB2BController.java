@@ -45,20 +45,27 @@ public class VqpsSubmissionB2BController {
     @PostMapping("/vqps-submissions")
     public VqpsSubmissionB2BDto createVqpsSubmission(@Valid @RequestBody VqpsSubmissionCreateRequestDto request) {
         var partnerId = authSupport.getPartnerIdForRole("vqpssubmission", "write");
-        var submission = vqpsSubmissionService.createVqpsSubmission(request, partnerId);
-        log.debug(
-            "Created VqpsSubmission with id {} for partnerId {}. Now waiting for publication...",
-            submission.id(),
-            partnerId
-        );
         if (request.waitForPublication()) {
+            // Pre-register the awaiter BEFORE publishing to Kafka to eliminate the race condition
+            // where the publication result arrives before waitForVqpsPublication registers a future.
+            var submissionId = publicationAwaiter.registerNewSubmission();
+            var submission = vqpsSubmissionService.createVqpsSubmission(request, partnerId, submissionId);
+            log.info(
+                "Created VqpsSubmission with id {} for partnerId {}. Now waiting for publication...",
+                submission.id(),
+                partnerId
+            );
             try {
                 return publicationAwaiter.waitForVqpsPublication(submission.id());
             } catch (VqpsPublicationTimeoutException e) {
-                log.debug("Publication of VQPS with submission id {} timed out", submission.id(), e);
+                log.warn("Publication of VQPS with submission id {} timed out", submission.id(), e);
+                return getVqpsSubmission(submission.id());
             }
+        } else {
+            var submission = vqpsSubmissionService.createVqpsSubmission(request, partnerId, UUID.randomUUID());
+            log.debug("Created VqpsSubmission with id {} for partnerId {}", submission.id(), partnerId);
+            return getVqpsSubmission(submission.id());
         }
-        return getVqpsSubmission(submission.id());
     }
 
     @PreAuthorize("hasRole('vqpssubmission', 'read')")
@@ -86,7 +93,7 @@ public class VqpsSubmissionB2BController {
     @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
     @ExceptionHandler(VqpsPublicationFailedException.class)
     public VqpsSubmissionB2BDto handlePublicationFailedException(final VqpsPublicationFailedException e) {
-        log.debug("Failed to publish vqps", e);
+        log.warn("Failed to publish vqps", e);
         return vqpsSubmissionService.getVqpsSubmissionB2B(e.getVqpsSubmissionId());
     }
 }

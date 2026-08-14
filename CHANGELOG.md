@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.42.20
+
+### Changed
+
+- Updated spring boot parent
+- Added CVE override for at.yawk.lz4:lz4-java
+- Removed CVE override for ch.qos.logback:logback-classic
+- Removed CVE override for org.apache.httpcomponents.core5:httpcore5-h2
+- Removed CVE override for com.fasterxml.jackson.core:jackson-annotation
+
+## 3.42.19
+
+### Changed
+
+- fixed race condition when publishing vqps submission
+
 ## 3.42.18
 
 ### Changed
@@ -13,7 +29,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## 3.42.17
 
-### Fixed
+### Changed
 
 - Activate BusinessPartnerIdentity for demo business partners with a succeeded trust onboarding submission, so
   ProtectedVerification requests are no longer incorrectly rejected as untrusted
@@ -39,13 +55,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## 3.42.13
 
-### Fix
+### Changed
 
 - Add missing delection for test data wich lead to error during mock data injection
 
 ## 3.42.12
 
-### Fix
+### Changed
 
 - Provide max data for verification for the BusinessPartner status values
   BusinessPartnerTrustStatus.ReVerificationStarted, BusinessPartnerTrustStatus.VerificationStarted

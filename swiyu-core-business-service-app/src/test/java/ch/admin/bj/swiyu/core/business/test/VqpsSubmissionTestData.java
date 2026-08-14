@@ -134,6 +134,7 @@ public class VqpsSubmissionTestData {
 
     public static VqpsSubmission vqpsSubmission(UUID partnerId) {
         return new VqpsSubmission(
+            UUID.randomUUID(),
             partnerId,
             "someSub",
             localizedMap(),

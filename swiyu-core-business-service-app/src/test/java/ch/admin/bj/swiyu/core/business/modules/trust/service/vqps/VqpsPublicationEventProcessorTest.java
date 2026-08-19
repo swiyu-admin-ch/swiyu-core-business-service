@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,7 +29,7 @@ class VqpsPublicationEventProcessorTest {
     private VqpsPublicationEventProcessor processor;
 
     @Test
-    void whenProcessSucceeded_thenMarkAsSucceededAndNotifyAwaiter()
+    void processVqpsPublicationSucceeded()
         throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, JOSEException {
         // GIVEN
         var submissionId = UUID.randomUUID();
@@ -43,11 +42,10 @@ class VqpsPublicationEventProcessorTest {
         processor.processVqpsPublicationSucceeded(event);
         // THEN
         verify(vqpsSubmissionService).markAsPublicationSucceeded(submissionId, vqpsJwt);
-        verify(vqpsPublicationAwaiter).notifyVqpsPublicationProcessFinished(submissionId);
     }
 
     @Test
-    void whenProcessFailed_thenMarkAsFailedAndNotifyAwaiter() {
+    void processVqpsPublicationFailed() {
         // GIVEN
         var submissionId = UUID.randomUUID();
         var event = new TiVqpsPublicationFailedEvent();
@@ -61,23 +59,5 @@ class VqpsPublicationEventProcessorTest {
 
         // THEN
         verify(vqpsSubmissionService).markAsPublicationFailed(submissionId, VqpsPublicationFailureReasonDto.UNKNOWN);
-        verify(vqpsPublicationAwaiter).notifyVqpsPublicationProcessFinished(submissionId);
-    }
-
-    @Test
-    void whenProcessSucceeded_thenNotifyAwaiterAfterMarkAsSucceeded()
-        throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, JOSEException {
-        var submissionId = UUID.randomUUID();
-        var event = new TiVqpsPublicationSucceededEvent();
-        var vqpsJwt = vqpsJwt(UUID.randomUUID(), Instant.now());
-        event.setPayload(
-            VqpsPublicationSucceededPayload.newBuilder().setVqps(vqpsJwt).setVqpsSubmissionId(submissionId).build()
-        );
-        var inOrder = Mockito.inOrder(vqpsSubmissionService, vqpsPublicationAwaiter);
-
-        processor.processVqpsPublicationSucceeded(event);
-
-        inOrder.verify(vqpsSubmissionService).markAsPublicationSucceeded(submissionId, vqpsJwt);
-        inOrder.verify(vqpsPublicationAwaiter).notifyVqpsPublicationProcessFinished(submissionId);
     }
 }

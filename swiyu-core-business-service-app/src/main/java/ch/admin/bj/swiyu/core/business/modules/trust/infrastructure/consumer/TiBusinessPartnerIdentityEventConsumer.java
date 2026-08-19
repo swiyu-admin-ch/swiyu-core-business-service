@@ -17,30 +17,21 @@ public class TiBusinessPartnerIdentityEventConsumer {
     private final TiBusinessPartnerIdentityEventProcessor processor;
     private final MessagingSecurityContext messagingSecurityContext;
 
-    @KafkaListener(
-        topics = { TiBusinessPartnerIdentityActivatedEvent.TypeRef.DEFAULT_TOPIC },
-        id = "TiBusinessPartnerIdentityActivatedEventListener"
-    )
+    @KafkaListener(topics = { TiBusinessPartnerIdentityActivatedEvent.TypeRef.DEFAULT_TOPIC })
     public void receive(TiBusinessPartnerIdentityActivatedEvent event, Acknowledgment ack) {
         messagingSecurityContext.setPreferredUser(event.getPublisher());
         processor.processActivatedEvent(event);
         ack.acknowledge();
     }
 
-    @KafkaListener(
-        topics = { TiBusinessPartnerIdentityUpdatedEvent.TypeRef.DEFAULT_TOPIC },
-        id = "TiBusinessPartnerIdentityUpdatedEventListener"
-    )
+    @KafkaListener(topics = { TiBusinessPartnerIdentityUpdatedEvent.TypeRef.DEFAULT_TOPIC })
     public void receive(TiBusinessPartnerIdentityUpdatedEvent event, Acknowledgment ack) {
         messagingSecurityContext.setPreferredUser(event.getPublisher());
         processor.processUpdatedEvent(event);
         ack.acknowledge();
     }
 
-    @KafkaListener(
-        topics = { TiBusinessPartnerIdentityDeactivatedEvent.TypeRef.DEFAULT_TOPIC },
-        id = "TiBusinessPartnerIdentityDeactivatedEventListener"
-    )
+    @KafkaListener(topics = { TiBusinessPartnerIdentityDeactivatedEvent.TypeRef.DEFAULT_TOPIC })
     public void receive(TiBusinessPartnerIdentityDeactivatedEvent event, Acknowledgment ack) {
         messagingSecurityContext.setPreferredUser(event.getPublisher());
         processor.processDeactivatedEvent(event);

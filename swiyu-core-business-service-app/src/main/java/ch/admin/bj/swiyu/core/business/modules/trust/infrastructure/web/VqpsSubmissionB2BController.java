@@ -45,11 +45,8 @@ public class VqpsSubmissionB2BController {
     @PostMapping("/vqps-submissions")
     public VqpsSubmissionB2BDto createVqpsSubmission(@Valid @RequestBody VqpsSubmissionCreateRequestDto request) {
         var partnerId = authSupport.getPartnerIdForRole("vqpssubmission", "write");
+        var submission = vqpsSubmissionService.createVqpsSubmission(request, partnerId);
         if (request.waitForPublication()) {
-            // Pre-register the awaiter BEFORE publishing to Kafka to eliminate the race condition
-            // where the publication result arrives before waitForVqpsPublication registers a future.
-            var submissionId = publicationAwaiter.registerNewSubmission();
-            var submission = vqpsSubmissionService.createVqpsSubmission(request, partnerId, submissionId);
             log.info(
                 "Created VqpsSubmission with id {} for partnerId {}. Now waiting for publication...",
                 submission.id(),
@@ -58,14 +55,15 @@ public class VqpsSubmissionB2BController {
             try {
                 return publicationAwaiter.waitForVqpsPublication(submission.id());
             } catch (VqpsPublicationTimeoutException e) {
-                log.warn("Publication of VQPS with submission id {} timed out", submission.id(), e);
-                return getVqpsSubmission(submission.id());
+                log.error(
+                    "Publication of VQPS with submission id {} timed out. This means no TiVqpsPublicationSucceededEvent " +
+                        "or TiVqpsPublicationFailedEvent was received within the expected time.",
+                    submission.id(),
+                    e
+                );
             }
-        } else {
-            var submission = vqpsSubmissionService.createVqpsSubmission(request, partnerId, UUID.randomUUID());
-            log.debug("Created VqpsSubmission with id {} for partnerId {}", submission.id(), partnerId);
-            return getVqpsSubmission(submission.id());
         }
+        return getVqpsSubmission(submission.id());
     }
 
     @PreAuthorize("hasRole('vqpssubmission', 'read')")

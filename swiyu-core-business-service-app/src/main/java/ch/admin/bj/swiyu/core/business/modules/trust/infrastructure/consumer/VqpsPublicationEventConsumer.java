@@ -18,10 +18,7 @@ public class VqpsPublicationEventConsumer {
     private final VqpsPublicationEventProcessor processor;
     private final MessagingSecurityContext messagingSecurityContext;
 
-    @KafkaListener(
-        topics = { TiVqpsPublicationSucceededEvent.TypeRef.DEFAULT_TOPIC },
-        id = "TiVqpsPublicationSucceededEventListener"
-    )
+    @KafkaListener(topics = { TiVqpsPublicationSucceededEvent.TypeRef.DEFAULT_TOPIC })
     public void receive(TiVqpsPublicationSucceededEvent event, Acknowledgment ack) {
         log.debug(
             "Received TiVqpsPublicationSucceededEvent for submission id {}",
@@ -32,10 +29,7 @@ public class VqpsPublicationEventConsumer {
         ack.acknowledge();
     }
 
-    @KafkaListener(
-        topics = { TiVqpsPublicationFailedEvent.TypeRef.DEFAULT_TOPIC },
-        id = "TiVqpsPublicationFailedEventListener"
-    )
+    @KafkaListener(topics = { TiVqpsPublicationFailedEvent.TypeRef.DEFAULT_TOPIC })
     public void receive(TiVqpsPublicationFailedEvent event, Acknowledgment ack) {
         log.debug(
             "Received TiVqpsPublicationFailedEvent for submission id {}",

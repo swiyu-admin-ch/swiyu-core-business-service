@@ -37,16 +37,12 @@ public class VqpsSubmissionService {
      * known before the submission is created, so that the caller can wait for the publication result.
      */
     @Transactional
-    public VqpsSubmissionB2BDto createVqpsSubmission(
-        VqpsSubmissionCreateRequestDto request,
-        UUID partnerId,
-        UUID vqpsSubmissionId
-    ) {
+    public VqpsSubmissionB2BDto createVqpsSubmission(VqpsSubmissionCreateRequestDto request, UUID partnerId) {
         log.info("Creating VqpsSubmission for partnerId {} with purposeName {}", partnerId, request.purposeName());
         dcqlQueryValidator.validateDcqlQuery(request.query());
         var submission = vqpsSubmissionRepository.save(
             new VqpsSubmission(
-                vqpsSubmissionId,
+                UUID.randomUUID(),
                 partnerId,
                 request.sub(),
                 request.purposeName(),

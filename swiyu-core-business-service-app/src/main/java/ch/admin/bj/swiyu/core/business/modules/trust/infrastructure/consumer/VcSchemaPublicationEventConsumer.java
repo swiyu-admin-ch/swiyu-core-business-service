@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.infrastructure.consumer;
 
-import static ch.admin.bj.swiyu.messagetype.ti.TiVcSchemaPublicationSucceededEvent.*;
+import static ch.admin.bj.swiyu.messagetype.ti.TiVcSchemaPublicationSucceededEvent.TypeRef;
 
 import ch.admin.bj.swiyu.core.business.common.security.MessagingSecurityContext;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.vcschema.VcSchemaPublicationEventProcessor;
@@ -18,17 +18,14 @@ public class VcSchemaPublicationEventConsumer {
     private final VcSchemaPublicationEventProcessor processor;
     private final MessagingSecurityContext messagingSecurityContext;
 
-    @KafkaListener(topics = { TypeRef.DEFAULT_TOPIC }, id = "TiVcSchemaPublicationSucceededEventListener")
+    @KafkaListener(topics = { TypeRef.DEFAULT_TOPIC })
     public void receive(TiVcSchemaPublicationSucceededEvent event, Acknowledgment ack) {
         messagingSecurityContext.setPreferredUser(event.getPublisher());
         processor.processVcSchemaPublicationSucceeded(event);
         ack.acknowledge();
     }
 
-    @KafkaListener(
-        topics = { TiVcSchemaPublicationFailedEvent.TypeRef.DEFAULT_TOPIC },
-        id = "TiVcSchemaPublicationFailedEventListener"
-    )
+    @KafkaListener(topics = { TiVcSchemaPublicationFailedEvent.TypeRef.DEFAULT_TOPIC })
     public void receive(TiVcSchemaPublicationFailedEvent event, Acknowledgment ack) {
         messagingSecurityContext.setPreferredUser(event.getPublisher());
         processor.processVcSchemaPublicationFailed(event);

@@ -41,6 +41,7 @@ public class DemoData {
          * Scenario:<br/>
          * Governmental BP which is already onboarded to Trust Registry.<br/>
          * Has authorization to verify a ProtectedVerification.<br/>
+         * Has authorization to issue a ProtectedIssuance.<br/>
          */
         GOV_BP_TRUST_ONBOARDING(
             DemoBusinessPartner.of(
@@ -115,6 +116,30 @@ public class DemoData {
                         new DemoBusinessPartner.DemoBusinessPartnerIdentity.DemoProtectedVerificationAuthorization(
                             UUID.fromString("e95dbfcc-0a16-4788-b985-a3aeb7ce9342"),
                             DemoBusinessPartner.DemoBusinessPartnerIdentity.DemoProtectedVerificationAuthorization.DemoProtectedVerificationField.AHV_NUMBER
+                        )
+                    ),
+                    List.of(
+                        new DemoBusinessPartner.DemoBusinessPartnerIdentity.DemoProtectedIssuanceAuthorization(
+                            UUID.fromString("6ea9eeb8-f5fb-4aad-b3dc-f836ff85aca7"),
+                            "did:webvh:QmSa8SMKvTxwJxavsHP6uxsrVL4B7eTPMVHct8LbT9yTty:localhost%3A8190:api:v1:did:effaab62-ab2d-4794-ba7f-48cbbe3ea383",
+                            fromLanguages(
+                                "Test reason (DEFAULT)",
+                                "Test reason (DE)",
+                                "Test reason (FR)",
+                                "Test reason (IT)",
+                                "Test reason (EN)",
+                                "Test reason (RM)"
+                            ),
+                            UUID.fromString("1ef66a61-ab48-4a55-a4a1-b1423da05d6f"),
+                            "urn:vct:demodata:protected:issuance:1ef66a61-ab48-4a55-a4a1-b1423da05d6f",
+                            fromLanguages(
+                                "DemoData (DEFAULT)",
+                                "DemoData (DE)",
+                                "DemoData (FR)",
+                                "DemoData (IT)",
+                                "DemoData (EN)",
+                                "DemoData (RM)"
+                            )
                         )
                     )
                 )
@@ -300,6 +325,7 @@ public class DemoData {
                 ),
                 DemoBusinessPartner.DemoBusinessPartnerIdentity.of(
                     DemoBusinessPartner.DemoBusinessPartnerIdentity.DemoBusinessPartnerIdentityStatus.ACTIVE,
+                    List.of(),
                     List.of()
                 )
             )
@@ -725,18 +751,21 @@ public class DemoData {
         }
 
         public record DemoBusinessPartnerIdentity(
-            DemoBusinessPartnerIdentityStatus status,
-            Instant validUntil,
-            List<DemoProtectedVerificationAuthorization> protectedVerificationAuthorizations
+            @NotNull DemoBusinessPartnerIdentityStatus status,
+            @NotNull Instant validUntil,
+            @NotNull List<@NotNull DemoProtectedVerificationAuthorization> protectedVerificationAuthorizations,
+            @NotNull List<@NotNull DemoProtectedIssuanceAuthorization> protectedIssuanceAuthorizations
         ) {
             public static DemoBusinessPartnerIdentity of(
-                DemoBusinessPartnerIdentityStatus status,
-                List<DemoProtectedVerificationAuthorization> protectedVerificationAuthorizations
+                @NotNull DemoBusinessPartnerIdentityStatus status,
+                @NotNull List<@NotNull DemoProtectedVerificationAuthorization> protectedVerificationAuthorizations,
+                @NotNull List<@NotNull DemoProtectedIssuanceAuthorization> protectedIssuanceAuthorizations
             ) {
                 return new DemoBusinessPartnerIdentity(
                     status,
                     Instant.now().atZone(ZoneId.of("Europe/Zurich")).plusYears(3).toInstant(),
-                    protectedVerificationAuthorizations
+                    protectedVerificationAuthorizations,
+                    protectedIssuanceAuthorizations
                 );
             }
 
@@ -750,6 +779,16 @@ public class DemoData {
                     AHV_NUMBER,
                 }
             }
+
+            public record DemoProtectedIssuanceAuthorization(
+                UUID id,
+                String identifier,
+                @NotNull Map<@NotBlank String, @NotBlank String> reason,
+                // For ease of use currently the ProtectedIssuanceEntry are part of this config
+                UUID protectedVctEntryId,
+                String vct,
+                @NotNull Map<@NotBlank String, @NotBlank String> vctName
+            ) {}
         }
     }
 }

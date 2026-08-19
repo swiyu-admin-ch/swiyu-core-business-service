@@ -8,10 +8,9 @@ public class VqpsPublicationTimeoutException extends BusinessException {
 
     private final UUID vqpsSubmissionId;
 
-    public VqpsPublicationTimeoutException(UUID vqpsSubmissionId, Throwable cause) {
+    public VqpsPublicationTimeoutException(UUID vqpsSubmissionId) {
         super(
-            "The processing of the vqps publication took longer than the configured max time. Pending request will be aborted.",
-            cause
+            "The processing of the vqps publication took longer than the configured max time. Pending request will be aborted."
         );
         this.vqpsSubmissionId = vqpsSubmissionId;
     }

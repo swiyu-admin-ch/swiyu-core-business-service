@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
 public class VqpsPublicationEventProcessor {
 
     private final VqpsSubmissionService vqpsSubmissionService;
-    private final VqpsPublicationAwaiter vqpsPublicationAwaiter;
 
     public void processVqpsPublicationSucceeded(TiVqpsPublicationSucceededEvent event) {
         log.info(
@@ -29,7 +28,6 @@ public class VqpsPublicationEventProcessor {
         var submissionId = event.getPayload().getVqpsSubmissionId();
         var jwt = event.getPayload().getVqps();
         vqpsSubmissionService.markAsPublicationSucceeded(submissionId, jwt);
-        vqpsPublicationAwaiter.notifyVqpsPublicationProcessFinished(submissionId);
     }
 
     public void processVqpsPublicationFailed(TiVqpsPublicationFailedEvent event) {
@@ -42,6 +40,5 @@ public class VqpsPublicationEventProcessor {
             submissionId,
             toVqpsPublicationFailureReasonDto(event.getPayload().getFailureReason())
         );
-        vqpsPublicationAwaiter.notifyVqpsPublicationProcessFinished(submissionId);
     }
 }

@@ -16,20 +16,14 @@ public class ProtectedVerificationSubmissionEventConsumer {
     private final ProtectedVerificationSubmissionEventProcessor processor;
     private final MessagingSecurityContext messagingSecurityContext;
 
-    @KafkaListener(
-        topics = { TiProtectedVerificationSubmissionApprovedEvent.TypeRef.DEFAULT_TOPIC },
-        id = "TiProtectedVerificationSubmissionApprovedEventListener"
-    )
+    @KafkaListener(topics = { TiProtectedVerificationSubmissionApprovedEvent.TypeRef.DEFAULT_TOPIC })
     public void receive(TiProtectedVerificationSubmissionApprovedEvent event, Acknowledgment ack) {
         messagingSecurityContext.setPreferredUser(event.getPublisher());
         processor.processApprovedEvent(event);
         ack.acknowledge();
     }
 
-    @KafkaListener(
-        topics = { TiProtectedVerificationSubmissionRejectedEvent.TypeRef.DEFAULT_TOPIC },
-        id = "TiProtectedVerificationSubmissionRejectedEventListener"
-    )
+    @KafkaListener(topics = { TiProtectedVerificationSubmissionRejectedEvent.TypeRef.DEFAULT_TOPIC })
     public void receive(TiProtectedVerificationSubmissionRejectedEvent event, Acknowledgment ack) {
         messagingSecurityContext.setPreferredUser(event.getPublisher());
         processor.processRejectedEvent(event);

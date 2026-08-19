@@ -1,14 +1,14 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.vqps;
 
+import static java.lang.Thread.sleep;
+
 import ch.admin.bj.swiyu.core.business.common.exceptions.VqpsPublicationFailedException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.VqpsPublicationTimeoutException;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.VqpsSubmissionB2BDto;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.annotations.VisibleForTesting;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
-import java.util.concurrent.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,99 +18,63 @@ import org.springframework.stereotype.Component;
 public class VqpsPublicationAwaiter {
 
     /**
-     * Maximum Time to wait for the publication process to finish before timing out.
+     * Maximum time to wait for the publication process to finish before timing out.
      */
     private static final Duration DEFAULT_MAX_WAIT_TIME = Duration.ofSeconds(10);
 
     /**
-     * Keeps for each incoming VqpsSubmission (its id) the completable future in cache with a Time-To-Live
-     * slightly longer than the max wait time. This ensures entries are not evicted while they are still
-     * being waited on, while still providing an automatic cleanup safety net.
+     * How long to sleep between DB polls.
      */
-    private final Cache<UUID, CompletableFuture<Void>> pendingRequests;
+    private static final Duration DEFAULT_POLL_INTERVAL = Duration.ofMillis(200);
+
     private final VqpsSubmissionService submissionService;
     private final Duration maxWaitTime;
+    private final Duration pollInterval;
 
     @Autowired
     public VqpsPublicationAwaiter(VqpsSubmissionService submissionService) {
-        this(submissionService, DEFAULT_MAX_WAIT_TIME);
+        this(submissionService, DEFAULT_MAX_WAIT_TIME, DEFAULT_POLL_INTERVAL);
     }
 
     @VisibleForTesting
     VqpsPublicationAwaiter(VqpsSubmissionService submissionService, Duration maxWaitTime) {
+        this(submissionService, maxWaitTime, DEFAULT_POLL_INTERVAL);
+    }
+
+    @VisibleForTesting
+    VqpsPublicationAwaiter(VqpsSubmissionService submissionService, Duration maxWaitTime, Duration pollInterval) {
         this.submissionService = submissionService;
         this.maxWaitTime = maxWaitTime;
-        // TTL must exceed maxWaitTime so futures are not evicted before the wait completes
-        this.pendingRequests = Caffeine.newBuilder().expireAfterWrite(maxWaitTime.plus(Duration.ofSeconds(5))).build();
+        this.pollInterval = pollInterval;
     }
 
     /**
-     * Pre-registers a pending future for the given submission ID. Must be called <em>before</em>
-     * {@link VqpsSubmissionService#createVqpsSubmission} so that the future is in place before
-     * the Kafka event can be published and the notification can arrive.
-     *
-     * @return the submission ID for which the future was registered
+     * Polls the database until the submission reaches a terminal state or {@code maxWaitTime} elapses.
      */
-    public UUID registerNewSubmission() {
-        var submissionId = UUID.randomUUID();
-        pendingRequests.put(submissionId, new CompletableFuture<>());
-        return submissionId;
-    }
-
+    @SuppressWarnings("BusyWait") // since we use virtual threads
     public VqpsSubmissionB2BDto waitForVqpsPublication(UUID submissionId) {
-        log.debug("Waiting for VQPS publication to finish for submission id {}", submissionId);
+        log.debug("Waiting for VQPS publication to finish by polling db for for submission id {}", submissionId);
 
-        // Retrieve the pre-registered future. Fall back to creating a new one only when
-        // waitForVqpsPublication is called without a prior registerPendingSubmission call.
-        var future = pendingRequests.get(submissionId, ignored -> new CompletableFuture<>());
+        var deadline = Instant.now().plus(maxWaitTime);
 
-        // Check whether publication already completed before we started waiting.
-        // If notifyVqpsPublicationProcessFinished was already called, the future is already
-        // completed so future.get() will return immediately below.
-        var submission = submissionService.getVqpsSubmissionB2B(submissionId);
-        if (submission.isSucceeded()) {
-            pendingRequests.invalidate(submissionId);
-            return submission;
-        } else if (submission.isFailed()) {
-            pendingRequests.invalidate(submissionId);
-            throwPublicationFailedException(submission);
-        }
+        while (true) {
+            var submission = submissionService.getVqpsSubmissionB2B(submissionId);
+            if (submission.isSucceeded()) {
+                return submission;
+            } else if (submission.isFailed()) {
+                return throwPublicationFailedException(submission);
+            }
 
-        try {
-            future.get(maxWaitTime.toNanos(), TimeUnit.NANOSECONDS);
-            log.debug(
-                "Finished waiting for VQPS publication for submission id {}. Fetching final submission state...",
-                submissionId
-            );
-            submission = submissionService.getVqpsSubmissionB2B(submissionId);
-            return switch (submission.status()) {
-                case PUBLICATION_SUCCEEDED -> submission;
-                case PUBLICATION_FAILED -> throwPublicationFailedException(submission);
-                case ACCEPTED -> throw new IllegalStateException(
-                    "The publication finished but status is still ACCEPTED"
-                );
-            };
-        } catch (TimeoutException e) {
-            throw new VqpsPublicationTimeoutException(submissionId, e);
-        } catch (ExecutionException e) {
-            throw new IllegalStateException("Unexpected execution exception while waiting for VQPS publication", e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Unexpected interrupt exception while waiting for VQPS publication", e);
-        } finally {
-            pendingRequests.invalidate(submissionId);
-        }
-    }
+            if (Instant.now().isAfter(deadline)) {
+                throw new VqpsPublicationTimeoutException(submissionId);
+            }
 
-    /**
-     * Called by VqpsPublicationEventProcessor after the transaction has committed
-     */
-    public void notifyVqpsPublicationProcessFinished(UUID vqpsSubmissionId) {
-        var future = pendingRequests.getIfPresent(vqpsSubmissionId);
-        if (future != null) {
-            // Complete the future but do NOT invalidate here: waitForVqpsPublication still holds a
-            // reference and will invalidate after it reads the result.
-            future.complete(null);
+            try {
+                sleep(pollInterval.toMillis());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while waiting for VQPS publication", e);
+            }
         }
     }
 

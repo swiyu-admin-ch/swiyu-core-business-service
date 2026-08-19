@@ -17,30 +17,21 @@ public class TrustOnboardingEventConsumer {
     private final TrustOnboardingEventProcessor processor;
     private final MessagingSecurityContext messagingSecurityContext;
 
-    @KafkaListener(
-        topics = { TiTrustOnboardingSucceededEvent.TypeRef.DEFAULT_TOPIC },
-        id = "TiTrustOnboardingSucceededEventListener"
-    )
+    @KafkaListener(topics = { TiTrustOnboardingSucceededEvent.TypeRef.DEFAULT_TOPIC })
     public void receive(TiTrustOnboardingSucceededEvent event, Acknowledgment ack) {
         messagingSecurityContext.setPreferredUser(event.getPublisher());
         processor.processOnboardingRequestAcceptedEvent(event);
         ack.acknowledge();
     }
 
-    @KafkaListener(
-        topics = { TiTrustOnboardingRejectedEvent.TypeRef.DEFAULT_TOPIC },
-        id = "TiTrustOnboardingRejectedEventListener"
-    )
+    @KafkaListener(topics = { TiTrustOnboardingRejectedEvent.TypeRef.DEFAULT_TOPIC })
     public void receive(TiTrustOnboardingRejectedEvent event, Acknowledgment ack) {
         messagingSecurityContext.setPreferredUser(event.getPublisher());
         processor.processOnboardingRequestRejectedEvent(event);
         ack.acknowledge();
     }
 
-    @KafkaListener(
-        topics = { TiTrustOnboardingInformationRequestedEvent.TypeRef.DEFAULT_TOPIC },
-        id = "TiTrustOnboardingInformationRequestedEventListener"
-    )
+    @KafkaListener(topics = { TiTrustOnboardingInformationRequestedEvent.TypeRef.DEFAULT_TOPIC })
     public void receive(TiTrustOnboardingInformationRequestedEvent event, Acknowledgment ack) {
         messagingSecurityContext.setPreferredUser(event.getPublisher());
         processor.processInformationRequestedEvent(event);

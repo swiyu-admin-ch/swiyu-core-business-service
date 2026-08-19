@@ -16,20 +16,14 @@ public class TrustAddDidEventConsumer {
     private final TrustAddDidEventProcessor processor;
     private final MessagingSecurityContext messagingSecurityContext;
 
-    @KafkaListener(
-        topics = { TiTrustAddDidSubmissionAcceptedEvent.TypeRef.DEFAULT_TOPIC },
-        id = "TiTrustAddDidSubmissionAcceptedEventListener"
-    )
+    @KafkaListener(topics = { TiTrustAddDidSubmissionAcceptedEvent.TypeRef.DEFAULT_TOPIC })
     public void receive(TiTrustAddDidSubmissionAcceptedEvent event, Acknowledgment ack) {
         messagingSecurityContext.setPreferredUser(event.getPublisher());
         processor.processAcceptedEvent(event);
         ack.acknowledge();
     }
 
-    @KafkaListener(
-        topics = { TiTrustAddDidSubmissionRejectedEvent.TypeRef.DEFAULT_TOPIC },
-        id = "TiTrustAddDidSubmissionRejectedEventListener"
-    )
+    @KafkaListener(topics = { TiTrustAddDidSubmissionRejectedEvent.TypeRef.DEFAULT_TOPIC })
     public void receive(TiTrustAddDidSubmissionRejectedEvent event, Acknowledgment ack) {
         messagingSecurityContext.setPreferredUser(event.getPublisher());
         processor.processRejectedEvent(event);

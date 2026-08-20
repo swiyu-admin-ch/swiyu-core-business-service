@@ -22,6 +22,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## 3.42.20
 
+### Added
+
+- Publish a TiSendEmailCommand with the fully composed partner notification email (subject and plain text body
+  in DE/FR/IT/EN) for every trust event, gated by the `app.functionality.email-enabled` functionality flag
+  (`FUNCTIONALITY_EMAIL_ENABLED`)
+
 ### Changed
 
 - Updated spring boot parent

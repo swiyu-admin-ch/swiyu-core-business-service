@@ -1,6 +1,8 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.bpi;
 
 import ch.admin.bit.jeap.domainevent.avro.AvroDomainEvent;
+import ch.admin.bit.jeap.messaging.idempotence.messagehandler.IdempotentMessageHandler;
+import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
@@ -13,6 +15,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -20,6 +23,7 @@ import org.springframework.stereotype.Component;
 public class TiBusinessPartnerIdentityEventProcessor {
 
     private final BusinessPartnerService businessPartnerService;
+    private final EmailCommandPublisher emailCommandPublisher;
 
     public void processActivatedEvent(TiBusinessPartnerIdentityActivatedEvent event) {
         if (isPayloadNull(event)) {
@@ -63,6 +67,8 @@ public class TiBusinessPartnerIdentityEventProcessor {
         businessPartnerService.applyBusinessPartnerIdentity(partnerId, bpi);
     }
 
+    @Transactional
+    @IdempotentMessageHandler
     public void processDeactivatedEvent(TiBusinessPartnerIdentityDeactivatedEvent event) {
         if (isPayloadNull(event)) {
             return;
@@ -71,7 +77,14 @@ public class TiBusinessPartnerIdentityEventProcessor {
         var partnerId = UUID.fromString(payload.getBusinessPartnerIdentityId().toString());
         log.info("Processing TiBusinessPartnerIdentityDeactivatedEvent for partner '{}'", partnerId);
 
-        businessPartnerService.deactivateBusinessPartnerIdentity(partnerId, payload.getVersion());
+        if (businessPartnerService.deactivateBusinessPartnerIdentity(partnerId, payload.getVersion())) {
+            emailCommandPublisher.trustIdentityExpired(partnerId);
+        } else {
+            log.warn(
+                "Received deactivation event for partner '{}' but no BusinessPartnerIdentity exists. Ignoring.",
+                partnerId
+            );
+        }
     }
 
     private BusinessPartnerIdentityStatus toInternalStatus(

@@ -16,6 +16,7 @@ import ch.admin.bj.swiyu.core.business.modules.identifier.config.IdentifierSchem
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierValidator;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryMapper;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
+import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.status.config.StatusListSchemaConfig;
 import ch.admin.bj.swiyu.core.business.modules.status.config.StatusListsLimitProperties;
 import ch.admin.bj.swiyu.core.business.modules.status.domain.StatusListEntry;
@@ -74,6 +75,14 @@ class StatusListValidatorIT {
     @MockitoBean(answers = Answers.RETURNS_DEEP_STUBS)
     @Qualifier("didResolverClient")
     RestClient didResolverClient;
+
+    /**
+     * Not used by this test, but the email publisher in {@code DataJpaTestKafkaConfiguration} depends on
+     * it. Mocking it keeps the slice small - the real service would drag the whole partner dependency
+     * graph, including the eGov validation client, into this context.
+     */
+    @MockitoBean
+    BusinessPartnerService businessPartnerService;
 
     // A few tests should skip certain validations
     @MockitoSpyBean

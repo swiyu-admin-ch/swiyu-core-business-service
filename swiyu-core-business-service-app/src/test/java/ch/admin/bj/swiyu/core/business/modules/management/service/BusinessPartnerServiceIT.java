@@ -17,6 +17,7 @@ import ch.admin.bj.swiyu.core.business.modules.management.api.CreateBusinessEnti
 import ch.admin.bj.swiyu.core.business.modules.management.api.CreatePartnerDto;
 import ch.admin.bj.swiyu.core.business.modules.management.api.UpdateBusinessEntityDto;
 import ch.admin.bj.swiyu.core.business.modules.status.service.StatusListEntryService;
+import ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData;
 import ch.admin.bj.swiyu.core.business.test.DataJpaTestConfiguration;
 import ch.admin.bj.swiyu.core.business.test.DataJpaTestKafkaConfiguration;
 import ch.admin.bj.swiyu.core.business.test.TestRepositories;
@@ -56,12 +57,6 @@ class BusinessPartnerServiceIT {
 
     @Autowired
     BusinessPartnerService businessPartnerService;
-
-    private static String lookupPamsAdminUserUid() {
-        return (
-            (JeapAuthenticationToken) SecurityContextHolder.getContext().getAuthentication()
-        ).getPreferredUsername();
-    }
 
     @Test
     void getBusinessEntities() {
@@ -347,5 +342,44 @@ class BusinessPartnerServiceIT {
 
         // WHEN & THEN
         assertFalse(() -> businessPartnerService.isGovernmental(randomId));
+    }
+
+    /**
+     * The service reports whether there was an identity to deactivate; the caller uses that to decide
+     * whether the partner has to be notified. The email itself is published by
+     * {@code TiBusinessPartnerIdentityEventProcessor} - see its test.
+     */
+    @Test
+    void deactivateBusinessPartnerIdentity_reportsThatAnIdentityWasDeactivated() {
+        // GIVEN
+        var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
+        partner.applyBusinessPartnerIdentityEvent(BusinessEntityTestData.activeBusinessPartnerIdentity());
+        repos.businessPartner.save(partner);
+        repos.commit();
+
+        // WHEN
+        var deactivated = businessPartnerService.deactivateBusinessPartnerIdentity(partner.getId(), 2L);
+
+        // THEN
+        assertThat(deactivated).isTrue();
+    }
+
+    @Test
+    void deactivateBusinessPartnerIdentity_withoutIdentity_reportsThatNothingWasDeactivated() {
+        // GIVEN - a partner that never received a BPI from TMS
+        var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
+        repos.commit();
+
+        // WHEN
+        var deactivated = businessPartnerService.deactivateBusinessPartnerIdentity(partner.getId(), 2L);
+
+        // THEN
+        assertThat(deactivated).isFalse();
+    }
+
+    private static String lookupPamsAdminUserUid() {
+        return (
+            (JeapAuthenticationToken) SecurityContextHolder.getContext().getAuthentication()
+        ).getPreferredUsername();
     }
 }

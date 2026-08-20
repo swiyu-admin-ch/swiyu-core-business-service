@@ -1,12 +1,14 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding;
 
 import ch.admin.bit.jeap.domainevent.avro.AvroDomainEvent;
+import ch.admin.bit.jeap.messaging.idempotence.messagehandler.IdempotentMessageHandler;
 import ch.admin.bj.swiyu.messagetype.ti.TiTrustOnboardingInformationRequestedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiTrustOnboardingRejectedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiTrustOnboardingSucceededEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -15,6 +17,8 @@ public class TrustOnboardingEventProcessor {
 
     private final TrustOnboardingService trustOnboardingService;
 
+    @Transactional
+    @IdempotentMessageHandler
     public void processInformationRequestedEvent(TiTrustOnboardingInformationRequestedEvent event) {
         if (isPayloadNull(event)) {
             return;
@@ -31,6 +35,8 @@ public class TrustOnboardingEventProcessor {
         );
     }
 
+    @Transactional
+    @IdempotentMessageHandler
     public void processOnboardingRequestRejectedEvent(TiTrustOnboardingRejectedEvent event) {
         if (isPayloadNull(event)) {
             return;
@@ -43,6 +49,8 @@ public class TrustOnboardingEventProcessor {
         this.trustOnboardingService.markAsRejected(payload.getTrustOnboardingSubmissionId(), payload.getRejectReason());
     }
 
+    @Transactional
+    @IdempotentMessageHandler
     public void processOnboardingRequestAcceptedEvent(TiTrustOnboardingSucceededEvent event) {
         if (isPayloadNull(event)) {
             return;

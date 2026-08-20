@@ -447,24 +447,43 @@ public class BusinessPartnerService {
     }
 
     /**
-     * Applies a deactivation event from TMS: sets BPI status to DEACTIVATED, preserving all other BPI data.
+     * Sets the BPI status to DEACTIVATED, preserving all other BPI data.
+     *
+     * @return true if an identity existed and was deactivated, false if there was nothing to deactivate.
+     *         The caller decides how to react - whether to log, to notify the partner, or to ignore it -
+     *         because that depends on where the call comes from. This service also does not publish the
+     *         email itself: the publisher resolves the contact person through this very service, and the
+     *         two would form a bean cycle.
      */
     @Transactional
-    public void deactivateBusinessPartnerIdentity(UUID partnerId, long tmsVersion) {
+    public boolean deactivateBusinessPartnerIdentity(UUID partnerId, long tmsVersion) {
         log.info("Deactivating BusinessPartnerIdentity for partner '{}'", partnerId);
         BusinessEntity businessPartner = businessPartnerRepository
             .findById(partnerId)
             .orElseThrow(throwNotFoundException(partnerId));
         var currentBpi = businessPartner.getBusinessPartnerIdentity();
-        if (currentBpi != null) {
+        var deactivated = currentBpi != null;
+        if (deactivated) {
             businessPartner.applyBusinessPartnerIdentityEvent(currentBpi.withDeactivated(tmsVersion));
-        } else {
-            log.warn(
-                "Received deactivation event for partner '{}' but no BusinessPartnerIdentity exists. Ignoring.",
-                partnerId
-            );
         }
         businessPartnerRepository.save(businessPartner);
+        return deactivated;
+    }
+
+    /**
+     * Email address of the designated contact person of the business partner in the service portal,
+     * i.e. the recipient of the partner notification emails. Null if the partner has no contact.
+     */
+    @Transactional(readOnly = true)
+    public String getContactEmail(UUID partnerId) {
+        var businessPartner = businessPartnerRepository
+            .findById(partnerId)
+            .orElseThrow(throwNotFoundException(partnerId));
+        return contactEmailOf(businessPartner);
+    }
+
+    private static String contactEmailOf(BusinessEntity businessPartner) {
+        return businessPartner.getContact() == null ? null : businessPartner.getContact().getEmail();
     }
 
     @Transactional

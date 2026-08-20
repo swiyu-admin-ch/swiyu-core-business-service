@@ -1,0 +1,92 @@
+---
+subject: AHV Verifikation/ OASI verification/ Vérification AVS/ Verifica AVS
+---
+Guten Tag
+
+Die eingereichten Informationen zur Zulassung als AHV-Prüfer erfüllen die Anforderungen nicht.
+Ihr Antrag wurde daher abgelehnt.
+
+Bei Fragen stehen wir Ihnen unter [(${contactEmail})] zur Verfügung.
+
+Link zu Ihrem Business Partner: [(${servicePortalPartnerUrl})]
+
+Freundliche Grüsse
+
+Bundesamt für Justiz
+
+Fachbereich e-ID
+
+Bundesrain 20, 3003 Bern
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Bonjour
+
+Les informations fournies en vue de l'habilitation comme vérificateur AVS ne répondent pas aux
+exigences. Votre demande a donc été rejetée.
+
+Pour toute question, nous restons à votre disposition à l'adresse [(${contactEmail})].
+
+Lien vers votre business partner: [(${servicePortalPartnerUrl})]
+
+Cordialement
+
+Office fédéral de la justice
+
+Division e-ID
+
+Bundesrain 20, 3003 Berne
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Buongiorno
+
+Le informazioni fornite per l'abilitazione come verificatore AVS non soddisfano i requisiti.
+Pertanto, la sua richiesta è stata respinta.
+
+Per eventuali domande, restiamo a disposizione all'indirizzo [(${contactEmail})].
+
+Link al Business Partner: [(${servicePortalPartnerUrl})]
+
+Cordiali saluti
+
+Ufficio federale di giustizia
+
+Sezione e-ID
+
+Bundesrain 20, 3003 Berna
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Hello
+
+The information you have submitted regarding your application to verify the OASI number does
+not meet the requirements. Your application has therefore been rejected.
+
+If you have any questions, please contact us at [(${contactEmail})].
+
+Link to your business partner: [(${servicePortalPartnerUrl})]
+
+Kind regards
+
+Federal Office of Justice
+
+e-ID Division
+
+Bundesrain 20, 3003 Bern
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch

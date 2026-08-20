@@ -47,7 +47,7 @@ public class DemoData {
             DemoBusinessPartner.of(
                 DemoBusinessPartner.DemoBusinessPartnerType.GOVERNMENTAL_INSTITUTION,
                 "77054cd8-6fe6-44eb-be22-b56ebf9c8622",
-                "erika.mueller@e2e.test",
+                "erika.mueller@e2e.local",
                 fromLanguages(
                     "Trusted Gov Partner",
                     "Trusted Gov Partner (DE)",
@@ -66,7 +66,7 @@ public class DemoData {
                 new DemoBusinessPartner.DemoContact(
                     "erika",
                     "müller",
-                    "erika.mueller@trusty-consulting.com",
+                    "erika.mueller@trusty-consulting.local",
                     "+41548884440",
                     DemoBusinessPartner.DemoContact.Language.DE
                 ),
@@ -76,7 +76,7 @@ public class DemoData {
                         "Erika",
                         "Müller",
                         "+41776665544",
-                        "erika.mueller@trusty-consulting.com"
+                        "erika.mueller@trusty-consulting.local"
                     )
                 ),
                 null,
@@ -161,7 +161,7 @@ public class DemoData {
             DemoBusinessPartner.of(
                 DemoBusinessPartner.DemoBusinessPartnerType.GOVERNMENTAL_INSTITUTION,
                 "7b24f978-afe7-4f60-af2f-57ae5a01d303",
-                "erika.mueller@e2e.test",
+                "erika.mueller@e2e.local",
                 fromLanguages(
                     "E2e GmbH (DE)",
                     "E2e GmbH (DE)",
@@ -209,7 +209,7 @@ public class DemoData {
                 // Keep ID in sync with
                 // ch.admin.bj.swiyu.core.business.common.demodata.DemoDataConstants.BusinessPartner#CORE_ID_BP_DEFAULT
                 "9f425029-9775-4984-99ba-bacc60069502",
-                "erika.mueller@trusty-consulting.com",
+                "erika.mueller@trusty-consulting.local",
                 fromLanguages(
                     "Vertrau mir Beratung GmbH",
                     "Vertrau mir Beratung GmbH (DE)",
@@ -228,7 +228,7 @@ public class DemoData {
                 new DemoBusinessPartner.DemoContact(
                     "erika",
                     "müller",
-                    "erika.mueller@trusty-consulting.com",
+                    "erika.mueller@trusty-consulting.local",
                     "+41548884440",
                     DemoBusinessPartner.DemoContact.Language.DE
                 ),
@@ -238,7 +238,7 @@ public class DemoData {
                         "Erika",
                         "Müller",
                         "+41776665544",
-                        "erika.mueller@trusty-consulting.com"
+                        "erika.mueller@trusty-consulting.local"
                     )
                 ),
                 null,
@@ -347,13 +347,13 @@ public class DemoData {
             DemoBusinessPartner.of(
                 DemoBusinessPartner.DemoBusinessPartnerType.GOVERNMENTAL_INSTITUTION,
                 "39f92e48-619e-4e92-8958-468ae138d8a3",
-                "p.keller@schleppende-logistik.ch",
+                "p.keller@schleppende-logistik.local",
                 fromLanguages("Demo Kanton", "Demo Kanton", "Demo Canton", "Demo Cantone", "Demo Canton", "Demochaun"),
                 new DemoBusinessPartner.DemoAddress("Erfolgsstrasse 1", "Demohausen", "11111", "Schweiz", "Democanton"),
                 new DemoBusinessPartner.DemoContact(
                     "Sandra",
                     "Schmid",
-                    "s.schmid@democanton.admin.ch",
+                    "s.schmid@democanton.admin.local",
                     "+41216548497",
                     DemoBusinessPartner.DemoContact.Language.DE
                 ),
@@ -363,14 +363,19 @@ public class DemoData {
                         "Sandra",
                         "Schmid",
                         "+41665554433",
-                        "s.schmid@democanton.admin.ch"
+                        "s.schmid@democanton.admin.local"
                     ),
-                    new DemoBusinessPartner.DemoSignatory("John", "Doe", "+41776665544", "j.doe@democanton.admin.ch"),
+                    new DemoBusinessPartner.DemoSignatory(
+                        "John",
+                        "Doe",
+                        "+41776665544",
+                        "j.doe@democanton.admin.local"
+                    ),
                     new DemoBusinessPartner.DemoSignatory(
                         "Erika",
                         "Müller",
                         "+41554443322",
-                        "e.mueller@democanton.admin.ch"
+                        "e.mueller@democanton.admin.local"
                     )
                 ),
                 null,
@@ -415,7 +420,7 @@ public class DemoData {
             DemoBusinessPartner.of(
                 DemoBusinessPartner.DemoBusinessPartnerType.BUSINESS,
                 "e97e84e6-f40e-47ba-bdfe-d92f3d3dbc84",
-                "helvetica@demo-comp.com",
+                "helvetica@demo-comp.local",
                 fromLanguages(
                     "Demo Unternehmen",
                     "Demo Unternehmen",
@@ -458,7 +463,7 @@ public class DemoData {
             DemoBusinessPartner.of(
                 DemoBusinessPartner.DemoBusinessPartnerType.BUSINESS,
                 "4b9f08ac-aa29-4bcf-97a4-88e73e49c3e1",
-                "p.keller@schleppende-logistik.ch",
+                "p.keller@schleppende-logistik.local",
                 fromLanguages(
                     "Schleppende Logistik AG",
                     "Schleppende Logistik AG",
@@ -471,7 +476,7 @@ public class DemoData {
                 new DemoBusinessPartner.DemoContact(
                     "Peter",
                     "Keller",
-                    "p.keller@schleppende-logistik.ch",
+                    "p.keller@schleppende-logistik.local",
                     "+41548884442",
                     DemoBusinessPartner.DemoContact.Language.DE
                 ),
@@ -481,7 +486,7 @@ public class DemoData {
                         "Peter",
                         "Keller",
                         "+41776665546",
-                        "p.keller@schleppende-logistik.ch"
+                        "p.keller@schleppende-logistik.local"
                     )
                 ),
                 null,
@@ -527,7 +532,7 @@ public class DemoData {
             DemoBusinessPartner.of(
                 DemoBusinessPartner.DemoBusinessPartnerType.BUSINESS,
                 "897edd6b-2e3e-4cc2-95a8-5b759c301df8",
-                "ceo@m-m.com",
+                "ceo@m-m.local",
                 fromLanguages(
                     "Böswilliges Umzugsunternehmen GmbH",
                     "Böswilliges Umzugsunternehmen GmbH",
@@ -546,12 +551,12 @@ public class DemoData {
                 new DemoBusinessPartner.DemoContact(
                     "John",
                     "Doe",
-                    "ceo@m-m.com",
+                    "ceo@m-m.local",
                     "+41548884441",
                     DemoBusinessPartner.DemoContact.Language.DE
                 ),
                 DemoBusinessPartner.DemoSigningRule.SINGLE_SIGNATURE,
-                List.of(new DemoBusinessPartner.DemoSignatory("John", "Doe", "+41548884441", "ceo@m-m.com")),
+                List.of(new DemoBusinessPartner.DemoSignatory("John", "Doe", "+41548884441", "ceo@m-m.local")),
                 null,
                 null,
                 List.of("f66469be-fb56-4ed3-be31-a2f5bd670ac9", "ff8757d8-9de8-4cde-a538-1e0e6fc73e5e"),

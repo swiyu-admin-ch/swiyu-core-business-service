@@ -1,11 +1,13 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding;
 
 import ch.admin.bit.jeap.domainevent.avro.AvroDomainEvent;
+import ch.admin.bit.jeap.messaging.idempotence.messagehandler.IdempotentMessageHandler;
 import ch.admin.bj.swiyu.messagetype.ti.TiTrustAddDidSubmissionAcceptedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiTrustAddDidSubmissionRejectedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -14,6 +16,8 @@ public class TrustAddDidEventProcessor {
 
     private final TrustAdditionalDidsService trustAdditionalDidsService;
 
+    @Transactional
+    @IdempotentMessageHandler
     public void processAcceptedEvent(TiTrustAddDidSubmissionAcceptedEvent event) {
         if (isPayloadNull(event)) {
             return;

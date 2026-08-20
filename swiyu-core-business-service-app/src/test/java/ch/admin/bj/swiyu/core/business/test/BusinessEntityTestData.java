@@ -70,6 +70,22 @@ public class BusinessEntityTestData {
         );
     }
 
+    /**
+     * A partner whose contact person has no email address. Partner notification emails are skipped for
+     * such a partner - the publisher logs an error instead of failing the surrounding transaction.
+     */
+    public static BusinessEntity businessPartnerWithoutContactEmail(UUID partnerId) {
+        return new BusinessEntity(
+            partnerId,
+            "No Contact AG",
+            "",
+            BusinessPartnerType.BUSINESS,
+            address(),
+            "CHE-123.456.789",
+            "+41 78 1234567"
+        );
+    }
+
     public static void insertTestBusinessPartners(BusinessPartnerRepository businessPartnerRepository) {
         businessPartnerRepository.deleteAll();
         businessPartnerRepository.save(businessPartnerA());

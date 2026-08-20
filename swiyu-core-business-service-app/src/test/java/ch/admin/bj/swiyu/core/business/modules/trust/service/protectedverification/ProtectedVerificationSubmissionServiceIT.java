@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
+import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.PartnerIsNotTrustedException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
@@ -52,6 +53,9 @@ class ProtectedVerificationSubmissionServiceIT {
     DomainEventPublisher domainEventPublisher;
 
     @MockitoBean
+    EmailCommandPublisher emailCommandPublisher;
+
+    @MockitoBean
     IdentifierEntryService identifierEntryService;
 
     @Autowired
@@ -93,6 +97,7 @@ class ProtectedVerificationSubmissionServiceIT {
         assertThat(persisted.getStatus()).isEqualTo(ProtectedVerificationSubmissionStatus.SUBMITTED);
 
         verify(domainEventPublisher).publishProtectedVerificationSubmissionAcceptedEvent(any());
+        verify(emailCommandPublisher).submissionAccepted(trustedPartnerId);
     }
 
     @Test
@@ -125,6 +130,7 @@ class ProtectedVerificationSubmissionServiceIT {
 
         var persisted = testRepositories.protectedVerificationSubmission.findById(submission.getId()).orElseThrow();
         assertThat(persisted.getStatus()).isEqualTo(ProtectedVerificationSubmissionStatus.APPROVED);
+        verify(emailCommandPublisher).trustProtectedVerificationAhvApproved(trustedPartnerId);
     }
 
     @Test
@@ -139,5 +145,6 @@ class ProtectedVerificationSubmissionServiceIT {
         var persisted = testRepositories.protectedVerificationSubmission.findById(submission.getId()).orElseThrow();
         assertThat(persisted.getStatus()).isEqualTo(ProtectedVerificationSubmissionStatus.REJECTED);
         assertThat(persisted.getRejectReason()).isEqualTo(rejectReason);
+        verify(emailCommandPublisher).trustProtectedVerificationAhvRejected(trustedPartnerId);
     }
 }

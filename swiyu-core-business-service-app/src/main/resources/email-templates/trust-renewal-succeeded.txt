@@ -1,0 +1,92 @@
+---
+subject: Datenbestätigung/ Data Confirmation/ Confirmation des données/ Conferma dei dati
+---
+Guten Tag
+
+Hiermit informieren wir Sie, dass die Aktualität Ihres Eintrags im Vertrauensregister
+erfolgreich verifiziert wurde.
+
+Bei Fragen stehen wir Ihnen unter [(${contactEmail})] zur Verfügung.
+
+Link zu Ihrem Business Partner: [(${servicePortalPartnerUrl})]
+
+Freundliche Grüsse
+
+Bundesamt für Justiz
+
+Fachbereich e-ID
+
+Bundesrain 20, 3003 Bern
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Bonjour
+
+Nous vous informons par la présente que l'actualité de votre inscription au registre de
+confiance swiyu a été vérifiée avec succès.
+
+Pour toute question, nous restons à votre disposition à l'adresse [(${contactEmail})].
+
+Lien vers votre business partner: [(${servicePortalPartnerUrl})]
+
+Cordialement
+
+Office fédéral de la justice
+
+Division e-ID
+
+Bundesrain 20, 3003 Berne
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Buongiorno
+
+Con la presente informiamo che l'attualità della sua iscrizione al registro di fiducia swiyu è
+stata verificata con esito positivo.
+
+Per eventuali domande, restiamo a disposizione all'indirizzo [(${contactEmail})].
+
+Link al Business Partner: [(${servicePortalPartnerUrl})]
+
+Cordiali saluti
+
+Ufficio federale di giustizia
+
+Sezione e-ID
+
+Bundesrain 20, 3003 Berna
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Hello
+
+We are writing to inform you that the validity of your entry in the swiyu Trust Registry has
+been successfully verified.
+
+If you have any questions, please contact us at [(${contactEmail})].
+
+Link to your business partner: [(${servicePortalPartnerUrl})]
+
+Kind regards
+
+Federal Office of Justice
+
+e-ID Division
+
+Bundesrain 20, 3003 Bern
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch

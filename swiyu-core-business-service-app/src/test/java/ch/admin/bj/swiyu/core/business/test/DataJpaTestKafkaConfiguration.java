@@ -14,6 +14,11 @@ import ch.admin.bit.jeap.messaging.transactionaloutbox.outbox.OutboxConfig;
 import ch.admin.bit.jeap.messaging.transactionaloutbox.outbox.OutboxTracing;
 import ch.admin.bit.jeap.messaging.transactionaloutbox.transaction.OutboxTransactionConfig;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
+import ch.admin.bj.swiyu.core.business.common.config.FunctionalityProperties;
+import ch.admin.bj.swiyu.core.business.modules.email.config.MailConfig;
+import ch.admin.bj.swiyu.core.business.modules.email.config.MailProperties;
+import ch.admin.bj.swiyu.core.business.modules.email.domain.EmailContentRenderer;
+import ch.admin.bj.swiyu.core.business.modules.email.service.DefaultEmailCommandPublisher;
 import org.apache.avro.generic.GenericData;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -30,9 +35,13 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
         AuditPublisher.class,
         CreateAuditCommandAutoConfiguration.class,
         AuditTransactionalOutboxAutoConfiguration.class,
+        // Partner notification emails
+        MailConfig.class,
+        EmailContentRenderer.class,
+        DefaultEmailCommandPublisher.class,
     }
 )
-@EnableConfigurationProperties(KafkaProperties.class)
+@EnableConfigurationProperties({ KafkaProperties.class, MailProperties.class, FunctionalityProperties.class })
 public class DataJpaTestKafkaConfiguration {
 
     @Bean

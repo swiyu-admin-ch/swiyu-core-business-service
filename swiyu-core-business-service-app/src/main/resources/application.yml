@@ -6,6 +6,16 @@ server:
 app:
   governmental-allowlist:
     partner-id: ${GOVERNMENTAL_ALLOWLIST_PARTNER_ID:}
+  functionality:
+    email-enabled: ${FUNCTIONALITY_EMAIL_ENABLED:}
+  mail:
+    from: ${MAIL_FROM:registries@swiyu.admin.ch}
+    reply-to: ${MAIL_REPLY_TO:registries@swiyu.admin.ch}
+    # Stage marker prepended to every subject: [DEV], [REF], [ABN], [ABN-PREVIEW], [PREVIEW], empty on PROD
+    subject-prefix: ${MAIL_SUBJECT_PREFIX:}
+    service-portal:
+      base-url: ${SERVICE_PORTAL_BASE_URL:https://portal.trust-infra.swiyu.admin.ch}
+      partner-template-url: ${SERVICE_PORTAL_PARTNER_TEMPLATE_URL:${app.mail.service-portal.base-url}/ui/business-partners/{0}}
   identifier-registry:
     did-tdw-route-template: "${DID_AUTHORING_DID_TDW_ROUTE_TEMPLATE:}"
     did-web-template: "${DID_AUTHORING_DID_WEB_TEMPLATE:}"

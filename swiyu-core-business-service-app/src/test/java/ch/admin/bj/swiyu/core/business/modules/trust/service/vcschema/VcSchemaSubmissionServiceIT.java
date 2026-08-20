@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.config.JsonSchemaConfig;
+import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
@@ -69,7 +70,7 @@ import org.springframework.test.context.jdbc.Sql;
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS, scripts = "/delete_business_entities.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS, scripts = "/insert_test_business_entities.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "/delete_vc_schema_submissions.sql")
-@MockitoBean(types = AuditPublisher.class)
+@MockitoBean(types = { AuditPublisher.class, EmailCommandPublisher.class })
 class VcSchemaSubmissionServiceIT {
 
     @MockitoBean

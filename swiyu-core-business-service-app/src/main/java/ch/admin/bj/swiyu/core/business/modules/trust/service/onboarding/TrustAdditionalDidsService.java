@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding;
 
+import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
@@ -38,6 +39,7 @@ public class TrustAdditionalDidsService {
     private final IdentifierEntryService identifierEntryService;
     private final ProofOfPossessionValidator proofOfPossessionValidator;
     private final DomainEventPublisher domainEventPublisher;
+    private final EmailCommandPublisher emailCommandPublisher;
 
     private static TrustAdditionalDidsRejectReason toTrustAdditionalDidsRejectReason(RejectReason source) {
         if (source == null) {
@@ -123,6 +125,9 @@ public class TrustAdditionalDidsService {
         submission.markAsPublished();
         repository.save(submission);
         log.info("TrustAdditionalDidsSubmission marked as succeeded, submissionId={}", submissionId);
+
+        var partnerId = submission.getPartnerId();
+        emailCommandPublisher.trustAdditionalDidAdded(partnerId);
     }
 
     @Transactional

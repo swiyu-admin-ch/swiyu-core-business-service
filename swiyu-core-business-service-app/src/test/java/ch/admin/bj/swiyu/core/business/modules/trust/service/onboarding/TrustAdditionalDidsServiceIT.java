@@ -6,10 +6,12 @@ import static ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.P
 import static ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.ProofOfPossessionKeyUtils.getVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.common.did.DidPublicKeyLoader;
+import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntry;
@@ -55,6 +57,9 @@ import org.springframework.web.client.RestClient;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @WithJeapAuthenticationToken(username = "test")
 class TrustAdditionalDidsServiceIT {
+
+    @MockitoBean
+    EmailCommandPublisher emailCommandPublisher;
 
     @MockitoBean
     DomainEventPublisher domainEventPublisher;
@@ -271,6 +276,7 @@ class TrustAdditionalDidsServiceIT {
 
         var persisted = repository.findById(submissionId).orElseThrow();
         assertThat(persisted.getStatus()).isEqualTo(TrustAdditionalDidsSubmissionStatus.SUCCEEDED);
+        verify(emailCommandPublisher).trustAdditionalDidAdded(partnerId);
     }
 
     @Test

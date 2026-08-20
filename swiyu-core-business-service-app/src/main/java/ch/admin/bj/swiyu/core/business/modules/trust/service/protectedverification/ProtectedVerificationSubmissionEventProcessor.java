@@ -1,11 +1,13 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.protectedverification;
 
 import ch.admin.bit.jeap.domainevent.avro.AvroDomainEvent;
+import ch.admin.bit.jeap.messaging.idempotence.messagehandler.IdempotentMessageHandler;
 import ch.admin.bj.swiyu.messagetype.ti.TiProtectedVerificationSubmissionApprovedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiProtectedVerificationSubmissionRejectedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -14,6 +16,8 @@ public class ProtectedVerificationSubmissionEventProcessor {
 
     private final ProtectedVerificationSubmissionService protectedVerificationSubmissionService;
 
+    @Transactional
+    @IdempotentMessageHandler
     public void processApprovedEvent(TiProtectedVerificationSubmissionApprovedEvent event) {
         if (isPayloadNull(event)) {
             return;
@@ -26,6 +30,8 @@ public class ProtectedVerificationSubmissionEventProcessor {
         protectedVerificationSubmissionService.markAsApproved(payload.getProtectedVerificationSubmissionId());
     }
 
+    @Transactional
+    @IdempotentMessageHandler
     public void processRejectedEvent(TiProtectedVerificationSubmissionRejectedEvent event) {
         if (isPayloadNull(event)) {
             return;

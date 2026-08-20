@@ -3,8 +3,10 @@ package ch.admin.bj.swiyu.core.business.modules.trust.infrastructure.web;
 import static ch.admin.bj.swiyu.core.business.test.ProtectedVerificationSubmissionTestData.protectedVerificationSubmission;
 import static ch.admin.bj.swiyu.core.business.test.ProtectedVerificationSubmissionTestData.protectedVerificationSubmissionRequestDto;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.ProtectedVerificationCategoryDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.ProtectedVerificationSubmissionDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.ProtectedVerificationSubmissionListItemDto;
@@ -37,6 +39,9 @@ import tools.jackson.databind.json.JsonMapper;
 @AutoConfigureMockMvc
 @WithAllTestContainerInitializers
 class ProtectedVerificationSubmissionInternalControllerIT {
+
+    @MockitoBean
+    EmailCommandPublisher emailCommandPublisher;
 
     @Autowired
     private MockMvc mockMvc;
@@ -165,6 +170,7 @@ class ProtectedVerificationSubmissionInternalControllerIT {
         );
         assertThat(dto).isNotNull();
         assertThat(dto.partnerId()).isEqualTo(BusinessEntityTestData.DEFAULT_ENTITY);
+        verify(emailCommandPublisher).submissionAccepted(BusinessEntityTestData.DEFAULT_ENTITY);
     }
 
     @Test

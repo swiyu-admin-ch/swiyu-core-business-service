@@ -19,6 +19,16 @@ app:
     data-url-template: https://status-reg-d.trust-infra.swiyu.admin.ch/api/v1/statuslist/{0}.{1}
   trust-registry:
     data-service-base-url: https://trust-reg-d.trust-infra.swiyu.admin.ch/
+  functionality:
+    email-enabled: true # local Kafka only, no SMTP consumer attached
+  mail:
+    # Non-prod stages send from the test mailbox, see "Email (Mailhost via BIT)"
+    from: test-registries@swiyu.admin.ch
+    reply-to: test-registries@swiyu.admin.ch
+    subject-prefix: "[LOCAL] "
+    service-portal:
+      base-url: https://portal.trust-infra.swiyu.admin.ch
+      partner-template-url: "https://portal.trust-infra.swiyu.admin.ch/ui/business-partners/{0}"
 
 pams:
   mock: true

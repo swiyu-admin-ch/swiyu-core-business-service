@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.protectedverification;
 
 import ch.admin.bj.swiyu.core.business.common.api.utils.PageableUtils;
+import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.PartnerIsNotTrustedException;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.ProtectedVerificationCategoryDto;
@@ -36,6 +37,7 @@ public class ProtectedVerificationSubmissionService {
     private final ProtectedVerificationSubmissionDomainService protectedVerificationSubmissionDomainService;
     private final BusinessPartnerService businessPartnerService;
     private final DomainEventPublisher domainEventPublisher;
+    private final EmailCommandPublisher emailCommandPublisher;
 
     @Transactional
     public ProtectedVerificationSubmissionDto createProtectedVerificationSubmission(
@@ -64,6 +66,7 @@ public class ProtectedVerificationSubmissionService {
         domainEventPublisher.publishProtectedVerificationSubmissionAcceptedEvent(
             EventMapper.mapToTiProtectedVerificationSubmissionAcceptedEvent(protectedVerificationSubmission.getId())
         );
+        emailCommandPublisher.submissionAccepted(dto.partnerId());
 
         return ProtectedVerificationMapper.toProtectedVerificationSubmissionDto(protectedVerificationSubmission);
     }
@@ -109,6 +112,11 @@ public class ProtectedVerificationSubmissionService {
         var protectedVerificationSubmission =
             protectedVerificationSubmissionDomainService.getProtectedVerificationSubmission(id);
         protectedVerificationSubmission.markAsApproved();
+
+        if (isAhv(protectedVerificationSubmission.getCategory())) {
+            var partnerId = protectedVerificationSubmission.getPartnerId();
+            emailCommandPublisher.trustProtectedVerificationAhvApproved(partnerId);
+        }
     }
 
     @Transactional
@@ -116,5 +124,18 @@ public class ProtectedVerificationSubmissionService {
         var protectedVerificationSubmission =
             protectedVerificationSubmissionDomainService.getProtectedVerificationSubmission(id);
         protectedVerificationSubmission.markAsRejected(rejectReason);
+
+        if (isAhv(protectedVerificationSubmission.getCategory())) {
+            var partnerId = protectedVerificationSubmission.getPartnerId();
+            emailCommandPublisher.trustProtectedVerificationAhvRejected(partnerId);
+        }
+    }
+
+    /**
+     * The AHV number is the personal administrative number, which is the only protected
+     * verification category to date.
+     */
+    private static boolean isAhv(ProtectedVerificationCategory category) {
+        return category == ProtectedVerificationCategory.PERSONAL_ADMINISTRATIVE_NUMBER;
     }
 }

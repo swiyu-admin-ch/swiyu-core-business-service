@@ -76,6 +76,15 @@ database-migration: # under local development we want to run the migrations on s
 app:
   governmental-allowlist:
     partner-id: 40f377d5-cd11-458a-944b-0c4f73f2ddaa # DEV/REF
+  functionality:
+    email-enabled: true
+  mail:
+    from: registries@swiyu.admin.ch
+    reply-to: registries@swiyu.admin.ch
+    subject-prefix: "[TEST] "
+    service-portal:
+      base-url: https://portal.trust-infra.swiyu.admin.ch
+      partner-template-url: "https://portal.trust-infra.swiyu.admin.ch/ui/business-partners/{0}"
   status-registry:
     data-url-template: "TEST.DATAURL/{0}.{1}"
   identifier-registry:

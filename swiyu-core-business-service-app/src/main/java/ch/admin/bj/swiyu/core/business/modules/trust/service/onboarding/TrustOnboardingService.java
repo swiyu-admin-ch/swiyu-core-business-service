@@ -10,6 +10,7 @@ import ch.admin.bj.swiyu.core.business.common.api.utils.PageableUtils;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditMapper;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
+import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
 import ch.admin.bj.swiyu.core.business.modules.documents.api.TrustOnboardingSubmissionDocumentListItemDto;
@@ -60,6 +61,7 @@ public class TrustOnboardingService {
     private final TrustOnboardingSubmissionLimitProperties limitProperties;
     private final DeclarationOfIntentValidator declarationOfIntentValidator;
     private final AuditPublisher auditPublisher;
+    private final EmailCommandPublisher emailCommandPublisher;
 
     @Transactional(readOnly = true)
     public Resource getDeclarationOfIntentDocument(UUID trustOnboardingSubmissionId, LanguageDto languageDto) {
@@ -385,6 +387,8 @@ public class TrustOnboardingService {
                 trustOnboardingSubmission.getPartnerId()
             )
         );
+        var partnerId = trustOnboardingSubmission.getPartnerId();
+        emailCommandPublisher.submissionAccepted(partnerId);
     }
 
     @Transactional
@@ -393,6 +397,11 @@ public class TrustOnboardingService {
             trustOnboardingSubmissionId
         );
         trustOnboardingSubmission.markAsRejected(toTrustOnboardingRejectReason(rejectReason));
+
+        // TODO EID-6620: once the submission carries its type, send the PROFILE_CHANGE variant for
+        // profile changes. Every submission is a REGISTRATION today.
+        var partnerId = trustOnboardingSubmission.getPartnerId();
+        emailCommandPublisher.trustRegistrationRejected(partnerId);
     }
 
     @Transactional
@@ -404,6 +413,10 @@ public class TrustOnboardingService {
             toTrustOnboardingDeclineReason(declineReason),
             partnerNote
         );
+
+        // TODO EID-6620: see markAsRejected
+        var partnerId = trustOnboardingSubmission.getPartnerId();
+        emailCommandPublisher.trustRegistrationInformationRequested(partnerId);
     }
 
     @Transactional
@@ -414,6 +427,11 @@ public class TrustOnboardingService {
         trustOnboardingSubmission.markAsSucceeded();
 
         updateBusinessPartnerWithSubmissionDetails(trustOnboardingSubmission);
+
+        // TODO EID-6620: once the submission carries its type, send the PROFILE_CHANGE or RENEWAL
+        // variant accordingly. Every submission is a REGISTRATION today.
+        var partnerId = trustOnboardingSubmission.getPartnerId();
+        emailCommandPublisher.trustRegistrationSucceeded(partnerId);
     }
 
     private void updateBusinessPartnerWithSubmissionDetails(TrustOnboardingSubmission trustOnboardingSubmission) {

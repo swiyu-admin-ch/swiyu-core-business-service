@@ -229,6 +229,12 @@ public class ArchitectureTest {
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.trust.service.bpi.."),
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.domain..")
             )
+            // email -> management (the publisher resolves the recipient from the partner id, so that
+            // the trigger points do not each have to look up the contact person themselves)
+            .ignoreDependency(
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.email.service.."),
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service..")
+            )
             // status -> identifier
             .ignoreDependency(
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.status.service.."),

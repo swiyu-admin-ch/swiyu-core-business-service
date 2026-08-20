@@ -1,0 +1,108 @@
+---
+subject: Statusaktualisierung/ Status update/ Mise à jour du statut/ Aggiornamento dello stato
+---
+Guten Tag
+
+Für die Prüfung Ihres Antrags zur Aufnahme in das swiyu Vertrauensregister benötigen wir
+weitere Angaben. Melden Sie sich dazu in Ihrem Benutzerkonto im swiyu Service Portal an und
+reichen Sie die angeforderten Informationen ein.
+
+Wir bitten Sie die Angaben innerhalb von 30 Tagen nachzureichen. Nach Ablauf dieser Frist
+wird Ihr Antrag abgelehnt.
+
+Für Fragen stehen wir Ihnen unter [(${contactEmail})] zur Verfügung.
+
+Link zu Ihrem Business Partner: [(${servicePortalPartnerUrl})]
+
+Freundliche Grüsse
+
+Bundesamt für Justiz
+
+Fachbereich e-ID
+
+Bundesrain 20, 3003 Bern
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Bonjour
+
+Afin d'examiner votre demande d'inscription au registre de confiance swiyu, nous avons besoin
+d'informations complémentaires. Pour ce faire, connectez-vous à votre compte utilisateur sur
+le swiyu Service Portal et soumettez les informations demandées.
+
+Nous vous prions de bien vouloir soumettre ces informations dans un délai de 30 jours. Passé
+ce délai, votre demande sera rejetée.
+
+Pour toute question, nous restons à votre disposition à l'adresse [(${contactEmail})].
+
+Lien vers votre business partner: [(${servicePortalPartnerUrl})]
+
+Cordialement
+
+Office fédéral de la justice
+
+Division e-ID
+
+Bundesrain 20, 3003 Berne
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Buongiorno
+
+Per poter esaminare la sua richiesta di iscrizione al registro di fiducia swiyu, abbiamo
+bisogno di ulteriori informazioni. A tal fine, la preghiamo di accedere al suo account utente
+sullo swiyu Service Portal e di inviare le informazioni richieste.
+
+La preghiamo di inviare i dati richiesti entro 30 giorni. Trascorso tale termine, la sua
+richiesta verrà respinta.
+
+Per eventuali domande, restiamo a disposizione all'indirizzo [(${contactEmail})].
+
+Link al Business Partner: [(${servicePortalPartnerUrl})]
+
+Cordiali saluti
+
+Ufficio federale di giustizia
+
+Sezione e-ID
+
+Bundesrain 20, 3003 Berna
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Hello
+
+We require further details to assess your application for enrollment in the swiyu Trust
+Registry. To this end, please log in to your account on the swiyu Service Portal and submit
+the requested information.
+
+Please provide the required information within 30 days. After this deadline, your
+application will be rejected.
+
+If you have any questions, please contact us at [(${contactEmail})].
+
+Link to your business partner: [(${servicePortalPartnerUrl})]
+
+Kind regards
+
+Federal Office of Justice
+
+e-ID Division
+
+Bundesrain 20, 3003 Bern
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch

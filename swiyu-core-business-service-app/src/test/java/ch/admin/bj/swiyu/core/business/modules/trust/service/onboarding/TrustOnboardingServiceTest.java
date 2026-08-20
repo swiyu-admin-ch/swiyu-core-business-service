@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
+import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionLimitProperties;
@@ -47,7 +48,8 @@ class TrustOnboardingServiceTest {
             mock(TrustOnboardingSubmissionValidator.class),
             mock(TrustOnboardingSubmissionLimitProperties.class),
             mock(DeclarationOfIntentValidator.class),
-            mock(AuditPublisher.class)
+            mock(AuditPublisher.class),
+            mock(EmailCommandPublisher.class)
         );
     }
 

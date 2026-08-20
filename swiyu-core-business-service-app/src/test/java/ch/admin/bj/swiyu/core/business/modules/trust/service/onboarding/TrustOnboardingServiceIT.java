@@ -21,6 +21,7 @@ import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.did.DidPublicKeyLoader;
 import ch.admin.bj.swiyu.core.business.common.domain.*;
+import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
@@ -72,6 +73,9 @@ import org.springframework.web.client.RestClient;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @WithJeapAuthenticationToken(username = "test")
 class TrustOnboardingServiceIT {
+
+    @MockitoBean
+    EmailCommandPublisher emailCommandPublisher;
 
     @MockitoBean
     ScanApi scanApi;
@@ -592,6 +596,7 @@ class TrustOnboardingServiceIT {
         var refreshed = repos.trustOnboardingSubmission.findById(submission.getId()).orElseThrow();
         assertEquals(TrustOnboardingSubmissionStatus.REJECTED, refreshed.getStatus());
         assertEquals(TrustOnboardingRejectReason.FRAUDULENT_ACTIVITY, refreshed.getRejectReason());
+        verify(emailCommandPublisher).trustRegistrationRejected(submission.getPartnerId());
     }
 
     @Test
@@ -610,6 +615,7 @@ class TrustOnboardingServiceIT {
         assertEquals(TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED, refreshed.getStatus());
         assertEquals(TrustOnboardingDeclineReason.MISSING_DOCUMENTS, refreshed.getDeclineReason());
         assertEquals("partnerNote", refreshed.getPartnerNote());
+        verify(emailCommandPublisher).trustRegistrationInformationRequested(submission.getPartnerId());
     }
 
     @Test
@@ -636,6 +642,10 @@ class TrustOnboardingServiceIT {
 
         var refreshed = repos.trustOnboardingSubmission.findById(submission.getId()).orElseThrow();
         assertEquals(TrustOnboardingSubmissionStatus.SUCCEEDED, refreshed.getStatus());
+        // The partner's contact is refreshed from the submission before the email goes out, so the
+        // recipient is the contact person the partner has after the successful onboarding.
+        var updatedPartner = businessPartnerService.getBusinessPartner(businessEntity.id());
+        verify(emailCommandPublisher).trustRegistrationSucceeded(businessEntity.id());
     }
 
     @SuppressWarnings("java:S1874") // remove with EID-6624

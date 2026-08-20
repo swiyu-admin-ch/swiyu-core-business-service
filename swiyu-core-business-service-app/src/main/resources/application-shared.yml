@@ -11,6 +11,12 @@ app:
     data-url-template: https://localhost:8290/api/v1/statuslist/{0}.{1}
   trust-registry:
     data-service-base-url: http://localhost:8390/
+  functionality:
+    email-enabled: true # local Kafka only, no SMTP consumer attached
+  mail:
+    service-portal:
+      base-url: http://localhost:4200
+      partner-template-url: "http://localhost:4200/ui/business-partners/{0}"
 
 spring:
   docker:

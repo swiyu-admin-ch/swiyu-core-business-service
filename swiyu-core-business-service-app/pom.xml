@@ -313,6 +313,19 @@
             <artifactId>ti-protected-verification-submission-rejected-event</artifactId>
             <version>1.0.0</version>
         </dependency>
+        <dependency>
+            <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
+            <artifactId>ti-send-email-command</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <!-- Thymeleaf, used to render the plain text partner notification emails.
+             We deliberately depend on the library instead of spring-boot-starter-thymeleaf:
+             this service renders no HTML views, so the MVC view resolver auto-configuration
+             would only add unused surface. The template engine is configured in MailConfig. -->
+        <dependency>
+            <groupId>org.thymeleaf</groupId>
+            <artifactId>thymeleaf</artifactId>
+        </dependency>
         <!-- PDFBox -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>

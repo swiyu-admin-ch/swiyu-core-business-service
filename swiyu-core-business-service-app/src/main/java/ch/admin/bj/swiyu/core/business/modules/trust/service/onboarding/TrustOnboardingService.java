@@ -398,7 +398,7 @@ public class TrustOnboardingService {
         );
         trustOnboardingSubmission.markAsRejected(toTrustOnboardingRejectReason(rejectReason));
 
-        // TODO EID-6620: once the submission carries its type, send the PROFILE_CHANGE variant for
+        // will be changed with EID-6620: once the submission carries its type, send the PROFILE_CHANGE variant for
         // profile changes. Every submission is a REGISTRATION today.
         var partnerId = trustOnboardingSubmission.getPartnerId();
         emailCommandPublisher.trustRegistrationRejected(partnerId);
@@ -414,7 +414,7 @@ public class TrustOnboardingService {
             partnerNote
         );
 
-        // TODO EID-6620: see markAsRejected
+        // will be changed with EID-6620: see markAsRejected
         var partnerId = trustOnboardingSubmission.getPartnerId();
         emailCommandPublisher.trustRegistrationInformationRequested(partnerId);
     }
@@ -428,7 +428,7 @@ public class TrustOnboardingService {
 
         updateBusinessPartnerWithSubmissionDetails(trustOnboardingSubmission);
 
-        // TODO EID-6620: once the submission carries its type, send the PROFILE_CHANGE or RENEWAL
+        // will be changed EID-6620: once the submission carries its type, send the PROFILE_CHANGE or RENEWAL
         // variant accordingly. Every submission is a REGISTRATION today.
         var partnerId = trustOnboardingSubmission.getPartnerId();
         emailCommandPublisher.trustRegistrationSucceeded(partnerId);

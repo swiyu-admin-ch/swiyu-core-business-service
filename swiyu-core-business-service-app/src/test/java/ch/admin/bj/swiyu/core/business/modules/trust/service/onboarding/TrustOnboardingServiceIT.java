@@ -643,8 +643,8 @@ class TrustOnboardingServiceIT {
         var refreshed = repos.trustOnboardingSubmission.findById(submission.getId()).orElseThrow();
         assertEquals(TrustOnboardingSubmissionStatus.SUCCEEDED, refreshed.getStatus());
         // The partner's contact is refreshed from the submission before the email goes out, so the
-        // recipient is the contact person the partner has after the successful onboarding.
-        var updatedPartner = businessPartnerService.getBusinessPartner(businessEntity.id());
+        // recipient is the contact person the partner has after the successful onboarding - verified in
+        // markAsSucceeded_updatesBusinessPartnerWithSubmissionDetails.
         verify(emailCommandPublisher).trustRegistrationSucceeded(businessEntity.id());
     }
 

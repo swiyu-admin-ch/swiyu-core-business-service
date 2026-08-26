@@ -39,8 +39,10 @@ public class TrustOnboardingMapper {
         };
     }
 
-    @SuppressWarnings("java:S2637") // Remove with EID-6762
-    public static TrustOnboardingSubmissionDto toTrustOnboardingSubmissionDto(TrustOnboardingSubmission source) {
+    public static TrustOnboardingSubmissionDto toTrustOnboardingSubmissionDto(
+        TrustOnboardingSubmission source,
+        TrustOnboardingSubmissionTypeDto submissionType
+    ) {
         return new TrustOnboardingSubmissionDto(
             source.getId(),
             source.getPartnerId(),
@@ -49,6 +51,7 @@ public class TrustOnboardingMapper {
             source.getEntityEmail(),
             AddressMapper.toAddressDto(source.getEntityAddress()),
             toContactDto(source.getContactPerson()),
+            submissionType,
             source.getVersion(),
             toTrustOnboardingSubmissionStatusDto(source.getStatus()),
             toProofOfPossessionDto(source.getProofOfPossessions()),
@@ -183,25 +186,6 @@ public class TrustOnboardingMapper {
         if (reason == null) {
             log.error("Unknown reject reason: {}. Mapping it to OTHER.", source);
             reason = TrustOnboardingRejectReason.OTHER;
-        }
-        return reason;
-    }
-
-    public static TrustOnboardingDeclineReason toTrustOnboardingDeclineReason(String source) {
-        if (source == null) {
-            return null;
-        }
-        var reason = switch (source) {
-            case "MISSING_DOCUMENTS" -> TrustOnboardingDeclineReason.MISSING_DOCUMENTS;
-            case "UNAUTHORIZED_SIGNATORIES" -> TrustOnboardingDeclineReason.UNAUTHORIZED_SIGNATORIES;
-            case "INCORRECT_COMPANY_INFORMATION" -> TrustOnboardingDeclineReason.INCORRECT_COMPANY_INFORMATION;
-            case "INCORRECT_DECLARATION_OF_INTENT" -> TrustOnboardingDeclineReason.INCORRECT_DECLARATION_OF_INTENT;
-            case "OTHER" -> TrustOnboardingDeclineReason.OTHER;
-            default -> null;
-        };
-        if (reason == null) {
-            log.error("Unknown decline reason: {}. Mapping it to OTHER.", source);
-            reason = TrustOnboardingDeclineReason.OTHER;
         }
         return reason;
     }

@@ -20,6 +20,7 @@ public record TrustOnboardingSubmissionDto(
     @NotNull String entityEmail,
     @NotNull AddressDto address,
     @NotNull ContactDto contactPerson,
+    @NotNull TrustOnboardingSubmissionTypeDto type,
     @NotNull Long version,
     @NotNull TrustOnboardingSubmissionStatusDto status,
     @NotNull List<ProofOfPossessionDto> proofOfPossessions,

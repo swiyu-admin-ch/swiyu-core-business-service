@@ -133,10 +133,7 @@ public class DemoDataImportService {
                     switch (trustOnboarding.status()) {
                         case UNSUBMITTED_TIMEOUT -> sub.markAsExpired();
                         case SUBMITTED -> sub.markAsSubmitted();
-                        case INFORMATION_REQUESTED -> sub.markAsInformationRequested(
-                            TrustOnboardingDeclineReason.MISSING_DOCUMENTS,
-                            "Test note data"
-                        );
+                        case INFORMATION_REQUESTED -> sub.markAsInformationRequested("Test note data");
                         case SUCCEEDED -> sub.markAsSucceeded();
                         case REJECTED -> sub.markAsRejected(TrustOnboardingRejectReason.FRAUDULENT_ACTIVITY);
                         case UNSUBMITTED -> {

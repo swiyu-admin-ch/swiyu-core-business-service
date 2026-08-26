@@ -183,7 +183,7 @@ class TrustOnboardingServiceIT {
     @Test
     void createTrustOnboardingSubmissionWhenInformationRequestedSubmissionExists_fails() {
         var initial = repos.trustOnboardingSubmission.saveAndFlush(trustOnboardingSubmission());
-        initial.markAsInformationRequested(TrustOnboardingDeclineReason.MISSING_DOCUMENTS, "partnerNote");
+        initial.markAsInformationRequested("partnerNote");
 
         assertEquals(1, repos.trustOnboardingSubmission.count());
         var testData = trustOnboardingSubmission();
@@ -333,7 +333,7 @@ class TrustOnboardingServiceIT {
         Assertions.assertThat(submitted.get().getStatus()).isEqualTo(TrustOnboardingSubmissionStatus.SUBMITTED);
 
         // WHEN requesting information
-        service.markAsInformationRequested(resultDto.id(), "MISSING_DOCUMENTS", "some reason, dont care");
+        service.markAsInformationRequested(resultDto.id(), "some reason, dont care");
 
         // THEN should reset all pops to not supplied and status to information requested
         var infoRequested = repos.trustOnboardingSubmission.findById(resultDto.id());
@@ -609,11 +609,11 @@ class TrustOnboardingServiceIT {
     void markAsInformationRequested_succeeds() {
         var submission = repos.trustOnboardingSubmission.save(trustOnboardingSubmission());
 
-        service.markAsInformationRequested(submission.getId(), "MISSING_DOCUMENTS", "partnerNote");
+        service.markAsInformationRequested(submission.getId(), "partnerNote");
 
         var refreshed = repos.trustOnboardingSubmission.findById(submission.getId()).orElseThrow();
         assertEquals(TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED, refreshed.getStatus());
-        assertEquals(TrustOnboardingDeclineReason.MISSING_DOCUMENTS, refreshed.getDeclineReason());
+        assertNull(refreshed.getDeclineReason());
         assertEquals("partnerNote", refreshed.getPartnerNote());
         verify(emailCommandPublisher).trustRegistrationInformationRequested(submission.getPartnerId());
     }
@@ -621,9 +621,7 @@ class TrustOnboardingServiceIT {
     @Test
     void markAsInformationRequested_fails_when_not_found() {
         var uuid = UUID.randomUUID();
-        assertThrows(ResourceNotFoundException.class, () ->
-            service.markAsInformationRequested(uuid, "OTHER", "should fail")
-        );
+        assertThrows(ResourceNotFoundException.class, () -> service.markAsInformationRequested(uuid, "should fail"));
     }
 
     @Test

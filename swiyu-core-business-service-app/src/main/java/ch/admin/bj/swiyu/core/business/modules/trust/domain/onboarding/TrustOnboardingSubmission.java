@@ -241,9 +241,8 @@ public class TrustOnboardingSubmission {
         this.requestedPartnerType = requestedPartnerType;
     }
 
-    public void markAsInformationRequested(TrustOnboardingDeclineReason declineReason, String partnerNote) {
+    public void markAsInformationRequested(String partnerNote) {
         this.status = TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED;
-        this.declineReason = declineReason;
         this.partnerNote = partnerNote;
         this.proofOfPossessions = this.proofOfPossessions.stream().map(ProofOfPossession::toNotSupplied).toList();
     }

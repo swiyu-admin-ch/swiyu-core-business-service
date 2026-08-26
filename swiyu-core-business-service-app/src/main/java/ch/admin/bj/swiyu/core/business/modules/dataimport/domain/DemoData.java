@@ -308,6 +308,7 @@ public class DemoData {
                     new DemoBusinessPartner.DemoTrustOnboarding(
                         UUID.fromString("3299cd25-8bab-47b7-9d46-f740be76e57e"),
                         DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionStatus.SUBMITTED,
+                        DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionType.PROFILE_CHANGE,
                         List.of(
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Declaration of intent.pdf",
@@ -716,9 +717,29 @@ public class DemoData {
         public record DemoTrustOnboarding(
             @NotNull UUID submissionId,
             @NotNull DemoTrustOnboardingSubmissionStatus status,
+            @NotNull DemoTrustOnboardingSubmissionType submissionType,
             @NotNull List<DemoTrustOnboardingSubmissionDocument> documents,
             DemoTrustOnboardingTask task
         ) {
+            /**
+             * Convenience constructor: an onboarding is a REGISTRATION unless a specific submission
+             * type (e.g. PROFILE_CHANGE) is given.
+             */
+            public DemoTrustOnboarding(
+                UUID submissionId,
+                DemoTrustOnboardingSubmissionStatus status,
+                List<DemoTrustOnboardingSubmissionDocument> documents,
+                DemoTrustOnboardingTask task
+            ) {
+                this(submissionId, status, DemoTrustOnboardingSubmissionType.REGISTRATION, documents, task);
+            }
+
+            public enum DemoTrustOnboardingSubmissionType {
+                REGISTRATION,
+                PROFILE_CHANGE,
+                RENEWAL,
+            }
+
             public enum DemoTrustOnboardingSubmissionStatus {
                 UNSUBMITTED, // user can update at any time
                 UNSUBMITTED_TIMEOUT,

@@ -168,7 +168,7 @@ public class TrustOnboardingService {
             )
         );
         if (inProgressEntry != null) {
-            return toTrustOnboardingSubmissionDto(inProgressEntry);
+            return toTrustOnboardingsSubmissionDto(inProgressEntry);
         }
 
         String uid = null;
@@ -192,7 +192,7 @@ public class TrustOnboardingService {
                 toSignatories(dto.signatories())
             )
         );
-        return toTrustOnboardingSubmissionDto(trustOnboardingSubmission);
+        return toTrustOnboardingsSubmissionDto(trustOnboardingSubmission);
     }
 
     @Transactional(readOnly = true)
@@ -405,14 +405,11 @@ public class TrustOnboardingService {
     }
 
     @Transactional
-    public void markAsInformationRequested(UUID trustOnboardingSubmissionId, String declineReason, String partnerNote) {
+    public void markAsInformationRequested(UUID trustOnboardingSubmissionId, String partnerNote) {
         var trustOnboardingSubmission = trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(
             trustOnboardingSubmissionId
         );
-        trustOnboardingSubmission.markAsInformationRequested(
-            toTrustOnboardingDeclineReason(declineReason),
-            partnerNote
-        );
+        trustOnboardingSubmission.markAsInformationRequested(partnerNote);
 
         // will be changed with EID-6620: see markAsRejected
         var partnerId = trustOnboardingSubmission.getPartnerId();
@@ -450,7 +447,15 @@ public class TrustOnboardingService {
     private TrustOnboardingSubmissionDto toTrustOnboardingsSubmissionDto(
         TrustOnboardingSubmission trustOnboardingSubmission
     ) {
-        return TrustOnboardingMapper.toTrustOnboardingSubmissionDto(trustOnboardingSubmission);
+        return TrustOnboardingMapper.toTrustOnboardingSubmissionDto(trustOnboardingSubmission, deriveSubmissionType());
+    }
+
+    /**
+     * The submission type. Always REGISTRATION for now; deriving PROFILE_CHANGE / RENEWAL from the
+     * partner's state will be implemented later (EID-6620).
+     */
+    private TrustOnboardingSubmissionTypeDto deriveSubmissionType() {
+        return TrustOnboardingSubmissionTypeDto.REGISTRATION;
     }
 
     @Transactional

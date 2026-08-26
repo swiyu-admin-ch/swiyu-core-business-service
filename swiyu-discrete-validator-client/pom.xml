@@ -7,7 +7,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-core-business-service</artifactId>
-        <version>3.42.22-SNAPSHOT</version>
+        <version>3.42.24-SNAPSHOT</version>
     </parent>
 
     <artifactId>swiyu-discrete-validator-client</artifactId>

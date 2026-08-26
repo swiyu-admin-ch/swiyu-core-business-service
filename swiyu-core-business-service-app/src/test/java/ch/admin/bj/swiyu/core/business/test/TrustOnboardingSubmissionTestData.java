@@ -163,10 +163,7 @@ public class TrustOnboardingSubmissionTestData {
             case SUBMITTED -> submission.markAsSubmitted();
             case SUCCEEDED -> submission.markAsSucceeded();
             case REJECTED -> submission.markAsRejected(TrustOnboardingRejectReason.FRAUDULENT_ACTIVITY);
-            case INFORMATION_REQUESTED -> submission.markAsInformationRequested(
-                TrustOnboardingDeclineReason.MISSING_DOCUMENTS,
-                "something missing"
-            );
+            case INFORMATION_REQUESTED -> submission.markAsInformationRequested("something missing");
             case UNSUBMITTED -> {
                 // nothing to do since default state is unsubmitted
             }

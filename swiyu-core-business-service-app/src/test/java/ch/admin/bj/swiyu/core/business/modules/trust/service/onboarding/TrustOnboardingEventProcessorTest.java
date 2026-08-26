@@ -29,11 +29,7 @@ class TrustOnboardingEventProcessorTest {
 
         processor.processInformationRequestedEvent(event);
 
-        verify(trustOnboardingService).markAsInformationRequested(
-            submissionId,
-            event.getPayload().getRejectReason(),
-            event.getPayload().getPartnerNote()
-        );
+        verify(trustOnboardingService).markAsInformationRequested(submissionId, event.getPayload().getPartnerNote());
     }
 
     @Test
@@ -43,7 +39,7 @@ class TrustOnboardingEventProcessorTest {
 
         processor.processInformationRequestedEvent(event);
 
-        verify(trustOnboardingService, never()).markAsInformationRequested(any(), any(), any());
+        verify(trustOnboardingService, never()).markAsInformationRequested(any(), any());
     }
 
     @Test
@@ -55,11 +51,7 @@ class TrustOnboardingEventProcessorTest {
 
         processor.processInformationRequestedEvent(event);
 
-        verify(trustOnboardingService).markAsInformationRequested(
-            null,
-            event.getPayload().getRejectReason(),
-            event.getPayload().getPartnerNote()
-        );
+        verify(trustOnboardingService).markAsInformationRequested(null, event.getPayload().getPartnerNote());
     }
 
     @Test

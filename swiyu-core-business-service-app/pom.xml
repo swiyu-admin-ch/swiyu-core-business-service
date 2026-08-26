@@ -4,7 +4,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-core-business-service</artifactId>
-        <version>3.42.22-SNAPSHOT</version>
+        <version>3.42.24-SNAPSHOT</version>
     </parent>
     <artifactId>swiyu-core-business-service-app</artifactId>
     <packaging>jar</packaging>
@@ -251,7 +251,7 @@
         <dependency>
             <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
             <artifactId>ti-trust-onboarding-information-requested-event</artifactId>
-            <version>3.0.0</version>
+            <version>5.0.0</version>
         </dependency>
         <dependency>
             <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>

@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.core.business.common.security;
 
-import ch.admin.bit.jeap.domainevent.avro.AvroDomainEventPublisher;
+import ch.admin.bit.jeap.messaging.model.MessagePublisher;
 import ch.admin.bit.jeap.security.resource.token.JeapAuthenticationToken;
 import java.time.Instant;
 import java.util.HashMap;
@@ -16,10 +16,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class MessagingSecurityContext {
 
-    public void setPreferredUser(AvroDomainEventPublisher publisher) {
+    /**
+     * Takes {@link MessagePublisher}, the interface shared by events and commands, so the same call
+     * works for both - {@code AvroDomainEventPublisher} and {@code AvroMessagePublisher} are unrelated
+     * generated classes that only meet in this interface.
+     */
+    public void setPreferredUser(MessagePublisher publisher) {
         // Use the publisher's topic name as the preferred username
-        String systemName = publisher.getOptionalSystem().orElse("anonymous");
-        String serviceName = publisher.getOptionalService().orElse("anonymous");
+        String systemName = publisher.getSystem() == null ? "anonymous" : publisher.getSystem();
+        String serviceName = publisher.getService() == null ? "anonymous" : publisher.getService();
         setPreferredUser("%s_%s".formatted(systemName, serviceName));
     }
 

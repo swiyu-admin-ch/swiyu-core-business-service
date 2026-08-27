@@ -7,7 +7,6 @@ import static org.mockito.Mockito.when;
 import ch.admin.bit.jeap.domainevent.avro.AvroDomainEventPublisher;
 import ch.admin.bit.jeap.security.resource.token.JeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
-import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,8 +33,8 @@ class MessagingSecurityContextIntegrationIT {
     void setPreferredUser_withSystemAndService_setsExpectedSecurityContext() {
         // given
         AvroDomainEventPublisher publisher = mock(AvroDomainEventPublisher.class);
-        when(publisher.getOptionalSystem()).thenReturn(Optional.of("foo"));
-        when(publisher.getOptionalService()).thenReturn(Optional.of("bar"));
+        when(publisher.getSystem()).thenReturn("foo");
+        when(publisher.getService()).thenReturn("bar");
 
         // when
         messagingSecurityContext.setPreferredUser(publisher);
@@ -48,11 +47,11 @@ class MessagingSecurityContextIntegrationIT {
     }
 
     @Test
-    void setPreferredUser_withEmptyOptionals_setsAnonymousUser() {
+    void setPreferredUser_withoutSystemAndService_setsAnonymousUser() {
         // given
         AvroDomainEventPublisher publisher = mock(AvroDomainEventPublisher.class);
-        when(publisher.getOptionalSystem()).thenReturn(Optional.empty());
-        when(publisher.getOptionalService()).thenReturn(Optional.empty());
+        when(publisher.getSystem()).thenReturn(null);
+        when(publisher.getService()).thenReturn(null);
 
         // when
         messagingSecurityContext.setPreferredUser(publisher);

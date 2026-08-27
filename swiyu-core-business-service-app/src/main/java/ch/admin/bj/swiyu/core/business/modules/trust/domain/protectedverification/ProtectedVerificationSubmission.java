@@ -77,7 +77,26 @@ public class ProtectedVerificationSubmission {
         String reason,
         ProtectedVerificationCategory category
     ) {
-        this.id = UUID.randomUUID();
+        this(UUID.randomUUID(), partnerId, sbnId, entityName, uid, contactPerson, reason, category);
+    }
+
+    /**
+     * Accepts an explicit id, so demo data can reference a submission's id from the matching
+     * ProtectedVerificationRequestTask it seeds on the trust-management-scs side (there is no other way to know
+     * it in advance, since it's otherwise only communicated via the TiProtectedVerificationSubmissionAcceptedEvent
+     * published after construction).
+     */
+    public ProtectedVerificationSubmission(
+        UUID id,
+        UUID partnerId,
+        UUID sbnId,
+        String entityName,
+        String uid,
+        Contact contactPerson,
+        String reason,
+        ProtectedVerificationCategory category
+    ) {
+        this.id = id;
         this.partnerId = partnerId;
         this.sbnId = sbnId;
         this.entityName = entityName;

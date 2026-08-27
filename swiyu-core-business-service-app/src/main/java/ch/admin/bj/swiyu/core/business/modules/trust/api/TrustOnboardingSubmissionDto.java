@@ -19,7 +19,7 @@ public record TrustOnboardingSubmissionDto(
     MultiLanguageTextDto entityName,
     @NotNull String entityEmail,
     @NotNull AddressDto address,
-    @NotNull ContactDto contactPerson,
+    ContactDto contactPerson, // can be nullable when not yet submitted
     @NotNull TrustOnboardingSubmissionTypeDto type,
     @NotNull Long version,
     @NotNull TrustOnboardingSubmissionStatusDto status,

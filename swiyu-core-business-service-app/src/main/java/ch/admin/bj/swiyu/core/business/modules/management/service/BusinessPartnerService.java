@@ -4,6 +4,7 @@ import static ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType.
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerType;
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerTypeDto;
 import static ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper.toAddress;
+import static ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper.toContact;
 import static org.springframework.util.StringUtils.hasText;
 
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
@@ -113,7 +114,7 @@ public class BusinessPartnerService {
         log.info(
             "Creating new business partner (V2) with name '{}' and contact email '{}'",
             request.name(),
-            request.contactEmail()
+            request.contact().email()
         );
 
         if (!hasText(pamsUserAdminDirUid)) {
@@ -122,11 +123,10 @@ public class BusinessPartnerService {
         var businessPartner = new BusinessEntity(
             UUID.randomUUID(),
             LocalizedMapUtil.fromSingleName(request.name()),
-            request.contactEmail(),
+            toContact(request.contact()),
             toBusinessPartnerType(request.partnerType()),
-            toAddress(request),
-            request.uid(),
-            request.contactPhone()
+            toAddress(request.address()),
+            request.uid()
         );
         // this will likely move to its own method once we have payment support. See feature: EIDARTFE-1297
         businessPartner.addPayedForDidSlots(1);

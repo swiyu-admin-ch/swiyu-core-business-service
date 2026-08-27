@@ -1,6 +1,22 @@
 server:
   port: 1235
+management:
+  health:
+    # Only for tests: the mail health indicator opens an SMTP connection on every call to
+    # /actuator/health, and HealthIT asserts 200 without a mail server running. In production the
+    # indicator is active.
+    mail:
+      enabled: false
+
 spring:
+  # GreenMail, started by the tests that need it (ServerSetupTest.SMTP listens on 3025).
+  # Tests that never send simply find nothing listening - they do not touch the mail sender.
+  mail:
+    host: localhost
+    port: 3025
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
   autoconfigure:
     exclude:
       # metics not tested in integration tests, therefore excluded

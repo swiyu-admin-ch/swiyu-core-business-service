@@ -7,7 +7,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ch.admin.bit.jeap.security.resource.token.JeapAuthenticationToken;
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
+import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
+import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
+import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
@@ -135,13 +138,14 @@ class BusinessPartnerServiceIT {
             "Hallo Welt AG",
             null,
             "uid",
-            "addressStreet",
-            "addressZipCode",
-            "addressCity",
-            "addressCountry",
-            "addressRegion",
-            "+41 78 1234567",
-            "hello.world@example.com"
+            new AddressDto("addressStreet", "addressCity", "3000", "addressCountry", "addressRegion"),
+            ContactDto.builder()
+                .firstName("John")
+                .lastName("Doe")
+                .email("hello.world@example.com")
+                .phone("+41 78 1234567")
+                .correspondingLanguage(LanguageDto.DE)
+                .build()
         ); // WHEN
         var businessEntity = businessPartnerService.createBusinessPartnerV2(
             createBusinessEntityDto,
@@ -159,13 +163,14 @@ class BusinessPartnerServiceIT {
             "Hallo Welt AG",
             BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION,
             "uid",
-            "addressStreet",
-            "addressZipCode",
-            "addressCity",
-            "addressCountry",
-            "addressRegion",
-            "+41 78 1234567",
-            "hello.world@example.com"
+            new AddressDto("addressStreet", "addressCity", "3000", "addressCountry", "addressRegion"),
+            ContactDto.builder()
+                .firstName("John")
+                .lastName("Doe")
+                .email("hello.world@example.com")
+                .phone("+41 78 1234567")
+                .correspondingLanguage(LanguageDto.DE)
+                .build()
         ); // WHEN
         var businessEntity = businessPartnerService.createBusinessPartnerV2(
             createBusinessEntityDto,

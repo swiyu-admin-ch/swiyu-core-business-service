@@ -3,3 +3,4 @@ include:
   - docker-compose-module/docker-compose.antivirus.yaml
   - docker-compose-module/docker-compose.db.yml
   - docker-compose-module/docker-compose.kafka.yml
+  - docker-compose-module/docker-compose.mail.yml

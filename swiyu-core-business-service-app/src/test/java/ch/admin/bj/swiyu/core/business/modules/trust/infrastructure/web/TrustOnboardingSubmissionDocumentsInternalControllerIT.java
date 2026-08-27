@@ -422,7 +422,6 @@ class TrustOnboardingSubmissionDocumentsInternalControllerIT {
             base.getEntityAddress(),
             base.getEntityEmail(),
             contactWithAddress,
-            base.getCorrespondingLanguage(),
             base.getUid(),
             base.getIsRegisteredInCommercialRegister(),
             base.getProofOfPossessions(),

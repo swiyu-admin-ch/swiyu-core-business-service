@@ -4,7 +4,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-core-business-service</artifactId>
-        <version>3.42.24-SNAPSHOT</version>
+        <version>3.42.30-SNAPSHOT</version>
     </parent>
     <artifactId>swiyu-core-business-service-app</artifactId>
     <packaging>jar</packaging>
@@ -20,6 +20,7 @@
             src/main/java/ch/admin/bj/swiyu/core/business/modules/dataimport/**/*
         </sonar.coverage.exclusions>
         <!-- dependency versions -->
+        <greenmail.version>2.1.9</greenmail.version>
         <nimbus-jose-jwt.version>10.9.1</nimbus-jose-jwt.version>
         <jackson-databind-nullable.version>0.2.10</jackson-databind-nullable.version>
         <json-schema-validator.version>1.5.9</json-schema-validator.version>
@@ -103,6 +104,14 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- In-memory SMTP server: lets the integration tests assert on the email as it was actually
+             received, including the header encoding that no unit test can cover. -->
+        <dependency>
+            <groupId>com.icegreen</groupId>
+            <artifactId>greenmail-junit5</artifactId>
+            <version>${greenmail.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -317,6 +326,11 @@
             <groupId>ch.admin.bj.swiyu.messagetype.ti</groupId>
             <artifactId>ti-send-email-command</artifactId>
             <version>1.0.0</version>
+        </dependency>
+        <!-- JavaMailSender, used to hand the composed emails to the BIT SMTP gateway. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
         <!-- Thymeleaf, used to render the plain text partner notification emails.
              We deliberately depend on the library instead of spring-boot-starter-thymeleaf:

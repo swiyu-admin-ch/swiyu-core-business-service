@@ -1,0 +1,10 @@
+services:
+  # Local SMTP sink for the partner notification emails (EID-6627).
+  # MailHog accepts anything without authentication and shows the received mails at
+  # http://localhost:8025 - nothing ever leaves the machine.
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: mailhog
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # web UI

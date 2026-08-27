@@ -7,7 +7,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
+import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
+import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
+import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
@@ -84,6 +87,11 @@ class BusinessPartnerInternalV2ControllerIT {
         assertThat(response.getResponse().getStatus()).isEqualTo(HttpStatus.CREATED.value());
         var businessPartnerDto = toBusinessPartnerDto(response.getResponse().getContentAsString());
         assertThat(businessPartnerDto).isNotNull();
+        // EID-6618: contact first/last name and correspondence language are persisted from the nested contact
+        assertThat(businessPartnerDto.contact()).isNotNull();
+        assertThat(businessPartnerDto.contact().firstName()).isEqualTo("John");
+        assertThat(businessPartnerDto.contact().lastName()).isEqualTo("Doe");
+        assertThat(businessPartnerDto.contact().correspondingLanguage()).isEqualTo(LanguageDto.DE);
     }
 
     @Test
@@ -159,20 +167,21 @@ class BusinessPartnerInternalV2ControllerIT {
                                 "Valid Name",
                                 BusinessPartnerTypeDto.BUSINESS,
                                 null,
-                                "Some Street",
-                                "8000",
-                                "Zurich",
-                                "Switzerland",
-                                "Zurich",
-                                "not-a-phone-number",
-                                "valid@example.com"
+                                new AddressDto("Some Street", "Zurich", "8000", "Switzerland", "Zurich"),
+                                ContactDto.builder()
+                                    .firstName("John")
+                                    .lastName("Doe")
+                                    .email("valid@example.com")
+                                    .phone("not-a-phone-number")
+                                    .correspondingLanguage(LanguageDto.DE)
+                                    .build()
                             )
                         )
                     )
             )
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.errorCode").value("data_invalid"))
-            .andExpect(jsonPath("$.additionalDetails", hasItem(containsString("contactPhone:"))));
+            .andExpect(jsonPath("$.additionalDetails", hasItem(containsString("contact.phone:"))));
     }
 
     @Test
@@ -181,7 +190,7 @@ class BusinessPartnerInternalV2ControllerIT {
         callCreateBusinessPartner("Valid Name", "not-an-email", BusinessPartnerTypeDto.BUSINESS)
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.errorCode").value("data_invalid"))
-            .andExpect(jsonPath("$.additionalDetails", hasItem(containsString("contactEmail:"))));
+            .andExpect(jsonPath("$.additionalDetails", hasItem(containsString("contact.email:"))));
     }
 
     @Test
@@ -197,13 +206,14 @@ class BusinessPartnerInternalV2ControllerIT {
                                 "Valid Name",
                                 BusinessPartnerTypeDto.BUSINESS,
                                 "INVALID-UID",
-                                "Some Street",
-                                "8000",
-                                "Zurich",
-                                "Switzerland",
-                                "Zurich",
-                                "+41791122334",
-                                "valid@example.com"
+                                new AddressDto("Some Street", "Zurich", "8000", "Switzerland", "Zurich"),
+                                ContactDto.builder()
+                                    .firstName("John")
+                                    .lastName("Doe")
+                                    .email("valid@example.com")
+                                    .phone("+41791122334")
+                                    .correspondingLanguage(LanguageDto.DE)
+                                    .build()
                             )
                         )
                     )
@@ -226,20 +236,21 @@ class BusinessPartnerInternalV2ControllerIT {
                                 "Valid Name",
                                 BusinessPartnerTypeDto.BUSINESS,
                                 null,
-                                "Some Street",
-                                "99999",
-                                "Zurich",
-                                "Switzerland",
-                                "Zurich",
-                                "+41791122334",
-                                "valid@example.com"
+                                new AddressDto("Some Street", "Zurich", "99999", "Switzerland", "Zurich"),
+                                ContactDto.builder()
+                                    .firstName("John")
+                                    .lastName("Doe")
+                                    .email("valid@example.com")
+                                    .phone("+41791122334")
+                                    .correspondingLanguage(LanguageDto.DE)
+                                    .build()
                             )
                         )
                     )
             )
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.errorCode").value("data_invalid"))
-            .andExpect(jsonPath("$.additionalDetails", hasItem(containsString("addressZipCode:"))));
+            .andExpect(jsonPath("$.additionalDetails", hasItem(containsString("address.postalCode:"))));
     }
 
     @Test
@@ -255,13 +266,14 @@ class BusinessPartnerInternalV2ControllerIT {
                                 "",
                                 BusinessPartnerTypeDto.BUSINESS,
                                 null,
-                                null,
-                                "bad-zip",
-                                "",
-                                null,
-                                null,
-                                "bad-phone",
-                                "bad-email"
+                                new AddressDto(null, "", "bad-zip", null, null),
+                                ContactDto.builder()
+                                    .firstName("")
+                                    .lastName("")
+                                    .email("bad-email")
+                                    .phone("bad-phone")
+                                    .correspondingLanguage(null)
+                                    .build()
                             )
                         )
                     )
@@ -446,13 +458,14 @@ class BusinessPartnerInternalV2ControllerIT {
             name,
             type,
             null,
-            "Some street",
-            "8000",
-            "Zurich",
-            "Switzerland",
-            "Zurich",
-            "+41791122334",
-            contactEmail
+            new AddressDto("Some street", "Zurich", "8000", "Switzerland", "Zurich"),
+            ContactDto.builder()
+                .firstName("John")
+                .lastName("Doe")
+                .email(contactEmail)
+                .phone("+41791122334")
+                .correspondingLanguage(LanguageDto.DE)
+                .build()
         );
         return mockMvc.perform(
             MockMvcRequestBuilders.post(BUSINESS_PARTNER_MANAGEMENT_BASE_URL)

@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.42.30
+
+### Changed
+
+- Updated jeap-spring-boot-parent -> 40.1.0
+
+## 3.42.29
+
+### Fixed
+
+- Fix sonar issues
+
+## 3.42.28
+
+### Added
+
+- Consume the TiSendEmailCommand and send the composed partner notification email via SMTP. Every send is
+  recorded in the new `sent_notification` table, so a redelivered command never results in a second email
+- SMTP configuration via `spring.mail.*`. `MAIL_HOST` has no default and must be set on every stage,
+  optionally with `MAIL_USERNAME` / `MAIL_PASSWORD` and `MAIL_SMTP_AUTH` where the gateway requires
+  credentials
+- MailHog in `docker-compose.local.yml` as a local SMTP sink, with its web UI on port 8025
+
+## 3.42.27
+
+### Fixed
+
+- Removed incorrect @NotNull on TrustOnboardingSubmissionDto.contactPerson, which can legitimately be null for draft
+  submissions
+
+## 3.42.26
+
+### Added
+
+- Add demo data for protected verification submissions to support local end-to-end testing of the approve/reject flow
+
+## 3.42.25
+
+### Changed
+
+- Moved trust onboarding correspondence language from the submission root to `contactPerson.correspondingLanguage`. The
+  deprecated request-level `correspondingLanguage` field is still accepted as a fallback for API compatibility
+- Restructured the business partner creation contract to carry nested `contact` and `address` objects. The contact now
+  includes first name, last name and correspondence language, which are persisted on the business entity. Contact email
+  is now validated for format.
+
 ## 3.42.24
 
 ### Changed
@@ -15,7 +61,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Expose submission type on the trust onboarding submission (always REGISTRATION for now; further types later) (EID-6622)
+- Expose submission type on the trust onboarding submission (always REGISTRATION for now; further types later) (
+  EID-6622)
 
 ## 3.42.22
 

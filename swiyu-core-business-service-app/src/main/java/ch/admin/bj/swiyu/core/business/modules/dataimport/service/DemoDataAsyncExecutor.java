@@ -32,6 +32,8 @@ public class DemoDataAsyncExecutor {
                 demoDataImportService.generateIdentifierEntries();
                 demoDataImportService.deleteDemoTrustOnboardingSubmissions();
                 demoDataImportService.generateTrustOnboardingSubmissions();
+                demoDataImportService.deleteDemoProtectedVerificationSubmissions();
+                demoDataImportService.generateProtectedVerificationSubmissions();
                 log.debug("LOCAL TEST DATA INJECTION is done!");
             } catch (Exception e) {
                 log.error("LOCAL TEST DATA INJECTION failed!", e);

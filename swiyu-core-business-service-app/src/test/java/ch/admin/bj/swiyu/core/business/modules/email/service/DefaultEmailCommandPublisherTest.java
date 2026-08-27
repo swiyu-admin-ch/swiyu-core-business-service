@@ -4,11 +4,9 @@ import static ch.admin.bj.swiyu.core.business.modules.email.domain.EmailType.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
+import ch.admin.bit.jeap.messaging.avro.security.AvroClassSecurity;
 import ch.admin.bit.jeap.messaging.transactionaloutbox.outbox.TransactionalOutbox;
 import ch.admin.bj.swiyu.core.business.common.config.FunctionalityProperties;
 import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
@@ -24,6 +22,7 @@ import java.util.function.BiConsumer;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -56,33 +55,9 @@ class DefaultEmailCommandPublisherTest {
     private BusinessPartnerService businessPartnerService;
     private DefaultEmailCommandPublisher publisher;
 
-    @BeforeEach
-    void setUp() {
-        outbox = mock(TransactionalOutbox.class);
-        businessPartnerService = mock(BusinessPartnerService.class);
-        when(businessPartnerService.getContactEmail(PARTNER_ID)).thenReturn(RECIPIENT);
-        publisher = publisherWithEmailFunctionality(true);
-    }
-
-    private DefaultEmailCommandPublisher publisherWithEmailFunctionality(boolean emailEnabled) {
-        var servicePortal = new MailProperties.ServicePortal();
-        servicePortal.setBaseUrl(BASE_URL);
-        servicePortal.setPartnerTemplateUrl(BASE_URL + "/ui/business-partners/{0}");
-
-        var mailProperties = new MailProperties();
-        mailProperties.setFrom(FROM);
-        mailProperties.setReplyTo(REPLY_TO);
-        mailProperties.setSubjectPrefix(SUBJECT_PREFIX);
-        mailProperties.setServicePortal(servicePortal);
-
-        var renderer = new EmailContentRenderer(new MailConfig().emailTemplateEngine());
-        return new DefaultEmailCommandPublisher(
-            outbox,
-            renderer,
-            mailProperties,
-            new FunctionalityProperties(emailEnabled),
-            businessPartnerService
-        );
+    @BeforeAll
+    static void installAvroClassWhitelist() {
+        AvroClassSecurity.installDefaultIfMissing();
     }
 
     static Stream<Arguments> allEmailTypes() {
@@ -116,6 +91,50 @@ class DefaultEmailCommandPublisherTest {
 
     private static BiConsumer<EmailCommandPublisher, UUID> trigger(BiConsumer<EmailCommandPublisher, UUID> method) {
         return method;
+    }
+
+    private static void assertNoUnresolvedVariables(EmailType emailType, String rendered) {
+        var unresolved = UNRESOLVED.matcher(rendered).results().map(MatchResult::group).toList();
+        assertThat(unresolved).as("unresolved template variables in email %s", emailType).isEmpty();
+    }
+
+    private static int countOccurrences(String haystack, String needle) {
+        var count = 0;
+        var index = haystack.indexOf(needle);
+        while (index >= 0) {
+            count++;
+            index = haystack.indexOf(needle, index + needle.length());
+        }
+        return count;
+    }
+
+    @BeforeEach
+    void setUp() {
+        outbox = mock(TransactionalOutbox.class);
+        businessPartnerService = mock(BusinessPartnerService.class);
+        when(businessPartnerService.getContactEmail(PARTNER_ID)).thenReturn(RECIPIENT);
+        publisher = publisherWithEmailFunctionality(true);
+    }
+
+    private DefaultEmailCommandPublisher publisherWithEmailFunctionality(boolean emailEnabled) {
+        var servicePortal = new MailProperties.ServicePortal();
+        servicePortal.setBaseUrl(BASE_URL);
+        servicePortal.setPartnerTemplateUrl(BASE_URL + "/ui/business-partners/{0}");
+
+        var mailProperties = new MailProperties();
+        mailProperties.setFrom(FROM);
+        mailProperties.setReplyTo(REPLY_TO);
+        mailProperties.setSubjectPrefix(SUBJECT_PREFIX);
+        mailProperties.setServicePortal(servicePortal);
+
+        var renderer = new EmailContentRenderer(new MailConfig().emailTemplateEngine());
+        return new DefaultEmailCommandPublisher(
+            outbox,
+            renderer,
+            mailProperties,
+            new FunctionalityProperties(emailEnabled),
+            businessPartnerService
+        );
     }
 
     @ParameterizedTest(name = "{0}")
@@ -200,20 +219,5 @@ class DefaultEmailCommandPublisherTest {
         var captor = ArgumentCaptor.forClass(TiSendEmailCommand.class);
         verify(outbox).sendMessage(captor.capture(), any(), eq(TiSendEmailCommand.TypeRef.DEFAULT_TOPIC));
         return captor.getValue();
-    }
-
-    private static void assertNoUnresolvedVariables(EmailType emailType, String rendered) {
-        var unresolved = UNRESOLVED.matcher(rendered).results().map(MatchResult::group).toList();
-        assertThat(unresolved).as("unresolved template variables in email %s", emailType).isEmpty();
-    }
-
-    private static int countOccurrences(String haystack, String needle) {
-        var count = 0;
-        var index = haystack.indexOf(needle);
-        while (index >= 0) {
-            count++;
-            index = haystack.indexOf(needle, index + needle.length());
-        }
-        return count;
     }
 }

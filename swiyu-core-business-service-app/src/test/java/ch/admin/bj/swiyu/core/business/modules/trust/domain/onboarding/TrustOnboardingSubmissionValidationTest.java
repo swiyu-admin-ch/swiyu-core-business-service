@@ -29,7 +29,7 @@ class TrustOnboardingSubmissionValidationTest {
     @Test
     void invalidContactPhone_isReportedOnDomainValidation() {
         var submission = buildSubmission(
-            new Contact("John", "Doe", "john@example.com", "0791234567", null),
+            new Contact("John", "Doe", "john@example.com", "0791234567", Language.DE),
             List.of(new Signatory("John", "Doe", "+41 79 123 45 67", "john@example.com"))
         );
 
@@ -43,7 +43,7 @@ class TrustOnboardingSubmissionValidationTest {
     @Test
     void invalidSignatoryEmail_isReportedOnDomainValidation() {
         var submission = buildSubmission(
-            new Contact("John", "Doe", "john@example.com", "+41 79 123 45 67", null),
+            new Contact("John", "Doe", "john@example.com", "+41 79 123 45 67", Language.DE),
             List.of(new Signatory("John", "Doe", "+41 79 123 45 67", "not-an-email"))
         );
 
@@ -62,7 +62,6 @@ class TrustOnboardingSubmissionValidationTest {
             new Address(),
             "valid@example.com",
             contact,
-            Language.DE,
             null,
             false,
             List.of(new ProofOfPossession("did:example:123", UUID.randomUUID().toString())),

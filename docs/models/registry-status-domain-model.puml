@@ -10,8 +10,10 @@ skinparam packageStyle rectangle
 package "Registry Status" #EFEBE9 {
 
     enum DatastoreStatus {
+        ACTIVE,
+        DEACTIVATED,
+        DISABLED,
         SETUP
-        ACTIVE
     }
 
     enum VcType {

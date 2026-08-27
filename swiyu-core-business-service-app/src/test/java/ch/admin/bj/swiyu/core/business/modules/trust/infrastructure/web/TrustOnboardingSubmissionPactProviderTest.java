@@ -4,7 +4,7 @@ import static ch.admin.bj.swiyu.core.business.common.security.SystemUserAuthenti
 import static ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionStatus.SUBMITTED;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.businessPartnerOfTypeBusiness;
 import static ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTestData.trustOnboardingSubmission;
-import static ch.admin.bj.swiyu.core.business.test.pact.PactProviderSupport.*;
+import static ch.admin.bj.swiyu.core.business.test.pact.PactProviderSupport.setupPactHttpTarget;
 
 import au.com.dius.pact.provider.junit5.PactVerificationContext;
 import au.com.dius.pact.provider.junitsupport.AllowOverridePactUrl;
@@ -12,6 +12,7 @@ import au.com.dius.pact.provider.junitsupport.IgnoreNoPactsToVerify;
 import au.com.dius.pact.provider.junitsupport.Provider;
 import au.com.dius.pact.provider.junitsupport.State;
 import au.com.dius.pact.provider.junitsupport.loader.PactBroker;
+import ch.admin.bit.jeap.messaging.avro.security.AvroClassSecurity;
 import ch.admin.bit.jeap.security.test.resource.configuration.JeapOAuth2IntegrationTestResourceConfiguration;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionRepository;
@@ -54,15 +55,16 @@ class TrustOnboardingSubmissionPactProviderTest {
     @Autowired
     private BusinessPartnerRepository businessPartnerRepository;
 
-    @BeforeEach
-    void setUp(PactVerificationContext context) {
-        setupPactHttpTarget(context, port);
-    }
-
     @BeforeAll
     static void init() {
         // here set the system property "pactbroker.consumerversionselectors.rawjson" in case you want to fetch branch specific consumer tests
         // see https://confluence.bit.admin.ch/spaces/JEAP/pages/684758576/Details+zur+jEAP-Integration+von+Pact
+        AvroClassSecurity.installDefaultIfMissing();
+    }
+
+    @BeforeEach
+    void setUp(PactVerificationContext context) {
+        setupPactHttpTarget(context, port);
     }
 
     @TestTemplate

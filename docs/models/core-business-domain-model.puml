@@ -200,6 +200,16 @@ package "Trust" #E0F7FA {
         JOINT_SIGNATURE_THREE
     }
 
+    enum ProtectedVerificationCategory {
+        PERSONAL_ADMINISTRATIVE_NUMBER
+    }
+
+    enum ProtectedVerificationSubmissionStatus {
+        SUBMITTED
+        APPROVED
+        REJECTED
+    }
+
     entity TrustOnboardingSubmission <<entity>> {
         + id : UUID <<PK>>
         + partnerId : UUID <<FK>>
@@ -269,7 +279,26 @@ package "Trust" #E0F7FA {
         + publicationFailureReason : VqpsPublicationFailureReason
     }
 
+    entity ProtectedVerificationSubmission <<entity>> {
+        + id : UUID <<PK>>
+        + partnerId : UUID <<FK>>
+        + sbnId : UUID
+        + entityName : String
+        + uid : String
+        + reason : String
+        + category : ProtectedVerificationCategory
+        + status : ProtectedVerificationSubmissionStatus
+        + rejectReason : String
+        + submittedAt : Instant
+        + version : Long
+        -- embedded --
+        + contactPerson : Contact
+        + auditMetadata : AuditMetadata
+    }
+
     TrustOnboardingSubmission --> TrustOnboardingSubmissionStatus : status
+    ProtectedVerificationSubmission --> ProtectedVerificationCategory : category
+    ProtectedVerificationSubmission --> ProtectedVerificationSubmissionStatus : status
     TrustOnboardingSubmission --> TrustOnboardingRejectReason : rejectReason
     TrustOnboardingSubmission --> TrustOnboardingDeclineReason : declineReason
     TrustOnboardingSubmission --> Language : correspondingLanguage
@@ -292,6 +321,7 @@ BusinessEntity ||--o{ TrustOnboardingSubmission : "partnerId"
 BusinessEntity ||--o{ TrustAdditionalDidsSubmission : "partnerId"
 BusinessEntity ||--o{ VcSchemaSubmission : "partnerId"
 BusinessEntity ||--o{ VqpsSubmission : "partnerId"
+BusinessEntity ||--o{ ProtectedVerificationSubmission : "partnerId"
 BusinessEntity ||--o{ PartnerDocument : "partnerId"
 TrustOnboardingSubmission ||--o{ PartnerDocument : "trustOnboardingSubmissionId"
 

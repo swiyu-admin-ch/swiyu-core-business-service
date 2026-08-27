@@ -3,7 +3,7 @@ package ch.admin.bj.swiyu.core.business.modules.dataimport.service;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
-import ch.admin.bj.swiyu.core.business.common.domain.Language;
+import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.DemoData;
 import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.MockMultipartFile;
 import ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocumentsRepository;
@@ -16,6 +16,8 @@ import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartner
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentUploadRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
+import ch.admin.bj.swiyu.core.business.modules.trust.domain.protectedverification.ProtectedVerificationSubmission;
+import ch.admin.bj.swiyu.core.business.modules.trust.domain.protectedverification.ProtectedVerificationSubmissionRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.TrustOnboardingService;
 import ch.admin.bj.swiyu.registry.identifier.domain.DatastoreStatus;
 import ch.admin.bj.swiyu.registry.identifier.domain.IdentifierDatastoreEntity;
@@ -46,6 +48,7 @@ public class DemoDataImportService {
     private final PartnerDocumentsRepository partnerDocumentsRepository;
     private final TrustOnboardingSubmissionRepository trustOnboardingSubmissionRepository;
     private final TrustOnboardingService trustOnboardingService;
+    private final ProtectedVerificationSubmissionRepository protectedVerificationSubmissionRepository;
     private final PartnerDocumentService partnerDocumentService;
 
     private final IdentifierEntryService identifierEntryService;
@@ -145,6 +148,41 @@ public class DemoDataImportService {
         );
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void deleteDemoProtectedVerificationSubmissions() {
+        for (var demoCase : DemoData.DemoCase.values()) {
+            protectedVerificationSubmissionRepository.deleteByPartnerId(demoCase.bp.id());
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void generateProtectedVerificationSubmissions() {
+        Arrays.stream(DemoData.DemoCase.values()).forEach(demoCase ->
+            demoCase.bp
+                .protectedVerificationSubmissions()
+                .forEach(demoSubmission -> {
+                    var sub = new ProtectedVerificationSubmission(
+                        demoSubmission.submissionId(),
+                        demoCase.bp.id(),
+                        demoSubmission.sbnId(),
+                        LocalizedMapUtil.getDefaultValue(demoCase.bp.names()),
+                        demoCase.bp.uid(),
+                        DemoDataMapper.toContact(demoCase.bp.contact()),
+                        demoSubmission.reason(),
+                        DemoDataMapper.toProtectedVerificationCategory(demoSubmission.category())
+                    );
+                    switch (demoSubmission.status()) {
+                        case APPROVED -> sub.markAsApproved();
+                        case REJECTED -> sub.markAsRejected("Test reject reason");
+                        case SUBMITTED -> {
+                            // Nothing to do, that's the status right after construction
+                        }
+                    }
+                    protectedVerificationSubmissionRepository.saveAndFlush(sub);
+                })
+        );
+    }
+
     private TrustOnboardingSubmission generateTrustOnboardingSubmission(
         UUID tosId,
         DemoData.DemoBusinessPartner demoData
@@ -183,7 +221,6 @@ public class DemoDataImportService {
                 address,
                 email,
                 contact,
-                Language.DE,
                 "CHE-123.456.789",
                 true,
                 List.of(pop),

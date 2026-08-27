@@ -1,7 +1,12 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.vcschema;
 
-import ch.admin.bj.swiyu.messagetype.ti.*;
+import ch.admin.bit.jeap.messaging.avro.security.AvroClassSecurity;
+import ch.admin.bj.swiyu.messagetype.ti.TiVcSchemaPublicationFailedEvent;
+import ch.admin.bj.swiyu.messagetype.ti.TiVcSchemaPublicationSucceededEvent;
+import ch.admin.bj.swiyu.messagetype.ti.VcSchemaPublicationFailedPayload;
+import ch.admin.bj.swiyu.messagetype.ti.VcSchemaPublicationSucceededPayload;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,6 +22,11 @@ class VcSchemaPublicationEventProcessorTest {
 
     @InjectMocks
     private VcSchemaPublicationEventProcessor processor;
+
+    @BeforeAll
+    static void installAvroClassWhitelist() {
+        AvroClassSecurity.installDefaultIfMissing();
+    }
 
     @Test
     void whenProcessSucceeded_thenMarkAsSucceededCalled() {

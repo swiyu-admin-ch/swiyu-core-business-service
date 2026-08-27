@@ -1,12 +1,12 @@
 package ch.admin.bj.swiyu.core.business.modules.management.api;
 
-import static ch.admin.bj.swiyu.core.business.common.validation.EmailValidation.EMAIL_REGEX;
-import static ch.admin.bj.swiyu.core.business.common.validation.SwissZipCodeValidation.SWISS_ZIP_CODE_PATTERN;
 import static ch.admin.bj.swiyu.core.business.common.validation.UidValidation.SWISS_UID_PATTERN;
 
+import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
-import ch.admin.bj.swiyu.core.business.common.validation.ValidPhone;
+import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -32,27 +32,8 @@ public record CreatePartnerDto(
         example = "CHE-123.456.789"
     )
     String uid,
-    @Size(max = 255) String addressStreet,
-    @NotBlank
-    @Pattern(regexp = SWISS_ZIP_CODE_PATTERN)
-    @Schema(description = "Swiss postal code (4 digits, 1000–9999).", example = "3000")
-    String addressZipCode,
-    @Size(max = 255) @NotBlank String addressCity,
-    @Size(max = 255) String addressCountry,
-    @Size(max = 255) String addressRegion,
-    @NotBlank
-    @Schema(
-        description = "Phone number under which the controller of the partner can be reached.",
-        example = "+41791234567"
-    )
-    @Size(max = 255)
-    @ValidPhone
-    String contactPhone,
-    @NotBlank
-    @Pattern(regexp = EMAIL_REGEX) // // Same RFC2822 pattern is used in swiyu-ecosystem-portal. Must be kept in sync.
-    @Schema(
-        description = "Email address how the controller of the partner can be reached. Ideally a shared mailbox.",
-        example = "example@example.com"
-    )
-    String contactEmail
+
+    @NotNull @Valid @Schema(description = "The official address of the partner.") AddressDto address,
+
+    @NotNull @Valid @Schema(description = "The contact person for the partner.") ContactDto contact
 ) {}

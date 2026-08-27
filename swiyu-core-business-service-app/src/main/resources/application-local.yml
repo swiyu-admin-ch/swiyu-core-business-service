@@ -100,6 +100,13 @@ spring:
   cloud:
     vault:
       enabled: false # encryption is disabled locally via messageTypeEncryptionDisabled, no Vault needed
+  # MailHog from docker-compose.mail.yml - accepts anything, shows the mails at http://localhost:8025
+  mail:
+    host: localhost
+    port: 1025
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
   datasource:
     core-db:
       type: com.zaxxer.hikari.HikariDataSource

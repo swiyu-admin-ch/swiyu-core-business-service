@@ -9,13 +9,13 @@ app:
   functionality:
     email-enabled: ${FUNCTIONALITY_EMAIL_ENABLED:}
   mail:
-    from: ${MAIL_FROM:registries@swiyu.admin.ch}
-    reply-to: ${MAIL_REPLY_TO:registries@swiyu.admin.ch}
+    from: ${MAIL_FROM:}
+    reply-to: ${MAIL_REPLY_TO:}
     # Stage marker prepended to every subject: [DEV], [REF], [ABN], [ABN-PREVIEW], [PREVIEW], empty on PROD
     subject-prefix: ${MAIL_SUBJECT_PREFIX:}
     service-portal:
-      base-url: ${SERVICE_PORTAL_BASE_URL:https://portal.trust-infra.swiyu.admin.ch}
-      partner-template-url: ${SERVICE_PORTAL_PARTNER_TEMPLATE_URL:${app.mail.service-portal.base-url}/ui/business-partners/{0}}
+      base-url: ${MAIL_SERVICE_PORTAL_BASE_URL:}
+      partner-template-url: ${MAIL_SERVICE_PORTAL_PARTNER_TEMPLATE_URL:${app.mail.service-portal.base-url}/ui/business-partners/{0}}
   identifier-registry:
     did-tdw-route-template: "${DID_AUTHORING_DID_TDW_ROUTE_TEMPLATE:}"
     did-web-template: "${DID_AUTHORING_DID_WEB_TEMPLATE:}"
@@ -78,6 +78,21 @@ spring:
   threads:
     virtual:
       enabled: true
+  # SMTP gateway for the partner notification emails, see "Email (Mailhost via BIT)".
+  # The gateway authenticates by whitelisted source IP, not by credentials - hence auth defaults to
+  # false. MAIL_HOST has no default on purpose: a missing value must fail the startup rather than
+  # silently point at localhost.
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT:25}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS:true}
+      mail.smtp.connectiontimeout: ${MAIL_SMTP_CONNECTION_TIMEOUT:5000}
+      mail.smtp.timeout: ${MAIL_SMTP_TIMEOUT:5000}
+      mail.smtp.writetimeout: ${MAIL_SMTP_WRITE_TIMEOUT:5000}
   http:
       clients.connect-timeout: 10000
       clients.read-timeout: 30000 # 30 seconds

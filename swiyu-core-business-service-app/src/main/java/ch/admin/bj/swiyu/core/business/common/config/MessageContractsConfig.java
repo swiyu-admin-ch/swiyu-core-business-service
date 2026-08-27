@@ -39,6 +39,7 @@ import org.springframework.context.annotation.Configuration;
         TiBusinessPartnerIdentityUpdatedEvent.TypeRef.class,
         TiBusinessPartnerIdentityActivatedEvent.TypeRef.class,
         TiBusinessPartnerIdentityDeactivatedEvent.TypeRef.class,
+        TiSendEmailCommand.TypeRef.class,
     }
 )
 @Configuration

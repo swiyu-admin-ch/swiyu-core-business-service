@@ -11,6 +11,7 @@ import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartner
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.Signatory;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.SigningRule;
+import ch.admin.bj.swiyu.core.business.modules.trust.domain.protectedverification.ProtectedVerificationCategory;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
@@ -107,6 +108,14 @@ public class DemoDataMapper {
         return switch (status) {
             case DEACTIVATED -> BusinessPartnerIdentityStatus.DEACTIVATED;
             case ACTIVE -> BusinessPartnerIdentityStatus.ACTIVE;
+        };
+    }
+
+    public static ProtectedVerificationCategory toProtectedVerificationCategory(
+        DemoData.DemoBusinessPartner.DemoProtectedVerificationSubmission.DemoProtectedVerificationCategory category
+    ) {
+        return switch (category) {
+            case PERSONAL_ADMINISTRATIVE_NUMBER -> ProtectedVerificationCategory.PERSONAL_ADMINISTRATIVE_NUMBER;
         };
     }
 }

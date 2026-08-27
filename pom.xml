@@ -5,7 +5,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-core-business-service</artifactId>
-    <version>3.42.24-SNAPSHOT</version>
+    <version>3.42.30-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
@@ -14,7 +14,8 @@
             Attention: when ever you update this version, check whether we can remove a CVE-OVERRIDE
             from the dependencyManagement section
          -->
-        <version>38.6.0</version>
+        <!-- see https://github.com/jeap-admin-ch/jeap-spring-boot-parent/blob/main/CHANGELOG.md -->
+        <version>40.1.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -59,11 +60,6 @@
                 <version>${project.version}</version>
             </dependency>
             <!-- CVE-OVERRIDE start -->
-            <dependency>
-                <groupId>at.yawk.lz4</groupId>
-                <artifactId>lz4-java</artifactId>
-                <version>1.11.1</version>
-            </dependency>
             <!-- CVE-OVERRIDE end -->
 
             <!-- commons-io is explicitly managed here because it is not provided by Spring Boot or jeap-parent.

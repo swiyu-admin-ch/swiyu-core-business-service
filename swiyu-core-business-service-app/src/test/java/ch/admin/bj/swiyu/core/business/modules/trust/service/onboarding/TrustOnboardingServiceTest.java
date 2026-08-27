@@ -131,7 +131,9 @@ class TrustOnboardingServiceTest {
         assertThat(response.rejectionReason()).isNull();
         assertThat(response.declineReason()).isNull();
         assertThat(response.partnerNote()).isNull();
-        assertThat(response.correspondingLanguage()).hasToString(dbEntry.getCorrespondingLanguage().toString());
+        assertThat(response.correspondingLanguage()).hasToString(
+            dbEntry.getContactPerson().getCorrespondingLanguage().toString()
+        );
         assertThat(response.initiatedAt()).isCloseTo(initiatedAt, within(10, ChronoUnit.MILLIS));
         assertThat(response.createdAt()).isNull();
         assertThat(response.submittedAt()).isNull();

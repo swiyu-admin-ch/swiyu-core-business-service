@@ -63,7 +63,9 @@ public class TrustOnboardingMapper {
             source.getRejectReason() == null ? null : String.valueOf(source.getRejectReason()),
             source.getDeclineReason() == null ? null : String.valueOf(source.getDeclineReason()),
             source.getPartnerNote(),
-            toLanguageDto(source.getCorrespondingLanguage()),
+            source.getContactPerson() == null
+                ? null
+                : toLanguageDto(source.getContactPerson().getCorrespondingLanguage()),
             truncateInstantToMicroseconds(source.getSubmittedAt()),
             truncateInstantToMicroseconds(source.getInitiatedAt()),
             truncateInstantToMicroseconds(source.getAuditMetadata().getCreatedAt()),
@@ -141,18 +143,28 @@ public class TrustOnboardingMapper {
     }
 
     public static Contact toContactEntity(ContactDto dto) {
+        return toContactEntity(dto, null);
+    }
+
+    /**
+     * Maps a {@link ContactDto} to a {@link Contact} entity, resolving the correspondence language.
+     * Prefers {@code contactPerson.correspondingLanguage}; falls back to the deprecated request-level
+     * {@code correspondingLanguage} only when the contact does not carry one (EID-6618 compatibility).
+     */
+    public static Contact toContactEntity(ContactDto dto, LanguageDto fallbackLanguage) {
         if (dto == null) {
             return null;
         }
+
+        LanguageDto effectiveLanguage =
+            dto.correspondingLanguage() != null ? dto.correspondingLanguage() : fallbackLanguage;
 
         return Contact.builder()
             .firstName(dto.firstName())
             .lastName(dto.lastName())
             .email(dto.email())
             .phone(dto.phone())
-            .correspondingLanguage(
-                dto.correspondingLanguage() != null ? Language.valueOf(dto.correspondingLanguage().name()) : null
-            )
+            .correspondingLanguage(effectiveLanguage != null ? Language.valueOf(effectiveLanguage.name()) : null)
             .build();
     }
 
@@ -269,7 +281,7 @@ public class TrustOnboardingMapper {
 
     private static MultiLanguageTextDto toMultiLanguageDto(Map<String, String> map) {
         if (map == null) {
-            return null;
+            return new MultiLanguageTextDto(null, null, null, null, null);
         }
         return new MultiLanguageTextDto(
             getByLanguageOrDefault(map, Language.DE),

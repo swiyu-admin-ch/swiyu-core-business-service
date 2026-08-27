@@ -2,21 +2,54 @@
 version: v1.25.1
 # ignores vulnerabilities until expiry date; change duration by modifying expiry date
 ignore:
-  SNYK-RHEL9-LIBACL-17713920:
+  SNYK-RHEL9-LIBCURLMINIMAL-17878844:
     - '*':
-        reason: >-
-          No fix available in ubi9 JRE base image yet; will resurface when
-          ignore expires
-        expires: 2026-08-01T00:00:00.000Z
-        created: 2026-07-01T12:20:25.164Z
-  SNYK-JAVA-ORGAPACHETOMCATEMBED-17732890:
+        reason: No fix available in ubi9 JRE base image yet
+        expires: 2026-11-09T09:00:00.000Z
+        created: 2026-08-26T11:45:25.164Z
+  SNYK-RHEL9-LIBCURLMINIMAL-17878854:
     - '*':
-        reason: Will be fixed in EID-6392 with Spring Boot 4 upgrade
-        expires: 2027-01-01T00:00:00.000Z
-        created: 2026-07-01T13:12:50.599Z
-  SNYK-JAVA-ORGAPACHETOMCATEMBED-17733746:
+        reason: No fix available in ubi9 JRE base image yet
+        expires: 2026-11-09T09:00:00.000Z
+        created: 2026-08-26T11:45:25.164Z
+  SNYK-RHEL9-LIBCURLMINIMAL-17878878:
     - '*':
-        reason: Will be fixed in EID-6392 with Spring Boot 4 upgrade
-        expires: 2027-01-01T00:00:00.000Z
-        created: 2026-07-01T13:12:50.599Z
-patch: {}
+        reason: No fix available in ubi9 JRE base image yet
+        expires: 2026-11-09T09:00:00.000Z
+        created: 2026-08-26T11:45:25.164Z
+  SNYK-RHEL9-LIBCURLMINIMAL-17878902:
+    - '*':
+        reason: No fix available in ubi9 JRE base image yet
+        expires: 2026-11-09T09:00:00.000Z
+        created: 2026-08-26T11:45:25.164Z
+  SNYK-RHEL9-LIBCURLMINIMAL-17878931:
+    - '*':
+        reason: No fix available in ubi9 JRE base image yet
+        expires: 2026-11-09T09:00:00.000Z
+        created: 2026-08-26T11:45:25.164Z
+  SNYK-RHEL9-CURLMINIMAL-17878836:
+    - '*':
+        reason: No fix available in ubi9 JRE base image yet
+        expires: 2026-11-09T09:00:00.000Z
+        created: 2026-08-26T11:45:25.164Z
+  SNYK-RHEL9-CURLMINIMAL-17878850:
+    - '*':
+        reason: No fix available in ubi9 JRE base image yet
+        expires: 2026-11-09T09:00:00.000Z
+        created: 2026-08-26T11:45:25.164Z
+  SNYK-RHEL9-CURLMINIMAL-17878882:
+    - '*':
+        reason: No fix available in ubi9 JRE base image yet
+        expires: 2026-11-09T09:00:00.000Z
+        created: 2026-08-26T11:45:25.164Z
+  SNYK-RHEL9-CURLMINIMAL-17878900:
+    - '*':
+        reason: No fix available in ubi9 JRE base image yet
+        expires: 2026-11-09T09:00:00.000Z
+        created: 2026-08-26T11:45:25.164Z
+  SNYK-RHEL9-CURLMINIMAL-17878929:
+    - '*':
+        reason: No fix available in ubi9 JRE base image yet
+        expires: 2026-11-09T09:00:00.000Z
+        created: 2026-08-26T11:45:25.164Z
+patch:

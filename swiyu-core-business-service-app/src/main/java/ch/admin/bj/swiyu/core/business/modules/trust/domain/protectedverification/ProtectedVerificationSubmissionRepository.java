@@ -7,4 +7,7 @@ import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 public interface ProtectedVerificationSubmissionRepository
     extends
         JpaRepository<ProtectedVerificationSubmission, UUID>,
-        QuerydslPredicateExecutor<ProtectedVerificationSubmission> {}
+        QuerydslPredicateExecutor<ProtectedVerificationSubmission>
+{
+    void deleteByPartnerId(UUID partnerId);
+}

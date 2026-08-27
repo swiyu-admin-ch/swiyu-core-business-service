@@ -75,14 +75,8 @@ public class BusinessEntity {
     @AttributeOverride(name = "email", column = @Column(name = "contact_email"))
     @AttributeOverride(name = "phone", column = @Column(name = "contact_phone"))
     @AttributeOverride(name = "correspondingLanguage", column = @Column(name = "contact_corresponding_language"))
-    @AttributeOverride(
-        name = "firstName",
-        column = @Column(name = "contact_first_name", insertable = false, updatable = false)
-    )
-    @AttributeOverride(
-        name = "lastName",
-        column = @Column(name = "contact_last_name", insertable = false, updatable = false)
-    )
+    @AttributeOverride(name = "firstName", column = @Column(name = "contact_first_name"))
+    @AttributeOverride(name = "lastName", column = @Column(name = "contact_last_name"))
     @Valid
     private Contact contact;
 
@@ -100,19 +94,32 @@ public class BusinessEntity {
     private BusinessPartnerIdentity businessPartnerIdentity;
 
     /**
-     * @deprecated since 1.13.35. Will be removed once the V1 internal management endpoint is removed.
+     * Canonical constructor. Used by the V2 create path
+     * ({@code BusinessPartnerService.createBusinessPartnerV2}) with a fully populated {@link Contact}
+     * (first/last name, email, phone, correspondence language). All other constructors delegate here.
      */
-    @SuppressWarnings("java:S1133")
-    @Deprecated(since = "1.13.35")
-    public BusinessEntity(UUID id, String name, String contactEmail, BusinessPartnerType type) {
+    public BusinessEntity(
+        UUID id,
+        Map<String, String> entityName,
+        Contact contact,
+        BusinessPartnerType type,
+        Address address,
+        String uid
+    ) {
         this.id = id;
-        this.entityName = fromSingleName(name);
-        this.contact = Contact.builder().email(contactEmail).build();
+        this.entityName = entityName;
+        this.contact = contact;
         this.type = type;
         this.payedForDidSlots = 0;
         this.payedForTrustVerification = false;
+        this.address = address;
+        this.uid = uid;
     }
 
+    /**
+     * Convenience constructor for callers that only have a single-language name and a flat
+     * email/phone contact (no contact-person name or language): demo-data import and tests.
+     */
     public BusinessEntity(
         UUID id,
         String name,
@@ -122,26 +129,24 @@ public class BusinessEntity {
         String uid,
         String contactPhone
     ) {
-        this(id, fromSingleName(name), contactEmail, type, address, uid, contactPhone);
+        this(
+            id,
+            fromSingleName(name),
+            Contact.builder().email(contactEmail).phone(contactPhone).build(),
+            type,
+            address,
+            uid
+        );
     }
 
-    public BusinessEntity(
-        UUID id,
-        Map<String, String> entityName,
-        String contactEmail,
-        BusinessPartnerType type,
-        Address address,
-        String uid,
-        String contactPhone
-    ) {
-        this.id = id;
-        this.entityName = entityName;
-        this.contact = Contact.builder().email(contactEmail).phone(contactPhone).build();
-        this.type = type;
-        this.payedForDidSlots = 0;
-        this.payedForTrustVerification = false;
-        this.address = address;
-        this.uid = uid;
+    /**
+     * @deprecated since 1.13.35. Used only by the deprecated V1 create endpoint
+     *     ({@code BusinessPartnerService.createBusinessPartnerV1}); will be removed with it.
+     */
+    @SuppressWarnings("java:S1133")
+    @Deprecated(since = "1.13.35")
+    public BusinessEntity(UUID id, String name, String contactEmail, BusinessPartnerType type) {
+        this(id, fromSingleName(name), Contact.builder().email(contactEmail).build(), type, null, null);
     }
 
     protected BusinessEntity() {

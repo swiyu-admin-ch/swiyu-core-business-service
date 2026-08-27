@@ -3,7 +3,6 @@ package ch.admin.bj.swiyu.core.business.test;
 import static ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil.fromLanguages;
 import static ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionStatus.*;
 import static ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.TrustOnboardingMapper.toContactEntity;
-import static ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.TrustOnboardingMapper.toLanguageEntity;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.DEFAULT_ENTITY;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.entityNameLocalizedMap;
 import static java.util.Collections.emptyMap;
@@ -42,6 +41,7 @@ public class TrustOnboardingSubmissionTestData {
                     .lastName("Doe")
                     .email("john.doe@example.com")
                     .phone("+41 79 123 45 67")
+                    .correspondingLanguage(LanguageDto.DE)
                     .build()
             )
             .dids(List.of("did:example:123", "did:example:abc"))
@@ -102,6 +102,7 @@ public class TrustOnboardingSubmissionTestData {
                     .lastName("Updated Doe")
                     .email("john.doe@udpated.com")
                     .phone("+41 987 654 321")
+                    .correspondingLanguage(LanguageDto.DE)
                     .build()
             )
             .dids(listOf("did:example:456"))
@@ -148,8 +149,7 @@ public class TrustOnboardingSubmissionTestData {
             dto.getEntityName(),
             AddressMapper.toAddressEntity(dto.entityAddress()),
             dto.getEntityEmail(),
-            toContactEntity(dto.getContactPerson()),
-            toLanguageEntity(dto.correspondingLanguage()),
+            toContactEntity(dto.getContactPerson(), dto.correspondingLanguage()),
             dto.getRegistryIds().get("UID"),
             true,
             proofOfPossessions,

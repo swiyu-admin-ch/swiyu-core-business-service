@@ -79,10 +79,7 @@ public class TrustOnboardingSubmission {
     @AttributeOverride(name = "email", column = @Column(name = "contact_email"))
     @AttributeOverride(name = "firstName", column = @Column(name = "contact_first_name"))
     @AttributeOverride(name = "lastName", column = @Column(name = "contact_last_name"))
-    @AttributeOverride(
-        name = "correspondingLanguage",
-        column = @Column(name = "contact_corresponding_language", insertable = false, updatable = false)
-    )
+    @AttributeOverride(name = "correspondingLanguage", column = @Column(name = "contact_corresponding_language"))
     @Valid
     private Contact contactPerson;
 
@@ -101,9 +98,6 @@ public class TrustOnboardingSubmission {
 
     @Getter
     private Boolean isRegisteredInCommercialRegister; // 'Handelsregistereintrag'
-
-    @Getter
-    private Language correspondingLanguage;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -157,7 +151,6 @@ public class TrustOnboardingSubmission {
         Address entityAddress,
         String entityEmail,
         Contact contactPerson,
-        Language correspondingLanguage,
         String uid,
         Boolean isRegisteredInCommercialRegister,
         List<ProofOfPossession> proofOfPossessions,
@@ -172,7 +165,6 @@ public class TrustOnboardingSubmission {
             entityAddress,
             entityEmail,
             contactPerson,
-            correspondingLanguage,
             uid,
             isRegisteredInCommercialRegister,
             proofOfPossessions,
@@ -191,7 +183,6 @@ public class TrustOnboardingSubmission {
         Address entityAddress,
         String entityEmail,
         Contact contactPerson,
-        Language correspondingLanguage,
         String uid,
         Boolean isRegisteredInCommercialRegister,
         List<ProofOfPossession> proofOfPossessions,
@@ -206,7 +197,6 @@ public class TrustOnboardingSubmission {
         this.entityAddress = entityAddress;
         this.entityEmail = entityEmail;
         this.contactPerson = contactPerson;
-        this.correspondingLanguage = correspondingLanguage;
         this.uid = uid;
         this.isRegisteredInCommercialRegister = isRegisteredInCommercialRegister;
         this.proofOfPossessions = proofOfPossessions;
@@ -266,7 +256,6 @@ public class TrustOnboardingSubmission {
         Address entityAddress,
         String entityEmail,
         Contact contactPerson,
-        Language correspondingLanguage,
         String uid,
         List<ProofOfPossession> proofOfPossession,
         BusinessPartnerType requestedPartnerType,
@@ -278,7 +267,6 @@ public class TrustOnboardingSubmission {
         this.entityAddress = entityAddress;
         this.entityEmail = entityEmail;
         this.contactPerson = contactPerson;
-        this.correspondingLanguage = correspondingLanguage;
         this.uid = uid;
         this.proofOfPossessions = proofOfPossession;
         this.requestedPartnerType = requestedPartnerType;

@@ -18,23 +18,12 @@ import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartner
 import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.jspecify.annotations.NonNull;
 
 /**
  * Collection of static mapping functions
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BusinessPartnerMapper {
-
-    public static @NonNull Address toAddress(CreatePartnerDto source) {
-        return new Address(
-            source.addressStreet(),
-            source.addressCity(),
-            source.addressZipCode(),
-            source.addressCountry(),
-            source.addressRegion()
-        );
-    }
 
     public static Address toAddress(AddressDto source) {
         return AddressMapper.toAddressEntity(source);

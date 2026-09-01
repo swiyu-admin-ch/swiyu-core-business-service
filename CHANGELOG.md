@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.42.32
+
+### Added
+
+- Nightly job publishing the scheduled partner notification emails: a reminder 180 / 150 / 120 / 90 / 30 days
+  before the Trust Identity expires, and a reminder once a submission has been waiting for review for six days
+- The reminders carry a composed, reproducible idempotence id instead of a generated one, so a partner is
+  reminded once per stage and not once per night the job runs
+- Configuration of the job via `EMAIL_NOTIFICATION_CRON` (default 03:15), `EMAIL_NOTIFICATION_WINDOW`
+  (default 4d) and `EMAIL_NOTIFICATION_PAGE_SIZE` (default 100)
+- The reviewed DE/FR/IT/EN texts of the three scheduled emails, taken from Email Templates v65. Only the
+  repeated renewal reminder counts the remaining days down; the initial reminder and the delayed review
+  notice state their period in the text or name none at all
+
+### Removed
+
+- Column `sent_notification.sent_at`. It held the same instant as `created_at`, which the auditing
+  listener stamps in the same transaction, and nothing read it
+
 ## 3.42.31
 
 ### Changed

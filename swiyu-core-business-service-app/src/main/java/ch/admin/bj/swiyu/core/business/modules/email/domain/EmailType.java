@@ -21,7 +21,11 @@ public enum EmailType {
     TRUST_IDENTITY_EXPIRED("trust-identity-expired"),
     TRUST_ADDITIONAL_DID_ADDED("trust-additional-did-added"),
     TRUST_PROTECTED_VERIFICATION_AHV_APPROVED("trust-protected-verification-ahv-approved"),
-    TRUST_PROTECTED_VERIFICATION_AHV_REJECTED("trust-protected-verification-ahv-rejected");
+    TRUST_PROTECTED_VERIFICATION_AHV_REJECTED("trust-protected-verification-ahv-rejected"),
+    // Scheduled emails: not triggered by an event but by EmailNotificationJob.
+    TRUST_REVIEW_DELAYED("trust-review-delayed"),
+    TRUST_RENEWAL_REMINDER_INITIAL("trust-renewal-reminder-initial"),
+    TRUST_RENEWAL_REMINDER("trust-renewal-reminder");
 
     /**
      * Name of the Thymeleaf template under {@code src/main/resources/email-templates}, without the

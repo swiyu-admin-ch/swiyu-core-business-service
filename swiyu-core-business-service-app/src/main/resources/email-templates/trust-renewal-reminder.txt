@@ -1,0 +1,130 @@
+---
+subject: Datenaktualisierung/ Data update/ Mise à jour des données/ Aggiornamento dei dati
+---
+Guten Tag
+
+Gerne erinnern wir Sie daran, dass die Prüfung Ihrer Angaben im swiyu Vertrauensregister noch offen
+ist. Bitte bestätigen Sie uns deren Aktualität oder aktualisieren Sie die Angaben bei Bedarf. Ihnen
+stehen noch [(${expirationDurationDays})] Tage zur Verfügung.
+
+Hinweis:
+
+- Erhalten wir innert obengenannter Frist keine Rückmeldung, wird Ihr Eintrag im swiyu
+  Vertrauensregister gelöscht. Sie gelten dann nicht mehr als verifizierte Aussteller oder Prüfer.
+  Ihre Daten im swiyu Basisregister (insbesondere Identifikatoren) bleiben jedoch bestehen.
+- Jede Änderung Ihrer Angaben hat eine erneute Kontrolle durch das Bundesamt für Justiz zur Folge.
+  Dafür wird eine Gebühr von CHF 350.– erhoben.
+
+Für Fragen stehen wir Ihnen unter [(${contactEmail})] zur Verfügung.
+
+Link zu Ihrem Business Partner: [(${servicePortalPartnerUrl})]
+
+Freundliche Grüsse
+
+Bundesamt für Justiz
+
+Fachbereich e-ID
+
+Bundesrain 20, 3003 Bern
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Bonjour
+
+Nous tenons à vous rappeler que la vérification de vos informations dans le registre de confiance
+swiyu est toujours en cours. Veuillez nous confirmer qu'elles sont à jour ou les mettre à jour si
+nécessaire. Il vous reste encore [(${expirationDurationDays})] jours.
+
+Remarque :
+
+- Si nous ne recevons aucune réponse dans le délai susmentionné, votre inscription au registre de
+  confiance swiyu sera supprimée. Vous ne serez alors plus considéré comme émetteur ou vérificateur
+  certifié. Vos données figurant dans le registre de base swiyu (en particulier vos identifiants)
+  resteront toutefois inchangées.
+- Toute modification de vos données entraîne un nouveau contrôle par l'Office fédéral de la justice.
+  Des frais de CHF 350.– sont prélevés à cet effet.
+
+Pour toute question, nous restons à votre disposition à l'adresse [(${contactEmail})].
+
+Lien vers votre business partner: [(${servicePortalPartnerUrl})]
+
+Cordialement
+
+Office fédéral de la justice
+
+Division e-ID
+
+Bundesrain 20, 3003 Berne
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Buongiorno
+
+Le ricordiamo che la verifica dei suoi dati nel registro di fiducia è ancora in sospeso. La
+preghiamo di confermarci che tali dati siano aggiornati o, se necessario, di aggiornarli. Ha ancora
+[(${expirationDurationDays})] giorni a disposizione.
+
+Nota:
+
+- Se non riceveremo alcuna risposta entro il termine sopra indicato, la sua iscrizione nel registro
+  di fiducia swiyu verrà cancellata. In tal caso, non sarà più considerato come emittente o
+  verificatore verificato. I suoi dati nel registro di base swiyu (in particolare gli
+  identificatori) rimarranno tuttavia invariati.
+- Ogni modifica dei suoi dati comporta un nuovo controllo da parte dell'Ufficio federale di
+  giustizia. A tal fine viene applicata una tassa di CHF 350.–.
+
+Per eventuali domande, restiamo a disposizione all'indirizzo [(${contactEmail})].
+
+Link al Business Partner: [(${servicePortalPartnerUrl})]
+
+Cordiali saluti
+
+Ufficio federale di giustizia
+
+Sezione e-ID
+
+Bundesrain 20, 3003 Berna
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Hello
+
+We would like to remind you that the verification of your details in the swiyu Trust Registry is
+still pending. Please confirm that your details are accurate or update them if necessary. You still
+have [(${expirationDurationDays})] days to complete your review.
+
+Please note:
+
+- If we do not receive a response within the above-mentioned period, your entry in the swiyu Trust
+  Registry will be deleted. You will then no longer be considered a verified issuer or verifier.
+  However, your data in the swiyu Base Registry (in particular your identifiers) will remain.
+- Any change to your details will result in a new verification process by the Federal Office of
+  Justice. A fee of CHF 350.– will be charged for this.
+
+If you have any questions, please contact us at [(${contactEmail})].
+
+Link to your business partner: [(${servicePortalPartnerUrl})]
+
+Kind regards
+
+Federal Office of Justice
+
+e-ID Division
+
+Bundesrain 20, 3003 Bern
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch

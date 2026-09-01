@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
+import org.springframework.test.util.ReflectionTestUtils;
 
 public class TrustOnboardingSubmissionTestData {
 
@@ -168,6 +169,19 @@ public class TrustOnboardingSubmissionTestData {
                 // nothing to do since default state is unsubmitted
             }
         }
+        return submission;
+    }
+
+    /**
+     * A submission that has been waiting for review since {@code submittedAt}.
+     *
+     * <p>{@code markAsSubmitted()} stamps the current time, and the "review delayed" reminder is about
+     * a submission that has been waiting - so the timestamp has to be moved back. There is deliberately
+     * no setter on the entity for it: outside of tests, nothing may backdate a submission.
+     */
+    public static TrustOnboardingSubmission submittedSince(UUID id, UUID partnerId, Instant submittedAt) {
+        var submission = trustOnboardingSubmission(id, partnerId, TrustOnboardingSubmissionStatus.SUBMITTED);
+        ReflectionTestUtils.setField(submission, "submittedAt", submittedAt);
         return submission;
     }
 

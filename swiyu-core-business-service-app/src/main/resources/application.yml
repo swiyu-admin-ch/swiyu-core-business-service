@@ -28,6 +28,13 @@ app:
     trust-additional-dids-submission-cleanup-interval: 1m
     trust-onboarding-submission-cleanup-interval: 1m
     trust-onboarding-document-cleanup-interval: 1h
+    email-notification:
+      # Nightly, outside office hours. Sends mail, so unlike the cleanup jobs the time of day matters.
+      cron: ${EMAIL_NOTIFICATION_CRON:0 15 3 * * *}
+      # How far back from a reminder day a partner is still picked up, so a night the job did not run
+      # does not drop that day's reminders. Must stay well below the 30 day gap between reminder points.
+      window: ${EMAIL_NOTIFICATION_WINDOW:4d}
+      page-size: ${EMAIL_NOTIFICATION_PAGE_SIZE:100}
   limits:
     identifier:
       default-max-count: ${LIMITS_IDENTIFIER_DEFAULT_MAX_COUNT:100}

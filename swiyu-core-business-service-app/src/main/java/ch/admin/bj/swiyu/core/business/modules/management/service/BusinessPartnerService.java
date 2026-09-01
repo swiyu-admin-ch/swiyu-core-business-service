@@ -14,6 +14,7 @@ import ch.admin.bj.swiyu.core.business.common.audit.AuditMapper;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
+import ch.admin.bj.swiyu.core.business.common.email.ExpiringPartnerIdentity;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessDataIntegrityViolationException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
@@ -480,6 +481,21 @@ public class BusinessPartnerService {
             .findById(partnerId)
             .orElseThrow(throwNotFoundException(partnerId));
         return contactEmailOf(businessPartner);
+    }
+
+    /**
+     * Partners whose active Trust Identity expires inside the given window, one page at a time.
+     *
+     * <p>For the nightly renewal reminders. Deliberately paged and projected: this runs over the whole
+     * partner base, so it must not depend on the base being small.
+     */
+    @Transactional(readOnly = true)
+    public Page<ExpiringPartnerIdentity> findIdentitiesExpiringBetween(
+        Instant windowStart,
+        Instant windowEnd,
+        Pageable pageable
+    ) {
+        return businessPartnerRepository.findIdentitiesExpiringBetween(windowStart, windowEnd, pageable);
     }
 
     private static String contactEmailOf(BusinessEntity businessPartner) {

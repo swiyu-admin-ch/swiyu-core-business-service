@@ -19,6 +19,7 @@ import ch.admin.bj.swiyu.core.business.modules.email.config.MailConfig;
 import ch.admin.bj.swiyu.core.business.modules.email.config.MailProperties;
 import ch.admin.bj.swiyu.core.business.modules.email.domain.EmailContentRenderer;
 import ch.admin.bj.swiyu.core.business.modules.email.service.DefaultEmailCommandPublisher;
+import ch.admin.bj.swiyu.core.business.modules.email.service.SentNotificationService;
 import org.apache.avro.generic.GenericData;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -39,6 +40,8 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
         MailConfig.class,
         EmailContentRenderer.class,
         DefaultEmailCommandPublisher.class,
+        // The scheduled reminders need the "was it already sent" check
+        SentNotificationService.class,
     }
 )
 @EnableConfigurationProperties({ KafkaProperties.class, MailProperties.class, FunctionalityProperties.class })

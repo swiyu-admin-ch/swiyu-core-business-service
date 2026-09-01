@@ -11,6 +11,7 @@ import ch.admin.bj.swiyu.core.business.common.audit.AuditMapper;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
 import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
+import ch.admin.bj.swiyu.core.business.common.email.PendingReviewSubmission;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
 import ch.admin.bj.swiyu.core.business.modules.documents.api.TrustOnboardingSubmissionDocumentListItemDto;
@@ -26,6 +27,7 @@ import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validati
 import com.querydsl.core.BooleanBuilder;
 import jakarta.persistence.OptimisticLockException;
 import java.io.ByteArrayOutputStream;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -453,6 +455,18 @@ public class TrustOnboardingService {
      */
     private TrustOnboardingSubmissionTypeDto deriveSubmissionType() {
         return TrustOnboardingSubmissionTypeDto.REGISTRATION;
+    }
+
+    /**
+     * Submissions that have been waiting for review longer than {@code minDelay}, one page at a time.
+     *
+     * <p>For the nightly "review delayed" reminder. Paged for the same reason as the renewal query: the
+     * number of open submissions is not bounded by anything the code controls.
+     */
+    @Transactional(readOnly = true)
+    public Page<PendingReviewSubmission> findSubmissionsPendingReviewLongerThan(Duration minDelay, Pageable pageable) {
+        var cutoff = Instant.now().minus(minDelay);
+        return trustOnboardingSubmissionRepository.findPendingReviewSubmittedBefore(cutoff, pageable);
     }
 
     @Transactional

@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -162,10 +163,19 @@ public class BusinessEntityTestData {
     }
 
     public static BusinessPartnerIdentity activeBusinessPartnerIdentity() {
+        return activeBusinessPartnerIdentityValidUntil(null);
+    }
+
+    /**
+     * An active Trust Identity that expires at the given point in time. For the renewal reminders,
+     * which select partners by exactly that date.
+     */
+    public static BusinessPartnerIdentity activeBusinessPartnerIdentityValidUntil(Instant validUntil) {
         return BusinessPartnerIdentity.builder()
             .status(BusinessPartnerIdentityStatus.ACTIVE)
             .uid("CHE-123.456.789")
             .entityName(Map.of("default", "Hello World AG"))
+            .validUntil(validUntil)
             .build();
     }
 

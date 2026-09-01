@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.common.email;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -43,4 +44,8 @@ public interface EmailCommandPublisher {
     void trustProtectedVerificationAhvApproved(UUID partnerId);
 
     void trustProtectedVerificationAhvRejected(UUID partnerId);
+
+    void trustReviewDelayed(UUID partnerId, UUID trustOnboardingSubmissionId, int delayDurationDays);
+
+    void trustRenewalReminder(UUID partnerId, Instant validUntil, int daysUntilExpiration);
 }

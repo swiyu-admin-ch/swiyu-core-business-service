@@ -235,6 +235,12 @@ public class ArchitectureTest {
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.email.service.."),
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service..")
             )
+            // email -> trust (the nightly reminder job asks the trust module which submissions are
+            // overdue for review; the query stays in the module that owns the data)
+            .ignoreDependency(
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.email.service.."),
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.trust.service..")
+            )
             // status -> identifier
             .ignoreDependency(
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.status.service.."),

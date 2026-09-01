@@ -4,7 +4,6 @@ import ch.admin.bj.swiyu.core.business.modules.email.domain.Email;
 import ch.admin.bj.swiyu.core.business.modules.email.domain.SentNotification;
 import ch.admin.bj.swiyu.core.business.modules.email.domain.SentNotificationRepository;
 import ch.admin.bj.swiyu.core.business.modules.email.domain.SentNotificationType;
-import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,10 +29,26 @@ public class SentNotificationService {
     private final ObjectMapper objectMapper;
 
     /**
+     * Whether the notification with that idempotence id already went out.
+     *
+     * <p>Used by the scheduled reminders to skip a partner who was already reminded. This is an
+     * optimisation, not the guarantee: the guarantee is {@code @IdempotentMessageHandler} on the
+     * processor plus the unique constraint on the column. Without this check the job would publish a
+     * command every night for every partner in the window and rely on the consumer to drop them all.
+     */
+    @Transactional(readOnly = true)
+    public boolean alreadySent(String idempotenceId) {
+        return repository.existsByIdempotenceId(idempotenceId);
+    }
+
+    /**
      * Records a sent email.
      *
      * <p>Must run inside the caller's transaction, so the record shares the fate of the send: no
      * record for an email that never left, and no email without a record.
+     *
+     * <p>When it went out is {@code auditMetadata.createdAt} - the row is written in the same
+     * transaction as the send, so a separate timestamp would hold the same instant.
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void createEmailSentNotification(String idempotenceId, Email email) {
@@ -41,8 +56,7 @@ public class SentNotificationService {
             idempotenceId,
             SentNotificationType.EMAIL,
             email.partnerId(),
-            objectMapper.valueToTree(email),
-            Instant.now()
+            objectMapper.valueToTree(email)
         );
         repository.save(notification);
         log.debug("Recorded sent email {} with idempotence id '{}'", email.emailType(), idempotenceId);

@@ -11,7 +11,6 @@ import jakarta.persistence.Id;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -67,25 +66,11 @@ public class SentNotification {
     @JdbcTypeCode(SqlTypes.JSON)
     private JsonNode email;
 
-    /**
-     * When the gateway accepted the message. Deliberately not {@code Email.composedAt}, which is the
-     * moment the email was composed - after an outage the two are hours apart.
-     */
-    @NotNull
-    private Instant sentAt;
-
-    public SentNotification(
-        String idempotenceId,
-        SentNotificationType type,
-        UUID partnerId,
-        JsonNode email,
-        Instant sentAt
-    ) {
+    public SentNotification(String idempotenceId, SentNotificationType type, UUID partnerId, JsonNode email) {
         this.id = UUID.randomUUID();
         this.idempotenceId = idempotenceId;
         this.type = type;
         this.partnerId = partnerId;
         this.email = email;
-        this.sentAt = sentAt;
     }
 }

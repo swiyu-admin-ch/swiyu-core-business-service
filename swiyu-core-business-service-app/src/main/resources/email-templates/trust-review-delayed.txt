@@ -1,0 +1,96 @@
+---
+subject: Prüfung verzögert/ Review delayed/ Examen retardé/ Ritardo nella revisione
+---
+Guten Tag
+
+Zurzeit übersteigen die eingehenden Anträge unsere Kapazitäten. Daher verzögert sich die Prüfung
+Ihres Antrags auf Aufnahme in das swiyu Vertrauensregister. Wir bitten Sie um Geduld und danken
+Ihnen für Ihr Verständnis.
+
+Für Fragen stehen wir Ihnen unter [(${contactEmail})] zur Verfügung.
+
+Link zu Ihrem Business Partner: [(${servicePortalPartnerUrl})]
+
+Freundliche Grüsse
+
+Bundesamt für Justiz
+
+Fachbereich e-ID
+
+Bundesrain 20, 3003 Bern
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Bonjour
+
+Le nombre de demandes reçues dépasse actuellement nos capacités. L'examen de votre demande
+d'inscription au registre de confiance swiyu est donc retardé. Nous vous demandons de faire preuve
+de patience et vous remercions de votre compréhension.
+
+Pour toute question, nous restons à votre disposition à l'adresse [(${contactEmail})].
+
+Lien vers votre business partner: [(${servicePortalPartnerUrl})]
+
+Cordialement
+
+Office fédéral de la justice
+
+Division e-ID
+
+Bundesrain 20, 3003 Berne
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Buongiorno
+
+Al momento, le richieste in arrivo superano le nostre capacità. Di conseguenza, l'esame della sua
+richiesta di iscrizione al registro di fiducia swiyu subirà un ritardo. Le chiediamo di avere
+pazienza e la ringraziamo per la sua comprensione.
+
+Per eventuali domande, restiamo a disposizione all'indirizzo [(${contactEmail})].
+
+Link al Business Partner: [(${servicePortalPartnerUrl})]
+
+Cordiali saluti
+
+Ufficio federale di giustizia
+
+Sezione e-ID
+
+Bundesrain 20, 3003 Berna
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch
+
+-----------------------------------------------------------------------
+
+Hello
+
+We are currently receiving more applications than we can process. As a result, there is a delay in
+reviewing your application for enrollment in the swiyu Trust Registry. We ask for your patience and
+thank you for your understanding.
+
+If you have any questions, please contact us at [(${contactEmail})].
+
+Link to your business partner: [(${servicePortalPartnerUrl})]
+
+Kind regards
+
+Federal Office of Justice
+
+e-ID Division
+
+Bundesrain 20, 3003 Bern
+
+[(${contactEmail})]
+
+https://www.eid.admin.ch

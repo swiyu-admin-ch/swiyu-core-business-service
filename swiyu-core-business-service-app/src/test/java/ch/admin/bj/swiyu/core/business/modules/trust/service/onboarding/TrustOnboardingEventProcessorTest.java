@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding;
 import static org.mockito.Mockito.*;
 
 import ch.admin.bj.swiyu.messagetype.ti.*;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,12 +25,18 @@ class TrustOnboardingEventProcessorTest {
     void testProcessInformationRequestedEvent_validPayload() {
         var event = mock(TiTrustOnboardingInformationRequestedEvent.class);
         var payload = mock(TrustOnboardingInformationRequestedPayload.class);
+        var deadline = Instant.now().plusSeconds(3600);
         when(event.getPayload()).thenReturn(payload);
         when(payload.getTrustOnboardingSubmissionId()).thenReturn(submissionId);
+        when(payload.getResubmitRequiredUntil()).thenReturn(deadline);
 
         processor.processInformationRequestedEvent(event);
 
-        verify(trustOnboardingService).markAsInformationRequested(submissionId, event.getPayload().getPartnerNote());
+        verify(trustOnboardingService).markAsInformationRequested(
+            submissionId,
+            deadline,
+            event.getPayload().getPartnerNote()
+        );
     }
 
     @Test
@@ -39,7 +46,7 @@ class TrustOnboardingEventProcessorTest {
 
         processor.processInformationRequestedEvent(event);
 
-        verify(trustOnboardingService, never()).markAsInformationRequested(any(), any());
+        verify(trustOnboardingService, never()).markAsInformationRequested(any(), any(), any());
     }
 
     @Test
@@ -51,7 +58,11 @@ class TrustOnboardingEventProcessorTest {
 
         processor.processInformationRequestedEvent(event);
 
-        verify(trustOnboardingService).markAsInformationRequested(null, event.getPayload().getPartnerNote());
+        verify(trustOnboardingService).markAsInformationRequested(
+            null,
+            payload.getResubmitRequiredUntil(),
+            event.getPayload().getPartnerNote()
+        );
     }
 
     @Test

@@ -1,6 +1,9 @@
 package ch.admin.bj.swiyu.core.business.modules.email.service;
 
+import static ch.admin.bj.swiyu.core.business.common.audit.AuditMapper.toAuditJson;
+
 import ch.admin.bit.jeap.messaging.idempotence.messagehandler.IdempotentMessageHandler;
+import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.config.FunctionalityProperties;
 import ch.admin.bj.swiyu.core.business.modules.email.domain.Email;
 import ch.admin.bj.swiyu.messagetype.ti.TiSendEmailCommand;
@@ -34,6 +37,7 @@ public class EmailCommandProcessor {
     private final SentNotificationService sentNotificationService;
     private final EmailSendService emailSendService;
     private final FunctionalityProperties functionalityProperties;
+    private final AuditPublisher auditPublisher;
 
     @Transactional
     @IdempotentMessageHandler
@@ -42,11 +46,9 @@ public class EmailCommandProcessor {
             log.info("Functionality 'email' is disabled, discarding email {}", command.getPayload().getEmailType());
             return;
         }
-
         var email = Email.from(command.getPayload());
-
         emailSendService.send(email);
-
         sentNotificationService.createEmailSentNotification(command.getIdentity().getIdempotenceId(), email);
+        auditPublisher.emailSent(email.partnerId(), command.getIdentity().getIdempotenceId(), toAuditJson(email));
     }
 }

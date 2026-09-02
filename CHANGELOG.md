@@ -5,24 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.42.36
+
+### Changed
+
+- fixed audit categories and field names
+- each sent email leads not to an audit event
+
+## 3.42.35
+
+### Fixed
+
+- Fix sonar findings
+
+## 3.42.34
+
+### Fixed
+
+- Fix sonar issue java:S1612 in EmailNotificationJobIT: replaced a lambda that only forwarded its argument with a method
+  reference
+
+## 3.42.33
+
+### Added
+
+- Added trust onboarding 'request additional information' (resubmit) support: submissions in the INFORMATION_REQUESTED
+  state now carry a resubmit deadline and demo data showcases the flow.
+
 ## 3.42.32
 
 ### Added
 
-- Nightly job publishing the scheduled partner notification emails: a reminder 180 / 150 / 120 / 90 / 30 days
-  before the Trust Identity expires, and a reminder once a submission has been waiting for review for six days
-- The reminders carry a composed, reproducible idempotence id instead of a generated one, so a partner is
-  reminded once per stage and not once per night the job runs
+- Nightly job publishing the scheduled partner notification emails: a reminder 180 / 150 / 120 / 90 / 30 days before the
+  Trust Identity expires, and a reminder once a submission has been waiting for review for six days
+- The reminders carry a composed, reproducible idempotence id instead of a generated one, so a partner is reminded once
+  per stage and not once per night the job runs
 - Configuration of the job via `EMAIL_NOTIFICATION_CRON` (default 03:15), `EMAIL_NOTIFICATION_WINDOW`
   (default 4d) and `EMAIL_NOTIFICATION_PAGE_SIZE` (default 100)
-- The reviewed DE/FR/IT/EN texts of the three scheduled emails, taken from Email Templates v65. Only the
-  repeated renewal reminder counts the remaining days down; the initial reminder and the delayed review
-  notice state their period in the text or name none at all
+- The reviewed DE/FR/IT/EN texts of the three scheduled emails, taken from Email Templates v65. Only the repeated
+  renewal reminder counts the remaining days down; the initial reminder and the delayed review notice state their period
+  in the text or name none at all
 
 ### Removed
 
-- Column `sent_notification.sent_at`. It held the same instant as `created_at`, which the auditing
-  listener stamps in the same transaction, and nothing read it
+- Column `sent_notification.sent_at`. It held the same instant as `created_at`, which the auditing listener stamps in
+  the same transaction, and nothing read it
 
 ## 3.42.31
 
@@ -46,11 +73,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Consume the TiSendEmailCommand and send the composed partner notification email via SMTP. Every send is
-  recorded in the new `sent_notification` table, so a redelivered command never results in a second email
-- SMTP configuration via `spring.mail.*`. `MAIL_HOST` has no default and must be set on every stage,
-  optionally with `MAIL_USERNAME` / `MAIL_PASSWORD` and `MAIL_SMTP_AUTH` where the gateway requires
-  credentials
+- Consume the TiSendEmailCommand and send the composed partner notification email via SMTP. Every send is recorded in
+  the new `sent_notification` table, so a redelivered command never results in a second email
+- SMTP configuration via `spring.mail.*`. `MAIL_HOST` has no default and must be set on every stage, optionally with
+  `MAIL_USERNAME` / `MAIL_PASSWORD` and `MAIL_SMTP_AUTH` where the gateway requires credentials
 - MailHog in `docker-compose.local.yml` as a local SMTP sink, with its web UI on port 8025
 
 ## 3.42.27
@@ -86,8 +112,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Expose submission type on the trust onboarding submission (always REGISTRATION for now; further types later) (
-  EID-6622)
+- Expose submission type on the trust onboarding submission (always REGISTRATION for now; further types later)
+  (EID-6622)
 
 ## 3.42.22
 
@@ -108,8 +134,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Publish a TiSendEmailCommand with the fully composed partner notification email (subject and plain text body
-  in DE/FR/IT/EN) for every trust event, gated by the `app.functionality.email-enabled` functionality flag
+- Publish a TiSendEmailCommand with the fully composed partner notification email (subject and plain text body in
+  DE/FR/IT/EN) for every trust event, gated by the `app.functionality.email-enabled` functionality flag
   (`FUNCTIONALITY_EMAIL_ENABLED`)
 
 ### Changed

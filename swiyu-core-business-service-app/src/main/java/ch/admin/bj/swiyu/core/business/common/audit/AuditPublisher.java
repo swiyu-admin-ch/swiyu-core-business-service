@@ -3,15 +3,7 @@ package ch.admin.bj.swiyu.core.business.common.audit;
 import static ch.admin.bit.jeap.audit.record.create.AuditObjectDataRole.NEW;
 import static ch.admin.bj.swiyu.core.business.common.audit.AuditEventDataKey.BUSINESS_PARTNER_ID;
 import static ch.admin.bj.swiyu.core.business.common.audit.AuditEventDataKey.USE_CASE_CATEGORY_ID;
-import static ch.admin.bj.swiyu.core.business.common.audit.AuditUseCase.BUSINESS_PARTNER_REGISTERED;
-import static ch.admin.bj.swiyu.core.business.common.audit.AuditUseCase.BUSINESS_PARTNER_UPDATED;
-import static ch.admin.bj.swiyu.core.business.common.audit.AuditUseCase.IDENTIFIER_ENTRY_CHANGED;
-import static ch.admin.bj.swiyu.core.business.common.audit.AuditUseCase.IDENTIFIER_ENTRY_CREATED;
-import static ch.admin.bj.swiyu.core.business.common.audit.AuditUseCase.IDENTIFIER_ENTRY_DESCRIPTION_CHANGED;
-import static ch.admin.bj.swiyu.core.business.common.audit.AuditUseCase.STATUS_LIST_CHANGED;
-import static ch.admin.bj.swiyu.core.business.common.audit.AuditUseCase.STATUS_LIST_CREATED;
-import static ch.admin.bj.swiyu.core.business.common.audit.AuditUseCase.TRUST_ONBOARDING_DOCUMENT_UPLOADED;
-import static ch.admin.bj.swiyu.core.business.common.audit.AuditUseCase.TRUST_ONBOARDING_SUBMITTED;
+import static ch.admin.bj.swiyu.core.business.common.audit.AuditUseCase.*;
 import static ch.admin.bj.swiyu.core.business.common.audit.AuditorProvider.getCurrentAuditor;
 
 import ch.admin.bit.jeap.audit.command.builder.CreateAuditRecordCommandBuilder;
@@ -22,6 +14,7 @@ import ch.admin.bit.jeap.messaging.kafka.properties.KafkaProperties;
 import io.micrometer.tracing.Tracer;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -128,17 +121,19 @@ public class AuditPublisher {
         String documentId,
         String version,
         String businessPartnerId,
-        String s3Key
+        String s3Key,
+        String partnerDocumentJson
     ) {
         logAuditEvent(TRUST_ONBOARDING_DOCUMENT_UPLOADED, businessPartnerId);
         var auditCommand = withCommonFields(TRUST_ONBOARDING_DOCUMENT_UPLOADED, documentId, version, businessPartnerId)
-            .addAuditObjectDataS3(NEW, "BUSINESS_PARTNER_DOCUMENT", s3Key)
+            .addAuditObjectDataJSON(NEW, DataJsonFieldName.TRUST_ONBOARDING_DOCUMENT_META, partnerDocumentJson)
+            .addAuditObjectDataS3(NEW, DataS3FieldName.TRUST_ONBOARDING_DOCUMENT, s3Key)
             .build();
         sender.auditEvent(auditCommand);
     }
 
     private void logAuditEvent(AuditUseCase useCase, String businessPartnerId) {
-        log.info("Sending audit event: useCase={}, businessPartnerId={}", useCase.getName(), businessPartnerId);
+        log.info("Sending audit event: useCase={}, businessPartnerId={}", useCase.name(), businessPartnerId);
     }
 
     private void publishAuditEvent(
@@ -149,26 +144,6 @@ public class AuditPublisher {
         String entityJson
     ) {
         publishAuditEvent(useCase, objectId, uploadCount, businessPartnerId, entityJson, null);
-    }
-
-    private void publishAuditEvent(
-        AuditUseCase useCase,
-        String objectId,
-        String uploadCount,
-        String businessPartnerId,
-        String entityJson,
-        String document
-    ) {
-        logAuditEvent(useCase, businessPartnerId);
-        var builder = withCommonFields(useCase, objectId, uploadCount, businessPartnerId).addAuditObjectDataJSON(
-            NEW,
-            useCase.getMetaFieldName(),
-            entityJson
-        );
-        if (document != null) {
-            builder.addAuditObjectDataValue(NEW, useCase.getDocumentFieldName(), document);
-        }
-        sender.auditEvent(builder.build());
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -185,9 +160,41 @@ public class AuditPublisher {
             submissionId,
             version,
             businessPartnerId
-        ).addAuditObjectDataJSON(NEW, TRUST_ONBOARDING_SUBMITTED.getMetaFieldName(), submissionJson);
+        ).addAuditObjectDataJSON(NEW, TRUST_ONBOARDING_SUBMITTED.getDataJsonFieldName(), submissionJson);
         for (var s3Key : doiS3Keys) {
-            builder.addAuditObjectDataS3(NEW, "TRUST_ONBOARDING_DOCUMENT", s3Key);
+            builder.addAuditObjectDataS3(NEW, DataS3FieldName.TRUST_ONBOARDING_DOCUMENT, s3Key);
+        }
+        sender.auditEvent(builder.build());
+    }
+
+    @Transactional
+    public void emailSent(UUID businessPartnerId, String emailIdempotenceId, String emailJson) {
+        logAuditEvent(EMAIL_SENT, businessPartnerId.toString());
+        var builder = withCommonFields(
+            EMAIL_SENT,
+            emailIdempotenceId,
+            "0", // emails do not have versions
+            businessPartnerId.toString()
+        ).addAuditObjectDataJSON(NEW, EMAIL_SENT.getDataJsonFieldName(), emailJson);
+        sender.auditEvent(builder.build());
+    }
+
+    private void publishAuditEvent(
+        AuditUseCase useCase,
+        String objectId,
+        String uploadCount,
+        String businessPartnerId,
+        String dataJson,
+        String dataValue
+    ) {
+        logAuditEvent(useCase, businessPartnerId);
+        var builder = withCommonFields(useCase, objectId, uploadCount, businessPartnerId).addAuditObjectDataJSON(
+            NEW,
+            useCase.getDataJsonFieldName(),
+            dataJson
+        );
+        if (dataValue != null) {
+            builder.addAuditObjectDataValue(NEW, useCase.getDataValueFieldName(), dataValue);
         }
         sender.auditEvent(builder.build());
     }
@@ -195,7 +202,7 @@ public class AuditPublisher {
     private CreateAuditRecordCommandBuilder withCommonFields(
         AuditUseCase useCase,
         String objectId,
-        String uploadCount,
+        String version,
         String businessPartnerId
     ) {
         // create the builder
@@ -212,14 +219,10 @@ public class AuditPublisher {
         }
         // common properties
         return builder
-            .idempotenceId(objectId + "-" + useCase.getName() + "-" + timestamp)
+            .idempotenceId(objectId + "-" + useCase.name() + "-" + timestamp)
             .setEventType(useCase.getEventType())
-            .setContext(useCase.getName(), getCurrentTraceId())
-            .setAuditObject(
-                useCase.getAuditObjectType(),
-                objectId,
-                /* since we do not have a JPA version on status list we use uploadCount */ uploadCount
-            )
+            .setContext(useCase.name(), getCurrentTraceId())
+            .setAuditObject(useCase.getAuditObjectType(), objectId, version)
             .addEventData(USE_CASE_CATEGORY_ID.getKey(), useCase.getCategory())
             .addEventData(BUSINESS_PARTNER_ID.getKey(), businessPartnerId);
     }

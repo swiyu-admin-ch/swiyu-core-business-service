@@ -12,12 +12,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * No BPI, no active submission             → VERIFICATION_NOT_STARTED
  * No BPI, latest submission UNSUBMITTED    → VERIFICATION_STARTED
  * No BPI, latest submission SUBMITTED      → VERIFICATION_IN_PROGRESS
- * No BPI, latest sub INFORMATION_REQUESTED → VERIFICATION_INFORMATION_REQUESTED
+ * No BPI, latest sub INFORMATION_REQUESTED/RESUBMITTED
+ *                                          → VERIFICATION_INFORMATION_REQUESTED_REQUIRED
+ * No BPI, latest sub UNSUBMITTED after resubmit (resubmitRequiredUntil set)
+ *                                          → VERIFICATION_INFORMATION_REQUESTED_STARTED
  *
  * BPI ACTIVE, no active submission         → VERIFICATION_SUCCEEDED
  * BPI ACTIVE or DEACTIVATED, latest submission UNSUBMITTED    → RE_VERIFICATION_STARTED
  * BPI ACTIVE or DEACTIVATED, latest submission SUBMITTED      → RE_VERIFICATION_IN_PROGRESS
- * BPI ACTIVE or DEACTIVATED, latest sub INFORMATION_REQUESTED → VERIFICATION_INFORMATION_REQUESTED
+ * BPI ACTIVE or DEACTIVATED, latest sub INFORMATION_REQUESTED/RESUBMITTED
+ *                                          → VERIFICATION_INFORMATION_REQUESTED_REQUIRED
  *
  * BPI DEACTIVATED, no active submission    → RE_VERIFICATION_REQUIRED
  *
@@ -37,8 +41,10 @@ public enum IdentityVerificationProgressStatusDto {
     VERIFICATION_STARTED,
     /** No BPI, first submission has been submitted and is under review (SUBMITTED). */
     VERIFICATION_IN_PROGRESS,
-    /** TMS has requested more information from the partner. */
-    VERIFICATION_INFORMATION_REQUESTED,
+    /** TMS requested more information and the partner has not started adjusting yet (INFORMATION_REQUESTED/RESUBMITTED). */
+    VERIFICATION_INFORMATION_REQUESTED_REQUIRED,
+    /** TMS requested more information and the partner has started adjusting (submission back in UNSUBMITTED). */
+    VERIFICATION_INFORMATION_REQUESTED_STARTED,
     /** Reserved for future PROFILE_CHANGE / RENEWAL rejection (EID-6620). */
     VERIFICATION_REJECTED,
     /** BPI is ACTIVE and no new submission is in flight — partner is fully verified. */

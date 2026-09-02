@@ -5,89 +5,90 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 
+/**
+ * See <a href="https://confluence.bit.admin.ch/x/gPVCTg">https://confluence.bit.admin.ch/x/gPVCTg</a> for all defined
+ * UseCases.
+ */
 @Getter
 @RequiredArgsConstructor
 public enum AuditUseCase {
     STATUS_LIST_CHANGED(
-        "STATUS_LIST_CHANGED",
         Category.STATUS_REGISTRY,
         ObjectType.STATUS_LIST,
-        MetaFieldName.STATUS_LIST_META,
-        "STATUS_LIST_JWT",
+        DataJsonFieldName.STATUS_LIST_META,
+        DataValueFieldName.STATUS_LIST_JWT,
         AuditEventType.MODIFIED
     ),
     STATUS_LIST_CREATED(
-        "STATUS_LIST_CREATED",
         Category.STATUS_REGISTRY,
         ObjectType.STATUS_LIST,
-        MetaFieldName.STATUS_LIST_META,
+        DataJsonFieldName.STATUS_LIST_META,
         null,
         AuditEventType.CREATED
     ),
     IDENTIFIER_ENTRY_CREATED(
-        "IDENTIFIER_ENTRY_CREATED",
         Category.IDENTIFIER_REGISTRY,
         ObjectType.IDENTIFIER_ENTRY,
-        MetaFieldName.IDENTIFIER_ENTRY_META,
-        null,
+        DataJsonFieldName.IDENTIFIER_ENTRY_META,
+        null, // no non-json value sent
         AuditEventType.CREATED
     ),
     IDENTIFIER_ENTRY_CHANGED(
-        "IDENTIFIER_ENTRY_CHANGED",
         Category.IDENTIFIER_REGISTRY,
         ObjectType.IDENTIFIER_ENTRY,
-        MetaFieldName.IDENTIFIER_ENTRY_META,
-        "IDENTIFIER_ENTRY_DID_DOC",
+        DataJsonFieldName.IDENTIFIER_ENTRY_META,
+        DataValueFieldName.IDENTIFIER_ENTRY_DID_DOC,
         AuditEventType.MODIFIED
     ),
     IDENTIFIER_ENTRY_DESCRIPTION_CHANGED(
-        "IDENTIFIER_ENTRY_DESCRIPTION_CHANGED",
         Category.IDENTIFIER_REGISTRY,
         ObjectType.IDENTIFIER_ENTRY,
-        MetaFieldName.IDENTIFIER_ENTRY_META,
-        null,
+        DataJsonFieldName.IDENTIFIER_ENTRY_META,
+        null, // no non-json value sent
         AuditEventType.MODIFIED
     ),
     BUSINESS_PARTNER_REGISTERED(
-        "BUSINESS_PARTNER_REGISTERED",
-        Category.MANAGEMENT,
+        Category.BUSINESS_PARTNER,
         ObjectType.BUSINESS_PARTNER,
-        MetaFieldName.BUSINESS_PARTNER_DATA,
-        null,
+        DataJsonFieldName.BUSINESS_PARTNER_DATA,
+        null, // no non-json value sent
         AuditEventType.CREATED
     ),
     BUSINESS_PARTNER_UPDATED(
-        "BUSINESS_PARTNER_UPDATED",
-        Category.MANAGEMENT,
+        Category.BUSINESS_PARTNER,
         ObjectType.BUSINESS_PARTNER,
-        MetaFieldName.BUSINESS_PARTNER_DATA,
+        DataJsonFieldName.BUSINESS_PARTNER_DATA,
         null,
         AuditEventType.MODIFIED
     ),
     TRUST_ONBOARDING_DOCUMENT_UPLOADED(
-        "TRUST_ONBOARDING_DOCUMENT_UPLOADED",
-        Category.TRUST,
-        ObjectType.TRUST_ONBOARDING_DOCUMENT,
-        null,
-        null,
+        Category.BUSINESS_PARTNER,
+        ObjectType.BUSINESS_PARTNER_DOCUMENT,
+        DataJsonFieldName.TRUST_ONBOARDING_DOCUMENT_META,
+        null, // no non-json value sent (only s3 file)
         AuditEventType.MODIFIED
     ),
     TRUST_ONBOARDING_SUBMITTED(
-        "TRUST_ONBOARDING_SUBMITTED",
-        Category.TRUST,
+        Category.BUSINESS_PARTNER,
         ObjectType.TRUST_ONBOARDING_SUBMISSION,
-        MetaFieldName.TRUST_ONBOARDING_SUBMISSION_DATA,
-        null,
+        DataJsonFieldName.TRUST_ONBOARDING_SUBMISSION_DATA,
+        null, // no non-json value sent
         AuditEventType.MODIFIED
+    ),
+    EMAIL_SENT(
+        Category.NOTIFICATION,
+        ObjectType.EMAIL,
+        DataJsonFieldName.EMAIL_DATA,
+        null, // no non-json value sent
+        AuditEventType.CREATED
     );
 
-    private final String name;
     private final String category;
     private final String auditObjectType;
     /** Key under which the entity's JSON snapshot is stored in the audit record's object data. */
-    private final String metaFieldName;
-    /** Key under which a secondary text document (e.g. a JWT or DID log) is stored. {@code null} if this use case has no secondary document. */
-    private final String documentFieldName;
+    private final String dataJsonFieldName;
+    /** Key under which a non-json document is stored (e.g. a JWT or DID log) is stored. {@code null} if this use case has no secondary document. */
+    private final String dataValueFieldName;
     private final AuditEventType eventType;
 
     @UtilityClass
@@ -95,26 +96,42 @@ public enum AuditUseCase {
 
         static final String STATUS_REGISTRY = "STATUS_REGISTRY";
         static final String IDENTIFIER_REGISTRY = "IDENTIFIER_REGISTRY";
-        static final String MANAGEMENT = "MANAGEMENT";
-        static final String TRUST = "TRUST";
+        static final String BUSINESS_PARTNER = "BUSINESS_PARTNER";
+        static final String NOTIFICATION = "NOTIFICATION";
     }
 
     @UtilityClass
     private static final class ObjectType {
 
+        static final String EMAIL = "EMAIL";
         static final String STATUS_LIST = "STATUS_LIST";
         static final String IDENTIFIER_ENTRY = "IDENTIFIER_ENTRY";
         static final String BUSINESS_PARTNER = "BUSINESS_PARTNER";
-        static final String TRUST_ONBOARDING_DOCUMENT = "TRUST_ONBOARDING_DOCUMENT";
+        static final String BUSINESS_PARTNER_DOCUMENT = "BUSINESS_PARTNER_DOCUMENT";
         static final String TRUST_ONBOARDING_SUBMISSION = "TRUST_ONBOARDING_SUBMISSION";
     }
 
     @UtilityClass
-    private static final class MetaFieldName {
+    static final class DataJsonFieldName {
 
         static final String STATUS_LIST_META = "STATUS_LIST_META";
         static final String IDENTIFIER_ENTRY_META = "IDENTIFIER_ENTRY_META";
         static final String BUSINESS_PARTNER_DATA = "BUSINESS_PARTNER_DATA";
+        static final String TRUST_ONBOARDING_DOCUMENT_META = "TRUST_ONBOARDING_DOCUMENT_META";
         static final String TRUST_ONBOARDING_SUBMISSION_DATA = "TRUST_ONBOARDING_SUBMISSION_DATA";
+        static final String EMAIL_DATA = "EMAIL_DATA";
+    }
+
+    @UtilityClass
+    private static final class DataValueFieldName {
+
+        static final String IDENTIFIER_ENTRY_DID_DOC = "IDENTIFIER_ENTRY_DID_DOC";
+        static final String STATUS_LIST_JWT = "STATUS_LIST_JWT";
+    }
+
+    @UtilityClass
+    static final class DataS3FieldName {
+
+        public static final String TRUST_ONBOARDING_DOCUMENT = "TRUST_ONBOARDING_DOCUMENT";
     }
 }

@@ -30,6 +30,7 @@ public class TrustOnboardingEventProcessor {
         );
         this.trustOnboardingService.markAsInformationRequested(
             payload.getTrustOnboardingSubmissionId(),
+            payload.getResubmitRequiredUntil(),
             payload.getPartnerNote()
         );
     }

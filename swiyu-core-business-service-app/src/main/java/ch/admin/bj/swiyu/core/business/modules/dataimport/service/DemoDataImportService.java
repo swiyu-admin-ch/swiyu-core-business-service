@@ -23,6 +23,7 @@ import ch.admin.bj.swiyu.registry.identifier.domain.DatastoreStatus;
 import ch.admin.bj.swiyu.registry.identifier.domain.IdentifierDatastoreEntity;
 import ch.admin.bj.swiyu.registry.identifier.domain.IdentifierDatastoreEntityRepository;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -136,7 +137,10 @@ public class DemoDataImportService {
                     switch (trustOnboarding.status()) {
                         case UNSUBMITTED_TIMEOUT -> sub.markAsExpired();
                         case SUBMITTED -> sub.markAsSubmitted();
-                        case INFORMATION_REQUESTED -> sub.markAsInformationRequested("Test note data");
+                        case INFORMATION_REQUESTED -> sub.markAsInformationRequested(
+                            Instant.now().plus(29, ChronoUnit.DAYS),
+                            "Test note data"
+                        );
                         case SUCCEEDED -> sub.markAsSucceeded();
                         case REJECTED -> sub.markAsRejected(TrustOnboardingRejectReason.FRAUDULENT_ACTIVITY);
                         case UNSUBMITTED -> {

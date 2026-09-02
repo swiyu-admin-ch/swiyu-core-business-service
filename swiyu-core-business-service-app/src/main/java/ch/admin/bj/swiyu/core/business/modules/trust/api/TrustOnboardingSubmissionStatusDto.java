@@ -9,4 +9,5 @@ public enum TrustOnboardingSubmissionStatusDto {
     SUCCEEDED, // approved and statements for all DIDs are published in trust registry
     REJECTED,
     INFORMATION_REQUESTED,
+    RESUBMITTED,
 }

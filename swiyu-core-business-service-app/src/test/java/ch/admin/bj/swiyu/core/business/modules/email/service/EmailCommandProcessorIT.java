@@ -3,11 +3,14 @@ package ch.admin.bj.swiyu.core.business.modules.email.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.*;
 
 import ch.admin.bit.jeap.messaging.avro.AvroMessageIdentity;
 import ch.admin.bit.jeap.messaging.avro.AvroMessageType;
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
+import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
+import ch.admin.bj.swiyu.core.business.modules.email.domain.Email;
+import ch.admin.bj.swiyu.core.business.modules.email.domain.EmailType;
 import ch.admin.bj.swiyu.core.business.modules.email.domain.SentNotificationRepository;
 import ch.admin.bj.swiyu.core.business.modules.email.domain.SentNotificationType;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
@@ -21,13 +24,15 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockito.Mockito;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mail.MailSendException;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The processor against a real database and a real SMTP server.
@@ -57,17 +62,24 @@ class EmailCommandProcessorIT {
     @Autowired
     SentNotificationRepository sentNotificationRepository;
 
+    @MockitoBean // mocked so we don't need to bootstrap kafka (reduce pipeline time)
+    private AuditPublisher auditPublisher;
+
     @BeforeEach
     void setUp() {
         sentNotificationRepository.deleteAll();
+        reset(auditPublisher);
     }
 
     @Test
     void sendsTheEmailAndRecordsIt() {
+        // GIVEN
         var command = command(UUID.randomUUID().toString());
 
+        // WHEN
         processor.process(command);
 
+        // THEN
         assertThat(GREEN_MAIL.waitForIncomingEmail(5000, 1)).isTrue();
         assertThat(sentNotificationRepository.findAll())
             .singleElement()
@@ -79,6 +91,7 @@ class EmailCommandProcessorIT {
                 assertThat(email.get("to").get(0).asString()).isEqualTo("contact.person@partner.example.com");
                 assertThat(email.get("subject").asString()).contains("Antrag eingereicht");
             });
+        verifyAuditCommandWasSent((command.getPayload()).getPartnerId());
     }
 
     /**
@@ -107,11 +120,11 @@ class EmailCommandProcessorIT {
      * depending on the full Avro message envelope.
      */
     private static TiSendEmailCommand command(String idempotenceId) {
-        var identity = Mockito.mock(AvroMessageIdentity.class);
-        Mockito.when(identity.getIdempotenceId()).thenReturn(idempotenceId);
+        var identity = mock(AvroMessageIdentity.class);
+        when(identity.getIdempotenceId()).thenReturn(idempotenceId);
 
-        var type = Mockito.mock(AvroMessageType.class);
-        Mockito.when(type.getName()).thenReturn("TiSendEmailCommand");
+        var type = mock(AvroMessageType.class);
+        when(type.getName()).thenReturn("TiSendEmailCommand");
 
         var payload = new TiSendEmailCommandPayload(
             UUID.randomUUID(),
@@ -124,10 +137,20 @@ class EmailCommandProcessorIT {
             "Guten Tag\n\nBonjour\n\nBuongiorno\n\nHello"
         );
 
-        var command = Mockito.mock(TiSendEmailCommand.class);
-        Mockito.when(command.getIdentity()).thenReturn(identity);
-        Mockito.when(command.getType()).thenReturn(type);
-        Mockito.when(command.getPayload()).thenReturn(payload);
+        var command = mock(TiSendEmailCommand.class);
+        when(command.getIdentity()).thenReturn(identity);
+        when(command.getType()).thenReturn(type);
+        when(command.getPayload()).thenReturn(payload);
         return command;
+    }
+
+    private void verifyAuditCommandWasSent(UUID partnerId) {
+        var partnerIdCaptor = ArgumentCaptor.forClass(UUID.class);
+        var emailJsonCaptor = ArgumentCaptor.forClass(String.class);
+        verify(auditPublisher, times(1)).emailSent(partnerIdCaptor.capture(), any(), emailJsonCaptor.capture());
+        var emailJson = emailJsonCaptor.getValue();
+        var email = new ObjectMapper().readValue(emailJson, Email.class);
+        assertThat(partnerIdCaptor.getValue()).isEqualTo(partnerId);
+        assertThat(email.emailType()).isEqualTo(EmailType.SUBMISSION_ACCEPTED.toString());
     }
 }

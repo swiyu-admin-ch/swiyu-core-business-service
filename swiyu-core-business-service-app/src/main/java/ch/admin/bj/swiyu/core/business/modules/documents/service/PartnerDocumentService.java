@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.documents.service;
 
+import static ch.admin.bj.swiyu.core.business.common.audit.AuditMapper.toAuditJson;
 import static ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocument.createTrustOnboardingSubissionPartnerDocument;
 import static ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentMapper.toPartnerDocumentDto;
 
@@ -127,7 +128,8 @@ public class PartnerDocumentService {
                 partnerDocument.getId().toString(),
                 String.valueOf(partnerDocument.getVersion()),
                 businessPartnerId.toString(),
-                partnerDocument.getStorageObjectKey()
+                partnerDocument.getStorageObjectKey(),
+                toAuditJson(partnerDocument)
             );
             return toPartnerDocumentDto(partnerDocument);
         } catch (Exception e) {

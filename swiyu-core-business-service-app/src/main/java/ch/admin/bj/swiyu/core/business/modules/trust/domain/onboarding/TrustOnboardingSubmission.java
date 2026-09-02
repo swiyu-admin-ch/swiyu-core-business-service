@@ -37,6 +37,9 @@ public class TrustOnboardingSubmission {
     @NotNull
     private Instant initiatedAt;
 
+    @Nullable
+    private Instant resubmitRequiredUntil;
+
     @Getter
     @Column(columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
@@ -235,6 +238,24 @@ public class TrustOnboardingSubmission {
         this.status = TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED;
         this.partnerNote = partnerNote;
         this.proofOfPossessions = this.proofOfPossessions.stream().map(ProofOfPossession::toNotSupplied).toList();
+    }
+
+    public void markAsInformationRequested(Instant resubmitRequiredUntil, String partnerNote) {
+        this.status = TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED;
+        this.resubmitRequiredUntil = resubmitRequiredUntil;
+        this.partnerNote = partnerNote;
+        this.proofOfPossessions = this.proofOfPossessions.stream().map(ProofOfPossession::toNotSupplied).toList();
+    }
+
+    public void markAsResubmitted(Instant resubmitRequiredUntil, String partnerNote) {
+        this.status = TrustOnboardingSubmissionStatus.RESUBMITTED;
+        this.resubmitRequiredUntil = resubmitRequiredUntil;
+        this.partnerNote = partnerNote;
+        this.proofOfPossessions = this.proofOfPossessions.stream().map(ProofOfPossession::toNotSupplied).toList();
+    }
+
+    public void markAsUnsubmitted() {
+        this.status = TrustOnboardingSubmissionStatus.UNSUBMITTED;
     }
 
     public void updateDeclarationOfIntent(DeclarationOfIntent declarationOfIntent) {

@@ -264,7 +264,10 @@ public class BusinessPartnerService {
      *   No active submission             → VERIFICATION_NOT_STARTED
      *   Latest active sub UNSUBMITTED    → VERIFICATION_STARTED
      *   Latest active sub SUBMITTED      → VERIFICATION_IN_PROGRESS
-     *   Latest active sub INFO_REQUESTED → VERIFICATION_INFORMATION_REQUESTED
+     *   Latest active sub INFO_REQUESTED → VERIFICATION_INFORMATION_REQUESTED_REQUIRED
+     *   Latest active sub RESUBMITTED    → VERIFICATION_IN_PROGRESS (behaves like SUBMITTED)
+     *   Latest active sub UNSUBMITTED after resubmit (resubmitRequiredUntil set)
+     *                                    → VERIFICATION_INFORMATION_REQUESTED_STARTED
      *
      * ── BPI ACTIVE (partner is currently trusted, no new submission) ──────────
      *   No active submission             → VERIFICATION_SUCCEEDED
@@ -275,8 +278,9 @@ public class BusinessPartnerService {
      *   after that produces RE_* states:
      *   Latest active sub UNSUBMITTED    → RE_VERIFICATION_STARTED
      *   Latest active sub SUBMITTED      → RE_VERIFICATION_IN_PROGRESS
-     *   Latest active sub INFO_REQUESTED → VERIFICATION_INFORMATION_REQUESTED
+     *   Latest active sub INFO_REQUESTED → VERIFICATION_INFORMATION_REQUESTED_REQUIRED
      *                                      (no RE_ prefix for this one — matches old model)
+     *   Latest active sub RESUBMITTED    → RE_VERIFICATION_IN_PROGRESS (behaves like SUBMITTED)
      *
      * ── BPI DEACTIVATED + no active submission ───────────────────────────────
      *   No active submission             → RE_VERIFICATION_REQUIRED
@@ -329,7 +333,7 @@ public class BusinessPartnerService {
                     latestActiveSubmission = null;
                 }
                 case UNSUBMITTED_TIMEOUT -> latestActiveSubmission = null;
-                case UNSUBMITTED, SUBMITTED, INFORMATION_REQUESTED -> latestActiveSubmission = sub;
+                case UNSUBMITTED, SUBMITTED, INFORMATION_REQUESTED, RESUBMITTED -> latestActiveSubmission = sub;
             }
         }
         var latestActive = java.util.Optional.ofNullable(latestActiveSubmission);
@@ -353,9 +357,12 @@ public class BusinessPartnerService {
         // Previously succeeded + active in-flight submission → RE_* states
         if (hasPreviouslySucceeded && latestActive.isPresent()) {
             var status = switch (latestActive.get().getStatus()) {
-                case UNSUBMITTED -> IdentityVerificationProgressStatusDto.RE_VERIFICATION_STARTED;
+                case UNSUBMITTED -> latestActive.get().getResubmitRequiredUntil() != null
+                    ? IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED_STARTED
+                    : IdentityVerificationProgressStatusDto.RE_VERIFICATION_STARTED;
                 case SUBMITTED -> IdentityVerificationProgressStatusDto.RE_VERIFICATION_IN_PROGRESS;
-                case INFORMATION_REQUESTED -> IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED;
+                case INFORMATION_REQUESTED -> IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED_REQUIRED;
+                case RESUBMITTED -> IdentityVerificationProgressStatusDto.RE_VERIFICATION_IN_PROGRESS;
                 default -> IdentityVerificationProgressStatusDto.VERIFICATION_SUCCEEDED; // unreachable
             };
             return new IdentityVerificationProgressDto(status, computeMaxDate(status, latestActive.get()));
@@ -366,9 +373,12 @@ public class BusinessPartnerService {
             return IdentityVerificationProgressDto.of(IdentityVerificationProgressStatusDto.VERIFICATION_NOT_STARTED);
         }
         var status = switch (latestActive.get().getStatus()) {
-            case UNSUBMITTED -> IdentityVerificationProgressStatusDto.VERIFICATION_STARTED;
+            case UNSUBMITTED -> latestActive.get().getResubmitRequiredUntil() != null
+                ? IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED_STARTED
+                : IdentityVerificationProgressStatusDto.VERIFICATION_STARTED;
             case SUBMITTED -> IdentityVerificationProgressStatusDto.VERIFICATION_IN_PROGRESS;
-            case INFORMATION_REQUESTED -> IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED;
+            case INFORMATION_REQUESTED -> IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED_REQUIRED;
+            case RESUBMITTED -> IdentityVerificationProgressStatusDto.VERIFICATION_IN_PROGRESS;
             default -> IdentityVerificationProgressStatusDto.VERIFICATION_NOT_STARTED; // unreachable
         };
         return new IdentityVerificationProgressDto(status, computeMaxDate(status, latestActive.get()));
@@ -398,7 +408,8 @@ public class BusinessPartnerService {
             case VERIFICATION_NOT_STARTED -> BusinessPartnerTrustStatusDto.NOT_VERIFIED;
             case VERIFICATION_STARTED -> BusinessPartnerTrustStatusDto.VERIFICATION_STARTED;
             case VERIFICATION_IN_PROGRESS -> BusinessPartnerTrustStatusDto.VERIFICATION_IN_PROGRESS;
-            case VERIFICATION_INFORMATION_REQUESTED -> BusinessPartnerTrustStatusDto.INFORMATION_REQUESTED;
+            case VERIFICATION_INFORMATION_REQUESTED_REQUIRED -> BusinessPartnerTrustStatusDto.INFORMATION_REQUESTED;
+            case VERIFICATION_INFORMATION_REQUESTED_STARTED -> BusinessPartnerTrustStatusDto.VERIFICATION_IN_PROGRESS;
             case VERIFICATION_REJECTED -> BusinessPartnerTrustStatusDto.NOT_VERIFIED;
             case VERIFICATION_SUCCEEDED -> BusinessPartnerTrustStatusDto.VERIFIED;
             case RE_VERIFICATION_REQUIRED -> BusinessPartnerTrustStatusDto.NOT_VERIFIED;
@@ -413,12 +424,13 @@ public class BusinessPartnerService {
      * Computes the deadline for the given status based on the active submission's {@code initiatedAt}
      * plus the configured {@code max-age-in-unsubmitted} duration.
      *
-     * <p>Applies to {@link IdentityVerificationProgressStatusDto#VERIFICATION_STARTED},
-     * {@link IdentityVerificationProgressStatusDto#RE_VERIFICATION_STARTED}, and (temporarily)
-     * {@link IdentityVerificationProgressStatusDto#VERIFICATION_INFORMATION_REQUESTED}.
-     * For {@code VERIFICATION_INFORMATION_REQUESTED} this is an approximation; the correct
-     * calculation will be introduced with EID-6376 based on the future {@code resubmitRequiredUntil}
-     * property of {@link TrustOnboardingSubmission}.
+     * <p>Applies to {@link IdentityVerificationProgressStatusDto#VERIFICATION_STARTED} and
+     * {@link IdentityVerificationProgressStatusDto#RE_VERIFICATION_STARTED} (based on
+     * {@code initiatedAt + max-age-in-unsubmitted}), and to
+     * {@link IdentityVerificationProgressStatusDto#VERIFICATION_INFORMATION_REQUESTED_REQUIRED} /
+     * {@link IdentityVerificationProgressStatusDto#VERIFICATION_INFORMATION_REQUESTED_STARTED}
+     * which use the submission's {@code resubmitRequiredUntil} deadline (falling back to the
+     * unsubmitted-age approximation if it is not set).
      *
      * @return the computed deadline, or {@code null} if no deadline applies for the given status
      */
@@ -427,9 +439,17 @@ public class BusinessPartnerService {
         TrustOnboardingSubmission activeSubmission
     ) {
         return switch (status) {
-            case VERIFICATION_STARTED, RE_VERIFICATION_STARTED, VERIFICATION_INFORMATION_REQUESTED -> activeSubmission
+            case VERIFICATION_STARTED, RE_VERIFICATION_STARTED -> activeSubmission
                 .getInitiatedAt()
                 .plus(trustOnboardingSubmissionLimitProperties.maxAgeInUnsubmitted());
+            case VERIFICATION_INFORMATION_REQUESTED_REQUIRED, VERIFICATION_INFORMATION_REQUESTED_STARTED -> {
+                var resubmitRequiredUntil = activeSubmission.getResubmitRequiredUntil();
+                yield resubmitRequiredUntil != null
+                    ? resubmitRequiredUntil
+                    : activeSubmission
+                          .getInitiatedAt()
+                          .plus(trustOnboardingSubmissionLimitProperties.maxAgeInUnsubmitted());
+            }
             default -> null;
         };
     }

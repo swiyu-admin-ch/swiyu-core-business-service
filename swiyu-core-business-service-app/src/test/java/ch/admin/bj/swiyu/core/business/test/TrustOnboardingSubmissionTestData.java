@@ -17,6 +17,7 @@ import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerTru
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -163,6 +164,7 @@ public class TrustOnboardingSubmissionTestData {
             case UNSUBMITTED_TIMEOUT -> submission.markAsExpired();
             case SUBMITTED -> submission.markAsSubmitted();
             case SUCCEEDED -> submission.markAsSucceeded();
+            case RESUBMITTED -> submission.markAsResubmitted(Instant.now().plus(7, ChronoUnit.DAYS), "Please adjust");
             case REJECTED -> submission.markAsRejected(TrustOnboardingRejectReason.FRAUDULENT_ACTIVITY);
             case INFORMATION_REQUESTED -> submission.markAsInformationRequested("something missing");
             case UNSUBMITTED -> {

@@ -333,9 +333,9 @@ class TrustOnboardingServiceIT {
         Assertions.assertThat(submitted.get().getStatus()).isEqualTo(TrustOnboardingSubmissionStatus.SUBMITTED);
 
         // WHEN requesting information
-        service.markAsInformationRequested(resultDto.id(), "some reason, dont care");
+        service.markAsInformationRequested(resultDto.id(), Instant.now().plusSeconds(3600), "some reason, dont care");
 
-        // THEN should reset all pops to not supplied and status to information requested
+        // THEN should reset all pops to not supplied and status to resubmitted
         var infoRequested = repos.trustOnboardingSubmission.findById(resultDto.id());
         Assertions.assertThat(infoRequested).isPresent();
         Assertions.assertThat(infoRequested.get().getStatus()).isEqualTo(
@@ -607,19 +607,26 @@ class TrustOnboardingServiceIT {
     void markAsInformationRequested_succeeds() {
         var submission = repos.trustOnboardingSubmission.save(trustOnboardingSubmission());
 
-        service.markAsInformationRequested(submission.getId(), "partnerNote");
+        service.markAsInformationRequested(submission.getId(), Instant.now().plusSeconds(3600), "partnerNote");
 
         var refreshed = repos.trustOnboardingSubmission.findById(submission.getId()).orElseThrow();
         assertEquals(TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED, refreshed.getStatus());
         assertNull(refreshed.getDeclineReason());
         assertEquals("partnerNote", refreshed.getPartnerNote());
+        assertEquals(
+            Instant.now().plusSeconds(3600).getEpochSecond(),
+            refreshed.getResubmitRequiredUntil().getEpochSecond()
+        );
         verify(emailCommandPublisher).trustRegistrationInformationRequested(submission.getPartnerId());
     }
 
     @Test
     void markAsInformationRequested_fails_when_not_found() {
         var uuid = UUID.randomUUID();
-        assertThrows(ResourceNotFoundException.class, () -> service.markAsInformationRequested(uuid, "should fail"));
+        var resubmitRequiredUntil = Instant.now().plusSeconds(3600);
+        assertThrows(ResourceNotFoundException.class, () ->
+            service.markAsInformationRequested(uuid, resubmitRequiredUntil, "should fail")
+        );
     }
 
     @Test
@@ -742,7 +749,8 @@ class TrustOnboardingServiceIT {
             eq(uploaded.id().toString()),
             anyString(),
             anyString(),
-            eq(persistedDocument.getStorageObjectKey())
+            eq(persistedDocument.getStorageObjectKey()),
+            anyString()
         );
     }
 

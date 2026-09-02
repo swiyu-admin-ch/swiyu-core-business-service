@@ -12,11 +12,11 @@ import java.time.Instant;
  *
  * <p>The {@link #maxDateForStatus()} field is non-null for states that have a time-bound deadline:
  * {@link IdentityVerificationProgressStatusDto#VERIFICATION_STARTED},
- * {@link IdentityVerificationProgressStatusDto#RE_VERIFICATION_STARTED}, and (temporarily)
- * {@link IdentityVerificationProgressStatusDto#VERIFICATION_INFORMATION_REQUESTED}.
- * For {@code VERIFICATION_INFORMATION_REQUESTED} this is currently approximated from the submission's
- * {@code initiatedAt + max-age-in-unsubmitted}; the correct calculation based on the future
- * {@code resubmitRequiredUntil} property of TrustOnboardingSubmission will be introduced with EID-6376.
+ * {@link IdentityVerificationProgressStatusDto#RE_VERIFICATION_STARTED}, and
+ * {@link IdentityVerificationProgressStatusDto#VERIFICATION_INFORMATION_REQUESTED_REQUIRED} /
+ * {@link IdentityVerificationProgressStatusDto#VERIFICATION_INFORMATION_REQUESTED_STARTED}.
+ * For the latter two, the deadline is taken from the submission's {@code resubmitRequiredUntil}
+ * (falling back to {@code initiatedAt + max-age-in-unsubmitted} if not set).
  */
 @Schema(name = "IdentityVerificationProgress")
 public record IdentityVerificationProgressDto(

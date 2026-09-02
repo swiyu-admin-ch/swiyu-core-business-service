@@ -88,7 +88,7 @@ class AuditPublisherIT {
         assertThat(msg.getPublisher().getSystem()).isEqualTo("ti");
         assertThat(msg.getPublisher().getService()).isEqualTo("swiyu-core-business-service");
         assertThat(msg.getPayload().getEvent().getType()).isEqualTo(AuditEventType.MODIFIED);
-        assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(STATUS_LIST_CHANGED.getName());
+        assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(STATUS_LIST_CHANGED.name());
         assertThat(msg.getPayload().getEvent().getContext().getProcessId()).isEqualTo(traceId);
         assertThat(getEventDataByKey(msg, USE_CASE_CATEGORY_ID.getKey())).isEqualTo(STATUS_LIST_CHANGED.getCategory());
         assertThat(getEventDataByKey(msg, BUSINESS_PARTNER_ID.getKey())).isEqualTo("bp-1");
@@ -127,7 +127,7 @@ class AuditPublisherIT {
         assertThat(msg.getPublisher().getSystem()).isEqualTo("ti");
         assertThat(msg.getPublisher().getService()).isEqualTo("swiyu-core-business-service");
         assertThat(msg.getPayload().getEvent().getType()).isEqualTo(AuditEventType.CREATED);
-        assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(STATUS_LIST_CREATED.getName());
+        assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(STATUS_LIST_CREATED.name());
         assertThat(msg.getPayload().getEvent().getContext().getProcessId()).isEqualTo(traceId);
         assertThat(getEventDataByKey(msg, USE_CASE_CATEGORY_ID.getKey())).isEqualTo(STATUS_LIST_CREATED.getCategory());
         assertThat(getEventDataByKey(msg, BUSINESS_PARTNER_ID.getKey())).isEqualTo(businessPartnerId);
@@ -165,7 +165,7 @@ class AuditPublisherIT {
         assertThat(msg.getPublisher().getSystem()).isEqualTo("ti");
         assertThat(msg.getPublisher().getService()).isEqualTo("swiyu-core-business-service");
         assertThat(msg.getPayload().getEvent().getType()).isEqualTo(AuditEventType.CREATED);
-        assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(IDENTIFIER_ENTRY_CREATED.getName());
+        assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(IDENTIFIER_ENTRY_CREATED.name());
         assertThat(msg.getPayload().getEvent().getContext().getProcessId()).isEqualTo(traceId);
         assertThat(getEventDataByKey(msg, USE_CASE_CATEGORY_ID.getKey())).isEqualTo(
             IDENTIFIER_ENTRY_CREATED.getCategory()
@@ -211,7 +211,7 @@ class AuditPublisherIT {
         assertThat(msg.getPublisher().getSystem()).isEqualTo("ti");
         assertThat(msg.getPublisher().getService()).isEqualTo("swiyu-core-business-service");
         assertThat(msg.getPayload().getEvent().getType()).isEqualTo(AuditEventType.MODIFIED);
-        assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(IDENTIFIER_ENTRY_CHANGED.getName());
+        assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(IDENTIFIER_ENTRY_CHANGED.name());
         assertThat(msg.getPayload().getEvent().getContext().getProcessId()).isEqualTo(traceId);
         assertThat(getEventDataByKey(msg, USE_CASE_CATEGORY_ID.getKey())).isEqualTo(
             IDENTIFIER_ENTRY_CHANGED.getCategory()
@@ -256,7 +256,7 @@ class AuditPublisherIT {
         assertThat(msg.getPublisher().getSystem()).isEqualTo("ti");
         assertThat(msg.getPublisher().getService()).isEqualTo("swiyu-core-business-service");
         assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(
-            IDENTIFIER_ENTRY_DESCRIPTION_CHANGED.getName()
+            IDENTIFIER_ENTRY_DESCRIPTION_CHANGED.name()
         );
         assertThat(msg.getPayload().getEvent().getContext().getProcessId()).isEqualTo(traceId);
         assertThat(getEventDataByKey(msg, USE_CASE_CATEGORY_ID.getKey())).isEqualTo(
@@ -310,9 +310,7 @@ class AuditPublisherIT {
         verify(kafkaMsgCallback, times(1)).onSend(messageCaptor.capture(), any());
         var msg = messageCaptor.getValue();
         assertThat(msg.getPayload().getEvent().getType()).isEqualTo(AuditEventType.CREATED);
-        assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(
-            BUSINESS_PARTNER_REGISTERED.getName()
-        );
+        assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(BUSINESS_PARTNER_REGISTERED.name());
         assertThat(msg.getPayload().getEvent().getContext().getProcessId()).isEqualTo(traceId);
         assertThat(getEventDataByKey(msg, USE_CASE_CATEGORY_ID.getKey())).isEqualTo(
             BUSINESS_PARTNER_REGISTERED.getCategory()
@@ -338,7 +336,7 @@ class AuditPublisherIT {
         verify(kafkaMsgCallback, times(1)).onSend(messageCaptor.capture(), any());
         var msg = messageCaptor.getValue();
         assertThat(msg.getPayload().getEvent().getType()).isEqualTo(AuditEventType.MODIFIED);
-        assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(BUSINESS_PARTNER_UPDATED.getName());
+        assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(BUSINESS_PARTNER_UPDATED.name());
         assertThat(msg.getPayload().getEvent().getContext().getProcessId()).isEqualTo(traceId);
         assertThat(getEventDataByKey(msg, USE_CASE_CATEGORY_ID.getKey())).isEqualTo(
             BUSINESS_PARTNER_UPDATED.getCategory()
@@ -357,7 +355,7 @@ class AuditPublisherIT {
         var s3Key = "partner-1/trust/submission-1/doc-1-file.pdf";
 
         var traceId = executeWithTracing(() ->
-            auditPublisher.trustOnboardingDocumentUploaded("doc-1", "0", "bp-1", s3Key)
+            auditPublisher.trustOnboardingDocumentUploaded("doc-1", "0", "bp-1", s3Key, "{}")
         );
 
         var messages = deferredMessageRepository.findAll();
@@ -367,7 +365,7 @@ class AuditPublisherIT {
         var msg = messageCaptor.getValue();
         assertThat(msg.getPayload().getEvent().getType()).isEqualTo(AuditEventType.MODIFIED);
         assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(
-            TRUST_ONBOARDING_DOCUMENT_UPLOADED.getName()
+            TRUST_ONBOARDING_DOCUMENT_UPLOADED.name()
         );
         assertThat(msg.getPayload().getEvent().getContext().getProcessId()).isEqualTo(traceId);
         assertThat(getEventDataByKey(msg, USE_CASE_CATEGORY_ID.getKey())).isEqualTo(
@@ -377,7 +375,8 @@ class AuditPublisherIT {
         assertThat(msg.getPayload().getAuditedData().getType()).isEqualTo(
             TRUST_ONBOARDING_DOCUMENT_UPLOADED.getAuditObjectType()
         );
-        assertThat(getAuditObjectDataS3(msg, "BUSINESS_PARTNER_DOCUMENT").getObjectReference()).isEqualTo(s3Key);
+        var s3AuditData = getAuditObjectDataS3(msg, AuditUseCase.DataS3FieldName.TRUST_ONBOARDING_DOCUMENT);
+        assertThat(s3AuditData.getObjectReference()).isEqualTo(s3Key);
     }
 
     @Transactional
@@ -404,9 +403,7 @@ class AuditPublisherIT {
         verify(kafkaMsgCallback, times(1)).onSend(messageCaptor.capture(), any());
         var msg = messageCaptor.getValue();
         assertThat(msg.getPayload().getEvent().getType()).isEqualTo(AuditEventType.MODIFIED);
-        assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(
-            TRUST_ONBOARDING_SUBMITTED.getName()
-        );
+        assertThat(msg.getPayload().getEvent().getContext().getUseCase()).isEqualTo(TRUST_ONBOARDING_SUBMITTED.name());
         assertThat(msg.getPayload().getEvent().getContext().getProcessId()).isEqualTo(traceId);
         assertThat(getEventDataByKey(msg, USE_CASE_CATEGORY_ID.getKey())).isEqualTo(
             TRUST_ONBOARDING_SUBMITTED.getCategory()
@@ -418,7 +415,7 @@ class AuditPublisherIT {
         assertThat(
             getAuditObjectDataJSON(msg, "TRUST_ONBOARDING_SUBMISSION_DATA").getJsonAsUTF8().toString()
         ).isNotBlank();
-        var s3Refs = getAuditObjectDataS3List(msg, "TRUST_ONBOARDING_DOCUMENT");
+        var s3Refs = getAuditObjectDataS3List(msg, AuditUseCase.DataS3FieldName.TRUST_ONBOARDING_DOCUMENT);
         assertThat(s3Refs).hasSize(2);
         assertThat(s3Refs.stream().map(AuditObjectDataS3::getObjectReference).toList()).containsExactlyInAnyOrder(
             s3Key1,

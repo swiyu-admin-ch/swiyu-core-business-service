@@ -81,7 +81,7 @@ class EmailNotificationJobIT {
     @Test
     void publishesARenewalReminderForEveryReminderPointOfTheFeature() {
         // one partner per reminder point, each exactly that many days from expiry
-        List.of(180, 150, 120, 90, 30).forEach(days -> partnerExpiringInDays(days));
+        List.of(180, 150, 120, 90, 30).forEach(this::partnerExpiringInDays);
 
         job.triggerScheduledEmailNotifications();
 

@@ -66,7 +66,8 @@ class TrustOnboardingServiceTest {
                 List.of(
                     TrustOnboardingSubmissionStatus.SUBMITTED,
                     TrustOnboardingSubmissionStatus.UNSUBMITTED,
-                    TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED
+                    TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED,
+                    TrustOnboardingSubmissionStatus.RESUBMITTED
                 )
             )
         ).thenReturn(dbEntry);
@@ -108,7 +109,8 @@ class TrustOnboardingServiceTest {
                 List.of(
                     TrustOnboardingSubmissionStatus.SUBMITTED,
                     TrustOnboardingSubmissionStatus.UNSUBMITTED,
-                    TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED
+                    TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED,
+                    TrustOnboardingSubmissionStatus.RESUBMITTED
                 )
             )
         ).thenReturn(dbEntry);

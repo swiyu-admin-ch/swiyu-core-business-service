@@ -68,6 +68,7 @@ public class TrustOnboardingMapper {
                 : toLanguageDto(source.getContactPerson().getCorrespondingLanguage()),
             truncateInstantToMicroseconds(source.getSubmittedAt()),
             truncateInstantToMicroseconds(source.getInitiatedAt()),
+            truncateInstantToMicroseconds(source.getResubmitRequiredUntil()),
             truncateInstantToMicroseconds(source.getAuditMetadata().getCreatedAt()),
             truncateInstantToMicroseconds(source.getAuditMetadata().getLastModifiedAt())
         );
@@ -215,6 +216,7 @@ public class TrustOnboardingMapper {
             case SUCCEEDED -> TrustOnboardingSubmissionStatusDto.SUCCEEDED;
             case REJECTED -> TrustOnboardingSubmissionStatusDto.REJECTED;
             case INFORMATION_REQUESTED -> TrustOnboardingSubmissionStatusDto.INFORMATION_REQUESTED;
+            case RESUBMITTED -> TrustOnboardingSubmissionStatusDto.RESUBMITTED;
         };
     }
 

@@ -166,7 +166,8 @@ public class TrustOnboardingService {
             List.of(
                 TrustOnboardingSubmissionStatus.SUBMITTED,
                 TrustOnboardingSubmissionStatus.UNSUBMITTED,
-                TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED
+                TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED,
+                TrustOnboardingSubmissionStatus.RESUBMITTED
             )
         );
         if (inProgressEntry != null) {
@@ -218,6 +219,14 @@ public class TrustOnboardingService {
         var trustOnboardingSubmission = trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(
             trustOnboardingSubmissionId
         );
+
+        // When the user starts making changes again after more information was requested,
+        // the submission is moved back to UNSUBMITTED (see EID-6376).
+        // RESUBMITTED is deliberately NOT included: it behaves like SUBMITTED (locked, no further changes).
+        var status = trustOnboardingSubmission.getStatus();
+        if (status == TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED) {
+            trustOnboardingSubmission.markAsUnsubmitted();
+        }
 
         String uid = null;
         if (dto.getRegistryIds() != null && dto.getRegistryIds().containsKey("UID")) {
@@ -404,11 +413,15 @@ public class TrustOnboardingService {
     }
 
     @Transactional
-    public void markAsInformationRequested(UUID trustOnboardingSubmissionId, String partnerNote) {
+    public void markAsInformationRequested(
+        UUID trustOnboardingSubmissionId,
+        Instant resubmitRequiredUntil,
+        String partnerNote
+    ) {
         var trustOnboardingSubmission = trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(
             trustOnboardingSubmissionId
         );
-        trustOnboardingSubmission.markAsInformationRequested(partnerNote);
+        trustOnboardingSubmission.markAsInformationRequested(resubmitRequiredUntil, partnerNote);
 
         // will be changed with EID-6620: see markAsRejected
         var partnerId = trustOnboardingSubmission.getPartnerId();

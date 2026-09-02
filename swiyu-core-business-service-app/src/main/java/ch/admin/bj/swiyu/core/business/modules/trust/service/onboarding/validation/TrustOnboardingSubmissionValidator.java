@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissi
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionStatus;
 import jakarta.annotation.Nullable;
+import java.time.Instant;
 import java.util.EnumSet;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -31,7 +32,17 @@ public class TrustOnboardingSubmissionValidator {
                 TrustOnboardingSubmissionValidatorErrorCodeDto.EDITING_BLOCKED.toString(),
                 "Submission is in state '%s' and cannot be edited right now".formatted(trustOnboarding.getStatus())
             );
+        } else if (isResubmissionDeadlineExpired(trustOnboarding)) {
+            errors.reject(
+                TrustOnboardingSubmissionValidatorErrorCodeDto.SUBMISSION_DEADLINE_EXPIRED.toString(),
+                "The deadline to resubmit the submission has passed and it can no longer be edited"
+            );
         }
         return errors;
+    }
+
+    private boolean isResubmissionDeadlineExpired(TrustOnboardingSubmission trustOnboarding) {
+        var resubmitRequiredUntil = trustOnboarding.getResubmitRequiredUntil();
+        return resubmitRequiredUntil != null && resubmitRequiredUntil.isBefore(Instant.now());
     }
 }

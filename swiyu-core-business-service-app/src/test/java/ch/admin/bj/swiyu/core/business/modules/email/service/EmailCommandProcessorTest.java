@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import ch.admin.bit.jeap.messaging.avro.AvroMessageIdentity;
+import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.config.FunctionalityProperties;
 import ch.admin.bj.swiyu.messagetype.ti.TiSendEmailCommand;
 import ch.admin.bj.swiyu.messagetype.ti.TiSendEmailCommandPayload;
@@ -34,12 +35,14 @@ class EmailCommandProcessorTest {
     private static final UUID PARTNER_ID = UUID.fromString("11111111-2222-3333-4444-555555555555");
     private static final String RECIPIENT = "contact.person@partner.example.com";
 
+    private AuditPublisher auditPublisher;
     private SentNotificationService sentNotificationService;
     private EmailSendService emailSendService;
     private EmailCommandProcessor processor;
 
     @BeforeEach
     void setUp() {
+        auditPublisher = mock(AuditPublisher.class);
         sentNotificationService = mock(SentNotificationService.class);
         emailSendService = mock(EmailSendService.class);
         processor = processorWithEmailFunctionality(true);
@@ -49,7 +52,8 @@ class EmailCommandProcessorTest {
         return new EmailCommandProcessor(
             sentNotificationService,
             emailSendService,
-            new FunctionalityProperties(emailEnabled)
+            new FunctionalityProperties(emailEnabled),
+            auditPublisher
         );
     }
 

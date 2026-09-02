@@ -694,6 +694,82 @@ public class DemoData {
                 ),
                 null
             )
+        ),
+        /**
+         * Status:<br/>
+         * identifier registry: <font color="green">onboarded</font><br/>
+         * trust registry: <font color="orange">ongoing</font><br/>
+         * <!-- Should be one of: -->
+         * <!-- <font color="green">onboarded</font> -->
+         * <!-- <font color="orange">ongoing</font> -->
+         * <!-- <font color="red">NOT onboarded</font> -->
+         * <p>
+         * Scenario:<br/>
+         * A Business BP which already sent a Trust Onboarding submission to TMS.<br/>
+         * TMS responded with a request for more information (resubmitRequiredUntil set).<br/>
+         * Assigned to demo user "doris default".
+         */
+        BP_BUSINESS_TRUST_ONBOARDING_MORE_INFO(
+            DemoBusinessPartner.of(
+                DemoBusinessPartner.DemoBusinessPartnerType.BUSINESS,
+                "a1b2c3d4-1111-4222-8333-444455556666",
+                "info@more-info-demo.local",
+                fromLanguages(
+                    "More Info Demo GmbH",
+                    "More Info Demo GmbH (DE)",
+                    "Plus d'Infos Démo GmbH (FR)",
+                    "Più Info Demo S.r.l. (IT)",
+                    "More Info Demo GmbH (EN)",
+                    "More Info Demo GmbH (RM)"
+                ),
+                new DemoBusinessPartner.DemoAddress(
+                    "Informationsstrasse 7",
+                    "Demohausen",
+                    "1111",
+                    "Schweiz",
+                    "Democanton"
+                ),
+                new DemoBusinessPartner.DemoContact(
+                    "Doris",
+                    "Default",
+                    "doris.default@demo.local",
+                    "+41548884443",
+                    DemoBusinessPartner.DemoContact.Language.DE
+                ),
+                DemoBusinessPartner.DemoSigningRule.SINGLE_SIGNATURE,
+                List.of(
+                    new DemoBusinessPartner.DemoSignatory(
+                        "Doris",
+                        "Default",
+                        "+41776665547",
+                        "doris.default@demo.local"
+                    )
+                ),
+                "CHE-123.456.789",
+                "+41791234567",
+                null,
+                null,
+                List.of(
+                    new DemoBusinessPartner.DemoTrustOnboarding(
+                        UUID.fromString("b2c3d4e5-2222-4333-8444-555566667777"),
+                        DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionStatus.INFORMATION_REQUESTED,
+                        List.of(
+                            new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
+                                "Declaration of intent.pdf",
+                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                "something"
+                            )
+                        ),
+                        new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask(
+                            UUID.fromString("c3d4e5f6-3333-4444-8555-666677778888"),
+                            DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask.DemoTrustTaskStatus.INFORMATION_REQUESTED,
+                            Instant.now().plus(29, ChronoUnit.DAYS),
+                            Instant.now().minus(1, ChronoUnit.DAYS)
+                        )
+                    )
+                ),
+                null
+            )
         );
 
         public final DemoBusinessPartner bp;

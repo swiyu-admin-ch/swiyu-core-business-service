@@ -38,6 +38,10 @@ public record TrustOnboardingSubmissionDto(
     LanguageDto correspondingLanguage,
     @Schema(example = "2024-10-29T09:35:16.809924Z") Instant submittedAt,
     @Schema(example = "2024-10-29T09:35:16.809924Z") Instant initiatedAt,
+    @Schema(
+        description = "Deadline until which the user can resubmit/adjust the submission after more information was requested"
+    )
+    Instant resubmitRequiredUntil,
     @Schema(example = "2024-10-29T09:35:16.809924Z") Instant createdAt,
     @Schema(example = "2024-10-29T09:35:16.809924Z") Instant updatedAt
 ) implements ListItemDto {}

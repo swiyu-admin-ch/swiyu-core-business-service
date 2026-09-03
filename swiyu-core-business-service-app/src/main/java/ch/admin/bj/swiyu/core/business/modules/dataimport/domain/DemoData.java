@@ -56,13 +56,7 @@ public class DemoData {
                     "Trusted Gov Partner (EN)",
                     "Trusted Gov Partner (RM)"
                 ),
-                new DemoBusinessPartner.DemoAddress(
-                    "Geschäftsstraße 13",
-                    "Demohausen",
-                    "1111",
-                    "Schweiz",
-                    "Democanton"
-                ),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 13", "Demohausen", "1111", "CH", "Democanton"),
                 new DemoBusinessPartner.DemoContact(
                     "erika",
                     "müller",
@@ -189,13 +183,7 @@ public class DemoData {
                     "Fresh Verified Partner AG (EN)",
                     "Fresh Verified Partner AG (RM)"
                 ),
-                new DemoBusinessPartner.DemoAddress(
-                    "Geschäftsstraße 13",
-                    "Demohausen",
-                    "1111",
-                    "Schweiz",
-                    "Democanton"
-                ),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 13", "Demohausen", "1111", "CH", "Democanton"),
                 new DemoBusinessPartner.DemoContact(
                     "erika",
                     "müller",
@@ -267,12 +255,18 @@ public class DemoData {
                     "E2e GmbH (EN)",
                     "E2e GmbH (RM)"
                 ),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 13", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoContact(
+                    "Erika",
+                    "Muster",
+                    "erika.mueller@e2e.local",
+                    "+41548884440",
+                    DemoBusinessPartner.DemoContact.Language.DE
+                ),
                 null,
                 null,
                 null,
-                null,
-                null,
-                null,
+                "+41548884440",
                 null,
                 List.of(
                     new DemoBusinessPartner.DemoIdentifier(
@@ -315,13 +309,7 @@ public class DemoData {
                     "Trusty Consulting GmbH (EN)",
                     "Trusty Consulting GmbH (RM)"
                 ),
-                new DemoBusinessPartner.DemoAddress(
-                    "Geschäftsstraße 13",
-                    "Demohausen",
-                    "1111",
-                    "Schweiz",
-                    "Democanton"
-                ),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 13", "Demohausen", "1111", "CH", "Democanton"),
                 new DemoBusinessPartner.DemoContact(
                     "erika",
                     "müller",
@@ -447,7 +435,7 @@ public class DemoData {
                 "39f92e48-619e-4e92-8958-468ae138d8a3",
                 "p.keller@schleppende-logistik.local",
                 fromLanguages("Demo Kanton", "Demo Kanton", "Demo Canton", "Demo Cantone", "Demo Canton", "Demochaun"),
-                new DemoBusinessPartner.DemoAddress("Erfolgsstrasse 1", "Demohausen", "11111", "Schweiz", "Democanton"),
+                new DemoBusinessPartner.DemoAddress("Erfolgsstrasse 1", "Demohausen", "1111", "CH", "Democanton"),
                 new DemoBusinessPartner.DemoContact(
                     "Sandra",
                     "Schmid",
@@ -527,14 +515,14 @@ public class DemoData {
                     "Demo Company",
                     "Demo Unternehmen"
                 ),
-                new DemoBusinessPartner.DemoAddress(
-                    "Geschäftsstraße 19",
-                    "Demohausen",
-                    "1111",
-                    "Schweiz",
-                    "Democanton"
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 19", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoContact(
+                    "Erika",
+                    "Muster",
+                    "helvetica@demo-comp.local",
+                    "+41791234567",
+                    DemoBusinessPartner.DemoContact.Language.DE
                 ),
-                null,
                 null,
                 null,
                 null,
@@ -570,7 +558,7 @@ public class DemoData {
                     "Sluggish Logistics AG",
                     "S.L. AG"
                 ),
-                new DemoBusinessPartner.DemoAddress("Lagerstrasse 27", "Demohausen", "1111", "Schweiz", "Democanton"),
+                new DemoBusinessPartner.DemoAddress("Lagerstrasse 27", "Demohausen", "1111", "CH", "Democanton"),
                 new DemoBusinessPartner.DemoContact(
                     "Peter",
                     "Keller",

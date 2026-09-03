@@ -107,7 +107,7 @@ class BusinessPartnerInternalV2Controller {
         return businessPartnerService.getBusinessPartner(id);
     }
 
-    @PreAuthorize("hasRoleForPartner('businesspartner','update',#id)")
+    @PreAuthorize("hasRoleForPartner('businesspartner','write',#id)")
     @PutMapping("/{id}")
     @ApiResponse(responseCode = "200", description = "Success")
     @ApiResponse(responseCode = "400", description = "Validation failed")

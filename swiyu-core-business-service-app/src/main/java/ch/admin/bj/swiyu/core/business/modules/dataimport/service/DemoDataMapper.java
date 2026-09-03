@@ -4,7 +4,6 @@ import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
-import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.DemoData;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
@@ -23,13 +22,25 @@ public class DemoDataMapper {
     public static BusinessEntity toBusinessEntity(DemoData.DemoBusinessPartner bp) {
         return new BusinessEntity(
             bp.id(),
-            LocalizedMapUtil.getDefaultValue(bp.names()),
-            bp.email(),
+            bp.names(),
+            toContactOrFallback(bp),
             toBusinessPartnerType(bp.type()),
             toAddress(bp.address()),
-            bp.uid(),
-            bp.contactPhone()
+            bp.uid()
         );
+    }
+
+    /**
+     * Returns the full {@link Contact} from {@link DemoData.DemoBusinessPartner#contact()} when present.
+     * Falls back to a minimal contact built from {@link DemoData.DemoBusinessPartner#email()} and
+     * {@link DemoData.DemoBusinessPartner#contactPhone()} for demo partners that have no dedicated
+     * contact person defined (e.g. E2ETEST_BP).
+     */
+    static Contact toContactOrFallback(DemoData.DemoBusinessPartner bp) {
+        if (bp.contact() != null) {
+            return toContact(bp.contact());
+        }
+        return Contact.builder().email(bp.email()).phone(bp.contactPhone()).build();
     }
 
     static BusinessPartnerType toBusinessPartnerType(DemoData.DemoBusinessPartner.DemoBusinessPartnerType type) {

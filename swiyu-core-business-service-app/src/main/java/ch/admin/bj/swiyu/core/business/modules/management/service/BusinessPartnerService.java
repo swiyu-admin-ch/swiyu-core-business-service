@@ -195,14 +195,13 @@ public class BusinessPartnerService {
         var address = toAddress(dto.address());
 
         if (businessPartner.isBusinessPartnerIdentityActive()) {
-            // BPI is ACTIVE: only irrelevant info (address + contact) can be changed
-            businessPartner.updateIrrelevantInfo(contact, address);
+            // BPI is ACTIVE: name and uid are owned by TMS and must not be overwritten.
+            // Only the irrelevant info (address + contact) may change, and only when provided.
+            businessPartner.applyPartialUpdateFromPortal(null, null, contact, address);
         } else {
-            // BPI not yet ACTIVE: also allow name and uid updates
-            var entityName = hasText(dto.name())
-                ? LocalizedMapUtil.fromSingleName(dto.name())
-                : businessPartner.getEntityName();
-            businessPartner.updateAllEditableInfo(entityName, dto.uid(), contact, address);
+            // BPI not yet ACTIVE: also allow name and uid updates. Blank values are ignored so
+            // PAMS is never updated with an empty name/uid.
+            businessPartner.applyPartialUpdateFromPortal(dto.name(), dto.uid(), contact, address);
         }
 
         pamsClient.updateBusinessPartner(businessPartner);

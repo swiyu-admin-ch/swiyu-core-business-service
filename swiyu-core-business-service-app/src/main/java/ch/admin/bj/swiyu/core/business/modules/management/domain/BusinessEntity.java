@@ -154,29 +154,26 @@ public class BusinessEntity {
     }
 
     /**
-     * Updates all editable fields. Used when the business partner identity is not yet ACTIVE
-     * (i.e. the partner has not been verified / trusted yet) so name and uid can still be changed.
+     * Applies a partial update coming from the portal. Only the provided (non-null) fields are
+     * changed; every other field keeps its current value so that unedited tiles are preserved.
+     *
+     * <p>A blank {@code name} or {@code uid} is ignored (never applied), so downstream systems
+     * such as PAMS are never updated with an empty name. The caller decides whether name/uid may
+     * be applied at all (they are owned by TMS once the identity is ACTIVE).
      */
-    public BusinessEntity updateAllEditableInfo(
-        Map<String, String> entityName,
-        String uid,
-        Contact contact,
-        Address address
-    ) {
-        this.entityName = entityName;
-        this.uid = uid;
-        this.contact = contact;
-        this.address = address;
-        return this;
-    }
-
-    /**
-     * Updates only the irrelevant (non-verified) fields. Used when the business partner identity
-     * is ACTIVE — name and uid are owned by TMS and must not be overwritten from the portal.
-     */
-    public BusinessEntity updateIrrelevantInfo(Contact contact, Address address) {
-        this.contact = contact;
-        this.address = address;
+    public BusinessEntity applyPartialUpdateFromPortal(String name, String uid, Contact contact, Address address) {
+        if (name != null && !name.isBlank()) {
+            this.entityName = fromSingleName(name);
+        }
+        if (uid != null && !uid.isBlank()) {
+            this.uid = uid;
+        }
+        if (contact != null) {
+            this.contact = contact;
+        }
+        if (address != null) {
+            this.address = address;
+        }
         return this;
     }
 

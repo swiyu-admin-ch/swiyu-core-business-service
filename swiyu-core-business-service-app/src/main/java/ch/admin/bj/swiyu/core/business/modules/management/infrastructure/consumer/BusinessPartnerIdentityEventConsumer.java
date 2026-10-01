@@ -1,7 +1,7 @@
-package ch.admin.bj.swiyu.core.business.modules.trust.infrastructure.consumer;
+package ch.admin.bj.swiyu.core.business.modules.management.infrastructure.consumer;
 
 import ch.admin.bj.swiyu.core.business.common.security.MessagingSecurityContext;
-import ch.admin.bj.swiyu.core.business.modules.trust.service.bpi.TiBusinessPartnerIdentityEventProcessor;
+import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerIdentityEventProcessor;
 import ch.admin.bj.swiyu.messagetype.ti.TiBusinessPartnerIdentityActivatedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiBusinessPartnerIdentityDeactivatedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiBusinessPartnerIdentityUpdatedEvent;
@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class TiBusinessPartnerIdentityEventConsumer {
+public class BusinessPartnerIdentityEventConsumer {
 
-    private final TiBusinessPartnerIdentityEventProcessor processor;
+    private final BusinessPartnerIdentityEventProcessor processor;
     private final MessagingSecurityContext messagingSecurityContext;
 
     @KafkaListener(topics = { TiBusinessPartnerIdentityActivatedEvent.TypeRef.DEFAULT_TOPIC })

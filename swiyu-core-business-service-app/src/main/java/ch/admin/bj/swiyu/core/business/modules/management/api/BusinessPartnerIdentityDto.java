@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.management.api;
 
+import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
@@ -15,5 +16,6 @@ public record BusinessPartnerIdentityDto(
     @Schema(description = "Timestamp when the identity was last activated") Instant lastActivated,
     @Schema(description = "Enterprise identification number (UID)") String uid,
     @Schema(description = "Localized entity name as managed by the trust management service")
+    @ValidLocalizedMap
     Map<String, String> entityName
 ) {}

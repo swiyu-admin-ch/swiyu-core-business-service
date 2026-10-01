@@ -6,10 +6,10 @@ import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
 import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.DemoData;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
-import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.Signatory;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.SigningRule;
+import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionType;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.protectedverification.ProtectedVerificationCategory;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -113,12 +113,23 @@ public class DemoDataMapper {
         };
     }
 
-    public static BusinessPartnerIdentityStatus toBusinessPartnerIdentityStatus(
+    public static ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityStatus toBusinessPartnerIdentityStatus(
         DemoData.DemoBusinessPartner.DemoBusinessPartnerIdentity.DemoBusinessPartnerIdentityStatus status
     ) {
         return switch (status) {
-            case DEACTIVATED -> BusinessPartnerIdentityStatus.DEACTIVATED;
-            case ACTIVE -> BusinessPartnerIdentityStatus.ACTIVE;
+            case DEACTIVATED -> ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityStatus.DEACTIVATED;
+            case ACTIVE -> ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityStatus.ACTIVE;
+        };
+    }
+
+    public static TrustOnboardingSubmissionType toTrustOnboardingSubmissionType(
+        DemoData.DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionType type
+    ) {
+        return switch (type) {
+            case REGISTRATION -> TrustOnboardingSubmissionType.REGISTRATION;
+            case PROFILE_CHANGE_MANDATORY -> TrustOnboardingSubmissionType.PROFILE_CHANGE_MANDATORY;
+            case PROFILE_CHANGE_VOLUNTARY -> TrustOnboardingSubmissionType.PROFILE_CHANGE_VOLUNTARY;
+            case RENEWAL -> TrustOnboardingSubmissionType.RENEWAL;
         };
     }
 

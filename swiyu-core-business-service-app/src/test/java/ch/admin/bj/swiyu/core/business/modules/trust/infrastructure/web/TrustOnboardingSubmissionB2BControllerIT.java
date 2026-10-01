@@ -8,7 +8,6 @@ import static org.mockito.Mockito.when;
 import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
 import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
-import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
 import ch.admin.bj.swiyu.core.business.common.did.DidPublicKeyLoader;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.*;
 import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustRegistryProperties;
@@ -93,7 +92,6 @@ class TrustOnboardingSubmissionB2BControllerIT {
             .entityAddress(
                 AddressDto.builder().street("Test Street").postalCode("1234").city("Test City").country("CH").build()
             )
-            .correspondingLanguage(LanguageDto.DE)
             .registryIds(Map.of("UID", "CHE-123.456.789"))
             .entityEmail("test@example.com")
             .contactPerson(
@@ -141,7 +139,6 @@ class TrustOnboardingSubmissionB2BControllerIT {
             .entityAddress(
                 AddressDto.builder().street("Test Street").postalCode("1234").city("Test City").country("CH").build()
             )
-            .correspondingLanguage(LanguageDto.DE)
             .registryIds(Map.of("UID", "CHE-123.456.789"))
             .entityEmail("test@example.com")
             .contactPerson(
@@ -183,7 +180,6 @@ class TrustOnboardingSubmissionB2BControllerIT {
             .entityAddress(
                 AddressDto.builder().street("Test Street").postalCode("1234").city("Test City").country("CH").build()
             )
-            .correspondingLanguage(LanguageDto.DE)
             .registryIds(Map.of("UID", "CHE-123.456.789"))
             .entityEmail("test@example.com")
             .contactPerson(

@@ -234,3 +234,6 @@ buildNumber.properties
 *.log
 
 config/*
+
+# Opencode
+docs/superpowers

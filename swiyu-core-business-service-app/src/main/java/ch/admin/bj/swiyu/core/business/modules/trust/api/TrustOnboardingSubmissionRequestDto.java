@@ -6,7 +6,6 @@ import static java.util.Collections.emptyMap;
 import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
 import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
-import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
 import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
 import ch.admin.bj.swiyu.core.business.common.validation.ValidRegistryIds;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -72,20 +71,19 @@ public record TrustOnboardingSubmissionRequestDto(
     @Getter
     Boolean isRegisteredInCommercialRegister,
 
-    // To be removed with EID-6303
-    @Schema(description = "The preferred language for correspondence.", example = "DE")
-    @Getter
-    LanguageDto correspondingLanguage,
-
     @Getter @Schema(description = "Selected DIDs to be onboarded initially") List<String> dids,
     @Schema(
         description = "The requested partner type. Can be different than the current partner type of the business partner."
     )
     @Getter
-    BusinessPartnerTypeDto requestedPartnerType
+    BusinessPartnerTypeDto requestedPartnerType,
+    @Schema(description = "The submission type for trust onboarding", example = "REGISTRATION")
+    @Getter
+    TrustOnboardingSubmissionTypeDto submissionType
 ) {
     public TrustOnboardingSubmissionRequestDto {
         signatories = (signatories == null) ? emptyList() : signatories;
         registryIds = (registryIds == null) ? emptyMap() : registryIds;
+        submissionType = (submissionType == null) ? TrustOnboardingSubmissionTypeDto.REGISTRATION : submissionType;
     }
 }

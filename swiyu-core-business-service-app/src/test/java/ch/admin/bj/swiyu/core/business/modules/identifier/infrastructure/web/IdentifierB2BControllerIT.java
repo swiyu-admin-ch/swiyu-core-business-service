@@ -508,20 +508,18 @@ class IdentifierB2BControllerIT {
         // BusinessEntity provided through SQL
         var identifierEntryId01 = identifierEntryService.createIdentifierEntry(ENTITY_A).id();
         var identifierEntryId02 = identifierEntryService.createIdentifierEntry(ENTITY_A).id();
-        identifierEntryService.createIdentifierEntry(ENTITY_B).id();
+        identifierEntryService.createIdentifierEntry(ENTITY_B);
         // WHEN
-        var result = objectMapper.readValue(
-            mockMvc
-                .perform(
-                    MockMvcRequestBuilders.get(
-                        BASE_URL + "business-entities/" + BusinessEntityTestData.ENTITY_A_S + "/identifier/"
-                    )
+        var content = mockMvc
+            .perform(
+                MockMvcRequestBuilders.get(
+                    BASE_URL + "business-entities/" + BusinessEntityTestData.ENTITY_A_S + "/identifier/"
                 )
-                .andReturn()
-                .getResponse()
-                .getContentAsString(),
-            new TypeReference<RestResponsePage<IdentifierEntryDto>>() {}
-        );
+            )
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+        var result = objectMapper.readValue(content, new TypeReference<RestResponsePage<IdentifierEntryDto>>() {});
         // THEN
         assertThat(result).isNotNull();
         // 3. status list should not be visible as it belongs to another business entity

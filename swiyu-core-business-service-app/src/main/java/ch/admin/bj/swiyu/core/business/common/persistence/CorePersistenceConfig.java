@@ -68,7 +68,7 @@ public class CorePersistenceConfig {
     @Bean(name = "coreDataSource")
     public DataSource coreDataSource(DataSourceProperties coreDataSourceProperties, HikariConfig globalHikariConfig) {
         var config = new HikariConfig();
-        config.setMaximumPoolSize(globalHikariConfig.getMaximumPoolSize());
+        globalHikariConfig.copyStateTo(config);
         config.setJdbcUrl(coreDataSourceProperties.getUrl());
         config.setUsername(coreDataSourceProperties.getUsername());
         config.setPassword(coreDataSourceProperties.getPassword());

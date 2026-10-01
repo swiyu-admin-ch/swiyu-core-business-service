@@ -13,8 +13,10 @@ import static org.mockito.Mockito.verify;
 import ch.admin.bit.jeap.security.resource.token.JeapAuthenticationToken;
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
+import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
+import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessDataIntegrityViolationException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
@@ -27,7 +29,12 @@ import ch.admin.bj.swiyu.core.business.test.DataJpaTestConfiguration;
 import ch.admin.bj.swiyu.core.business.test.DataJpaTestKafkaConfiguration;
 import ch.admin.bj.swiyu.core.business.test.TestRepositories;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
+import ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityStatus;
+import ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityUpdatedPayload;
 import ch.admin.bj.swiyu.messagetype.ti.TiBusinessPartnerUpdatedEvent;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -61,6 +68,9 @@ class BusinessPartnerServiceIT {
     @MockitoBean
     DomainEventPublisher domainEventPublisher;
 
+    @MockitoBean
+    AuditPublisher auditPublisher;
+
     @Autowired
     TestRepositories repos;
 
@@ -91,7 +101,7 @@ class BusinessPartnerServiceIT {
         var readEntity = businessPartnerService.getBusinessPartner(partner.getId());
         // THEN
         assertThat(partner.getId()).isNotNull();
-        assertThat(readEntity.name()).isEqualTo(LocalizedMapUtil.getDefaultValue(partner.getEntityName()));
+        assertThat(readEntity.entityName()).isEqualTo(partner.getEntityName());
         assertThat(readEntity.id()).isEqualTo(partner.getId());
     }
 
@@ -123,6 +133,8 @@ class BusinessPartnerServiceIT {
         // THEN
         assertThat(businessEntity).isNotNull();
         assertThat(businessEntity.id()).isNotNull();
+        // non-governmental partners start armed for hard delete
+        assertThat(businessEntity.hardDeleteAllowed()).isTrue();
         verify(domainEventPublisher).publishTiBusinessPartnerUpdatedEvent(
             argThat(event -> event.getPayload().getBusinessPartnerId().equals(businessEntity.id()))
         );
@@ -145,6 +157,8 @@ class BusinessPartnerServiceIT {
         // THEN
         assertThat(businessEntity).isNotNull();
         assertThat(businessEntity.id()).isNotNull();
+        // governmental institutions are always locked against hard delete
+        assertThat(businessEntity.hardDeleteAllowed()).isFalse();
     }
 
     @Test
@@ -292,7 +306,7 @@ class BusinessPartnerServiceIT {
     void deactivateBusinessPartnerIdentity_reportsThatAnIdentityWasDeactivated() {
         // GIVEN
         var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
-        partner.applyBusinessPartnerIdentityEvent(BusinessEntityTestData.activeBusinessPartnerIdentity());
+        partner.updateBusinessPartnerIdentity(BusinessEntityTestData.businessPartnerIdentity());
         repos.businessPartner.save(partner);
         repos.commit();
 
@@ -376,9 +390,9 @@ class BusinessPartnerServiceIT {
         repos.commit();
 
         // WHEN
-        businessPartnerService.applyBusinessPartnerIdentity(
+        businessPartnerService.applyUpdatedBusinessPartnerIdentity(
             partner.getId(),
-            BusinessEntityTestData.activeBusinessPartnerIdentity()
+            businessPartnerIdentityUpdatedPayload()
         );
         businessPartnerService.deactivateBusinessPartnerIdentity(partner.getId(), 2L);
 
@@ -388,9 +402,97 @@ class BusinessPartnerServiceIT {
         );
     }
 
+    @Test
+    void changeHardDeleteAllowed_locksAndArmsThePartner_auditsAndPublishes() {
+        // GIVEN - a non-governmental partner, armed by default
+        var partner = repos.businessPartner.save(businessPartnerOfTypeBusiness(UUID.randomUUID()));
+        repos.commit();
+        assertThat(partner.isHardDeleteAllowed()).isTrue();
+
+        // WHEN - lock, then arm again
+        var locked = businessPartnerService.changeHardDeleteAllowed(partner.getId(), false);
+        var armed = businessPartnerService.changeHardDeleteAllowed(partner.getId(), true);
+
+        // THEN - flag toggled, every change audited and published
+        assertThat(locked.hardDeleteAllowed()).isFalse();
+        assertThat(armed.hardDeleteAllowed()).isTrue();
+        assertThat(repos.businessPartner.findById(partner.getId()).orElseThrow().isHardDeleteAllowed()).isTrue();
+        verify(auditPublisher, times(2)).businessPartnerUpdated(
+            org.mockito.ArgumentMatchers.eq(partner.getId().toString()),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any()
+        );
+        verify(domainEventPublisher, times(2)).publishTiBusinessPartnerUpdatedEvent(
+            argThat(event -> event.getPayload().getBusinessPartnerId().equals(partner.getId()))
+        );
+    }
+
+    @Test
+    void changeHardDeleteAllowed_armingAGovernmentalPartner_isRefused() {
+        // GIVEN - governmental partners are always locked
+        var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
+        repos.commit();
+        assertThat(partner.isHardDeleteAllowed()).isFalse();
+
+        // WHEN / THEN
+        var partnerId = partner.getId();
+        assertThatThrownBy(() -> businessPartnerService.changeHardDeleteAllowed(partnerId, true)).isInstanceOf(
+            BusinessDataIntegrityViolationException.class
+        );
+        assertThat(repos.businessPartner.findById(partner.getId()).orElseThrow().isHardDeleteAllowed()).isFalse();
+        verify(domainEventPublisher, never()).publishTiBusinessPartnerUpdatedEvent(
+            org.mockito.ArgumentMatchers.any(TiBusinessPartnerUpdatedEvent.class)
+        );
+    }
+
+    @Test
+    void changeHardDeleteAllowed_unknownPartner_throwsNotFound() {
+        var unknownId = UUID.randomUUID();
+        assertThatThrownBy(() -> businessPartnerService.changeHardDeleteAllowed(unknownId, false)).isInstanceOf(
+            ResourceNotFoundException.class
+        );
+    }
+
+    @Test
+    void updateBusinessPartner_changingTypeToGovernmental_locksHardDelete() {
+        // GIVEN - an armed BUSINESS partner
+        var businessEntity = repos.businessPartner.save(businessPartnerOfTypeBusiness(UUID.randomUUID()));
+        repos.commit();
+        assertThat(businessEntity.isHardDeleteAllowed()).isTrue();
+
+        // WHEN - the type changes to GOVERNMENTAL_INSTITUTION
+        businessPartnerService.updateBusinessPartner(
+            businessEntity.getId(),
+            LocalizedMapUtil.fromSingleName("Gov Now"),
+            businessEntity.getAddress(),
+            "gov@example.com",
+            businessEntity.getUid(),
+            null,
+            BusinessPartnerType.GOVERNMENTAL_INSTITUTION
+        );
+
+        // THEN - the safeguard locks automatically
+        assertThat(
+            repos.businessPartner.findById(businessEntity.getId()).orElseThrow().isHardDeleteAllowed()
+        ).isFalse();
+    }
+
     private static String lookupPamsAdminUserUid() {
         return (
             (JeapAuthenticationToken) SecurityContextHolder.getContext().getAuthentication()
         ).getPreferredUsername();
+    }
+
+    private static BusinessPartnerIdentityUpdatedPayload businessPartnerIdentityUpdatedPayload() {
+        return new BusinessPartnerIdentityUpdatedPayload(
+            UUID.randomUUID(),
+            Instant.now(),
+            List.of("did:example:partner1", "did:example:partner2"),
+            BusinessPartnerIdentityStatus.ACTIVE,
+            Instant.now(),
+            "CHE-123.456.789",
+            Map.of("default", "Test Partner AG"),
+            1L
+        );
     }
 }

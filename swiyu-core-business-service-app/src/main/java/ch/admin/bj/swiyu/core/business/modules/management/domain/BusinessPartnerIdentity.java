@@ -8,7 +8,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -16,7 +15,6 @@ import org.hibernate.type.SqlTypes;
 
 @Embeddable
 @Getter
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class BusinessPartnerIdentity {
@@ -49,14 +47,14 @@ public class BusinessPartnerIdentity {
      * Used when processing a TiBusinessPartnerIdentityDeactivatedEvent.
      */
     public BusinessPartnerIdentity withDeactivated(long tmsVersion) {
-        return BusinessPartnerIdentity.builder()
-            .validUntil(this.validUntil)
-            .trustedIdentifier(this.trustedIdentifier)
-            .status(BusinessPartnerIdentityStatus.DEACTIVATED)
-            .lastActivated(this.lastActivated)
-            .uid(this.uid)
-            .entityName(this.entityName)
-            .tmsVersion(tmsVersion)
-            .build();
+        return new BusinessPartnerIdentity(
+            this.validUntil,
+            this.trustedIdentifier,
+            BusinessPartnerIdentityStatus.DEACTIVATED,
+            this.lastActivated,
+            this.uid,
+            this.entityName,
+            tmsVersion
+        );
     }
 }

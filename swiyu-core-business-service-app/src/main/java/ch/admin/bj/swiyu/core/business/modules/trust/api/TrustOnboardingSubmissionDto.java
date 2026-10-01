@@ -14,9 +14,6 @@ public record TrustOnboardingSubmissionDto(
     @NotNull UUID id,
     @NotNull UUID partnerId,
     @NotNull @ValidLocalizedMap Map<String, String> name,
-    @Deprecated(since = "3.38.0", forRemoval = true) // Remove in EID-6303
-    @NotNull
-    MultiLanguageTextDto entityName,
     @NotNull String entityEmail,
     @NotNull AddressDto address,
     ContactDto contactPerson, // can be nullable when not yet submitted

@@ -1,6 +1,6 @@
-package ch.admin.bj.swiyu.core.business.modules.trust.service.bpi;
+package ch.admin.bj.swiyu.core.business.modules.management.service;
 
-import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.activeBusinessPartnerIdentity;
+import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.businessPartnerIdentity;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.businessPartnerOfTypeGov;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -39,7 +39,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @WithAllTestContainerInitializers
 @WithJeapAuthenticationToken(username = "Test")
-class TiBusinessPartnerIdentityEventProcessorIT {
+class BusinessPartnerIdentityEventProcessorIT {
 
     @MockitoBean
     EmailCommandPublisher emailCommandPublisher;
@@ -54,7 +54,7 @@ class TiBusinessPartnerIdentityEventProcessorIT {
     DomainEventPublisher domainEventPublisher;
 
     @Autowired
-    TiBusinessPartnerIdentityEventProcessor processor;
+    BusinessPartnerIdentityEventProcessor processor;
 
     @Autowired
     TestRepositories repos;
@@ -98,7 +98,7 @@ class TiBusinessPartnerIdentityEventProcessorIT {
 
     private UUID givenPartnerWithActiveIdentity() {
         var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
-        partner.applyBusinessPartnerIdentityEvent(activeBusinessPartnerIdentity());
+        partner.updateBusinessPartnerIdentity(businessPartnerIdentity());
         return repos.businessPartner.save(partner).getId();
     }
 

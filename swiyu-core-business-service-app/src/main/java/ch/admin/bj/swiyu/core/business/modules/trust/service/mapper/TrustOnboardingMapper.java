@@ -1,6 +1,5 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.mapper;
 
-import static ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil.getByLanguageOrDefault;
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerTypeDto;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -8,7 +7,6 @@ import static org.springframework.util.CollectionUtils.isEmpty;
 
 import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
 import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
-import ch.admin.bj.swiyu.core.business.common.api.MultiLanguageTextDto;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
 import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
@@ -21,7 +19,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -39,19 +36,15 @@ public class TrustOnboardingMapper {
         };
     }
 
-    public static TrustOnboardingSubmissionDto toTrustOnboardingSubmissionDto(
-        TrustOnboardingSubmission source,
-        TrustOnboardingSubmissionTypeDto submissionType
-    ) {
+    public static TrustOnboardingSubmissionDto toTrustOnboardingSubmissionDto(TrustOnboardingSubmission source) {
         return new TrustOnboardingSubmissionDto(
             source.getId(),
             source.getPartnerId(),
             source.getEntityName(),
-            toMultiLanguageDto(source.getEntityName()),
             source.getEntityEmail(),
             AddressMapper.toAddressDto(source.getEntityAddress()),
             toContactDto(source.getContactPerson()),
-            submissionType,
+            toTrustOnboardingSubmissionTypeDto(source.getType()),
             source.getVersion(),
             toTrustOnboardingSubmissionStatusDto(source.getStatus()),
             toProofOfPossessionDto(source.getProofOfPossessions()),
@@ -72,6 +65,34 @@ public class TrustOnboardingMapper {
             truncateInstantToMicroseconds(source.getAuditMetadata().getCreatedAt()),
             truncateInstantToMicroseconds(source.getAuditMetadata().getLastModifiedAt())
         );
+    }
+
+    public static TrustOnboardingSubmissionTypeDto toTrustOnboardingSubmissionTypeDto(
+        TrustOnboardingSubmissionType source
+    ) {
+        if (source == null) {
+            return TrustOnboardingSubmissionTypeDto.REGISTRATION;
+        }
+        return switch (source) {
+            case REGISTRATION -> TrustOnboardingSubmissionTypeDto.REGISTRATION;
+            case PROFILE_CHANGE_MANDATORY -> TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_MANDATORY;
+            case PROFILE_CHANGE_VOLUNTARY -> TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_VOLUNTARY;
+            case RENEWAL -> TrustOnboardingSubmissionTypeDto.RENEWAL;
+        };
+    }
+
+    public static TrustOnboardingSubmissionType toTrustOnboardingSubmissionType(
+        TrustOnboardingSubmissionTypeDto source
+    ) {
+        if (source == null) {
+            return TrustOnboardingSubmissionType.REGISTRATION;
+        }
+        return switch (source) {
+            case REGISTRATION -> TrustOnboardingSubmissionType.REGISTRATION;
+            case PROFILE_CHANGE_MANDATORY -> TrustOnboardingSubmissionType.PROFILE_CHANGE_MANDATORY;
+            case PROFILE_CHANGE_VOLUNTARY -> TrustOnboardingSubmissionType.PROFILE_CHANGE_VOLUNTARY;
+            case RENEWAL -> TrustOnboardingSubmissionType.RENEWAL;
+        };
     }
 
     private static List<ProofOfPossessionDto> toProofOfPossessionDto(List<ProofOfPossession> source) {
@@ -144,28 +165,16 @@ public class TrustOnboardingMapper {
     }
 
     public static Contact toContactEntity(ContactDto dto) {
-        return toContactEntity(dto, null);
-    }
-
-    /**
-     * Maps a {@link ContactDto} to a {@link Contact} entity, resolving the correspondence language.
-     * Prefers {@code contactPerson.correspondingLanguage}; falls back to the deprecated request-level
-     * {@code correspondingLanguage} only when the contact does not carry one (EID-6618 compatibility).
-     */
-    public static Contact toContactEntity(ContactDto dto, LanguageDto fallbackLanguage) {
         if (dto == null) {
             return null;
         }
-
-        LanguageDto effectiveLanguage =
-            dto.correspondingLanguage() != null ? dto.correspondingLanguage() : fallbackLanguage;
 
         return Contact.builder()
             .firstName(dto.firstName())
             .lastName(dto.lastName())
             .email(dto.email())
             .phone(dto.phone())
-            .correspondingLanguage(effectiveLanguage != null ? Language.valueOf(effectiveLanguage.name()) : null)
+            .correspondingLanguage(toLanguageEntity(dto.correspondingLanguage()))
             .build();
     }
 
@@ -279,18 +288,5 @@ public class TrustOnboardingMapper {
             return null;
         }
         return source.truncatedTo(ChronoUnit.MICROS);
-    }
-
-    private static MultiLanguageTextDto toMultiLanguageDto(Map<String, String> map) {
-        if (map == null) {
-            return new MultiLanguageTextDto(null, null, null, null, null);
-        }
-        return new MultiLanguageTextDto(
-            getByLanguageOrDefault(map, Language.DE),
-            getByLanguageOrDefault(map, Language.FR),
-            getByLanguageOrDefault(map, Language.IT),
-            getByLanguageOrDefault(map, Language.EN),
-            getByLanguageOrDefault(map, Language.RM)
-        );
     }
 }

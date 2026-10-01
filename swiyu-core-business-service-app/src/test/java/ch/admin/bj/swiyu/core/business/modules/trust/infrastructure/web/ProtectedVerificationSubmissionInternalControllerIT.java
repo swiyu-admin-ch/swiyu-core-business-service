@@ -62,7 +62,7 @@ class ProtectedVerificationSubmissionInternalControllerIT {
         var trustedEntity = testRepositories.businessPartner
             .findById(BusinessEntityTestData.DEFAULT_ENTITY)
             .orElseThrow();
-        trustedEntity.applyBusinessPartnerIdentityEvent(BusinessEntityTestData.activeBusinessPartnerIdentity());
+        trustedEntity.updateBusinessPartnerIdentity(BusinessEntityTestData.businessPartnerIdentity());
         testRepositories.businessPartner.save(trustedEntity);
     }
 

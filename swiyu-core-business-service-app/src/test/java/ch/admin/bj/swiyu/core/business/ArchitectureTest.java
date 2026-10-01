@@ -7,6 +7,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.*;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -35,6 +36,14 @@ import org.springframework.web.bind.annotation.RestController;
     importOptions = { ImportOption.DoNotIncludeTests.class, ImportOption.DoNotIncludeJars.class }
 )
 public class ArchitectureTest {
+
+    private static final Pattern MODULE_PACKAGE_PATTERN = Pattern.compile(
+        "ch\\.admin\\.bj\\.swiyu\\.core\\.business\\.modules\\.([^.]+)(?:\\..*)?"
+    );
+
+    private static final Pattern MODULE_DOMAIN_PACKAGE_PATTERN = Pattern.compile(
+        "ch\\.admin\\.bj\\.swiyu\\.core\\.business\\.modules\\.([^.]+)\\.domain(?:\\..*)?"
+    );
 
     @ArchTest
     public static final ArchTests codingRules = ArchTests.in(CodingRules.class);
@@ -66,31 +75,6 @@ public class ArchitectureTest {
             .whereLayer(Layer.WEB.layerName)
             .mayNotBeAccessedByAnyLayer()
             .ignoreDependency(JavaClass.Predicates.simpleName("DemoDataImportService"), alwaysTrue());
-    }
-
-    private static @NonNull ArchCondition<JavaMethod> noReturnTypeFromDomainPackageCondition() {
-        return new ArchCondition<JavaMethod>("not have a return type from the domain layer") {
-            @Override
-            public void check(JavaMethod method, ConditionEvents events) {
-                method
-                    .getReturnType()
-                    .getAllInvolvedRawTypes()
-                    .stream()
-                    .filter(type ->
-                        type
-                            .getPackageName()
-                            .matches(Pattern.quote(ROOT_PACKAGE.replace("..", "")) + ".*\\.domain(\\..+)?")
-                    )
-                    .forEach(type ->
-                        events.add(
-                            SimpleConditionEvent.violated(
-                                method,
-                                method.getFullName() + " returns domain type: " + type.getName()
-                            )
-                        )
-                    );
-            }
-        };
     }
 
     @Getter
@@ -174,6 +158,13 @@ public class ArchitectureTest {
             .allowEmptyShould(true);
 
         @ArchTest
+        static final ArchRule visibleForTesting_methods_only_called_from_tests_or_demoDataImportService = methods()
+            .that()
+            .areAnnotatedWith(VisibleForTesting.class)
+            .should(onlyBeCalledFromTestsOrDemoDataImportService())
+            .allowEmptyShould(true);
+
+        @ArchTest
         static final ArchRule no_cycles_between_slices = SlicesRuleDefinition.slices()
             .matching("..core.business.(**)..")
             .should()
@@ -191,6 +182,13 @@ public class ArchitectureTest {
             .resideInAnyPackage(COMMON_PACKAGE)
             .should()
             .onlyDependOnClassesThat(resideInAnyPackage(COMMON_PACKAGE).or(resideOutsideOfPackage(ROOT_PACKAGE)));
+
+        @ArchTest
+        static final ArchRule modules_should_not_access_domain_of_other_modules = classes()
+            .that()
+            .resideInAPackage("ch.admin.bj.swiyu.core.business.modules..")
+            .should(notAccessDomainPackageOfOtherModules())
+            .allowEmptyShould(true);
 
         @ArchTest
         static final ArchRule noDependenciesBetweenModules = slices()
@@ -227,6 +225,12 @@ public class ArchitectureTest {
             .ignoreDependency(
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.trust.service.."),
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.[api|service]..")
+            )
+            // trust.service -> management.domain (TrustOnboardingService reads the trusted business partner
+            // identity to build PROFILE_CHANGE/RENEWAL submissions from verified partner data, EID-6620)
+            .ignoreDependency(
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.trust.service.."),
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.domain..")
             )
             // trust.service.bpi -> management.domain (BPI event processor builds BusinessPartnerIdentity)
             .ignoreDependency(
@@ -346,5 +350,103 @@ public class ArchitectureTest {
             .should()
             .beInterfaces()
             .allowEmptyShould(true);
+    }
+
+    private static @NonNull ArchCondition<JavaMethod> onlyBeCalledFromTestsOrDemoDataImportService() {
+        return new ArchCondition<>("only be called from tests or from DemoDataImportService") {
+            @Override
+            public void check(JavaMethod method, ConditionEvents events) {
+                method
+                    .getCallsOfSelf()
+                    .forEach(call -> {
+                        JavaClass caller = call.getOriginOwner();
+                        var allowed =
+                            caller.equals(method.getOwner()) || "DemoDataImportService".equals(caller.getSimpleName());
+                        if (!allowed) {
+                            events.add(
+                                SimpleConditionEvent.violated(
+                                    method,
+                                    method.getFullName() +
+                                        " is annotated with @VisibleForTesting but is called from production code: " +
+                                        call.getDescription()
+                                )
+                            );
+                        }
+                    });
+            }
+        };
+    }
+
+    private static String moduleOf(String packageName) {
+        var matcher = MODULE_PACKAGE_PATTERN.matcher(packageName);
+        return matcher.matches() ? matcher.group(1) : null;
+    }
+
+    @SuppressWarnings("java:S1135") // remove with EID-6624
+    private static @NonNull ArchCondition<JavaClass> notAccessDomainPackageOfOtherModules() {
+        return new ArchCondition<>("not access the domain package of another module") {
+            @Override
+            public void check(JavaClass origin, ConditionEvents events) {
+                var originModule = moduleOf(origin.getPackageName());
+                if (originModule == null) {
+                    return;
+                }
+                // demodata -> allow all: the dataimport module may access every module's domain package
+                if ("dataimport".equals(originModule)) {
+                    return;
+                }
+                origin
+                    .getDirectDependenciesFromSelf()
+                    .forEach(dependency -> {
+                        var targetPackage = dependency.getTargetClass().getPackageName();
+                        var domainMatcher = MODULE_DOMAIN_PACKAGE_PATTERN.matcher(targetPackage);
+                        if (domainMatcher.matches() && !originModule.equals(domainMatcher.group(1))) {
+                            var targetModule = domainMatcher.group(1);
+                            // management -> trust.domain: temporary until the deprecated trustVerificationStatus
+                            // field is removed from BusinessPartnerDto.
+                            // TODO EID-6624: remove this exception
+                            if ("management".equals(originModule) && "trust".equals(targetModule)) {
+                                return;
+                            }
+                            events.add(
+                                SimpleConditionEvent.violated(
+                                    origin,
+                                    "Module '" +
+                                        originModule +
+                                        "' accesses the domain package of module '" +
+                                        targetModule +
+                                        "': " +
+                                        dependency.getDescription()
+                                )
+                            );
+                        }
+                    });
+            }
+        };
+    }
+
+    private static @NonNull ArchCondition<JavaMethod> noReturnTypeFromDomainPackageCondition() {
+        return new ArchCondition<JavaMethod>("not have a return type from the domain layer") {
+            @Override
+            public void check(JavaMethod method, ConditionEvents events) {
+                method
+                    .getReturnType()
+                    .getAllInvolvedRawTypes()
+                    .stream()
+                    .filter(type ->
+                        type
+                            .getPackageName()
+                            .matches(Pattern.quote(ROOT_PACKAGE.replace("..", "")) + ".*\\.domain(\\..+)?")
+                    )
+                    .forEach(type ->
+                        events.add(
+                            SimpleConditionEvent.violated(
+                                method,
+                                method.getFullName() + " returns domain type: " + type.getName()
+                            )
+                        )
+                    );
+            }
+        };
     }
 }

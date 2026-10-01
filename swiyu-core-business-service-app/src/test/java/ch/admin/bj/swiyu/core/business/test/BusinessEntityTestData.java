@@ -13,7 +13,9 @@ import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
@@ -152,29 +154,47 @@ public class BusinessEntityTestData {
         );
     }
 
-    public static BusinessPartnerIdentity activeBusinessPartnerIdentity() {
-        return activeBusinessPartnerIdentityValidUntil(null);
+    public static BusinessPartnerIdentity businessPartnerIdentity() {
+        return businessPartnerIdentity(Instant.now().plus(Duration.ofDays(365 * 3).minus(Duration.ofDays(10))));
+    }
+
+    public static BusinessPartnerIdentity businessPartnerIdentity(List<String> trustedIdentifier) {
+        return businessPartnerIdentity(
+            Instant.now().plus(Duration.ofDays(365 * 3).minus(Duration.ofDays(10))),
+            trustedIdentifier
+        );
     }
 
     /**
      * An active Trust Identity that expires at the given point in time. For the renewal reminders,
      * which select partners by exactly that date.
      */
-    public static BusinessPartnerIdentity activeBusinessPartnerIdentityValidUntil(Instant validUntil) {
-        return BusinessPartnerIdentity.builder()
-            .status(BusinessPartnerIdentityStatus.ACTIVE)
-            .uid("CHE-123.456.789")
-            .entityName(Map.of("default", "Hello World AG"))
-            .validUntil(validUntil)
-            .build();
+    public static BusinessPartnerIdentity businessPartnerIdentity(Instant validUntil) {
+        return businessPartnerIdentity(validUntil, List.of("did:example:partner1", "did:example:partner2"));
+    }
+
+    private static BusinessPartnerIdentity businessPartnerIdentity(Instant validUntil, List<String> trustedIdentifier) {
+        return new BusinessPartnerIdentity(
+            validUntil,
+            trustedIdentifier,
+            BusinessPartnerIdentityStatus.ACTIVE,
+            Instant.now(),
+            "CHE-123.456.789",
+            Map.of("default", "Test Partner AG"),
+            1L
+        );
     }
 
     public static BusinessPartnerIdentity deactivatedBusinessPartnerIdentity() {
-        return BusinessPartnerIdentity.builder()
-            .status(BusinessPartnerIdentityStatus.DEACTIVATED)
-            .uid("CHE-123.456.789")
-            .entityName(Map.of("default", "Hello World AG"))
-            .build();
+        return new BusinessPartnerIdentity(
+            null,
+            List.of("did:example:partner1", "did:example:partner2"),
+            BusinessPartnerIdentityStatus.DEACTIVATED,
+            Instant.now(),
+            "CHE-123.456.789",
+            Map.of("default", "Test Partner AG"),
+            1L
+        );
     }
 
     public static CreatePartnerDto createPartnerDto() {

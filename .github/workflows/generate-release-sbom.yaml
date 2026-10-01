@@ -1,0 +1,14 @@
+name: Generate and publish releases with SBOM
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release-sbom:
+    uses: "swiyu-admin-ch/github-actions-workflows/.github/workflows/maven-generate-release-sbom.yml@main"
+    permissions:
+      contents: write
+    secrets:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}

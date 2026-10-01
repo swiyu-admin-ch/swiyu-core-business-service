@@ -13,10 +13,6 @@ import java.util.UUID;
 @Schema(name = "BusinessPartnerListItem")
 public record BusinessPartnerListItemDto(
     @Schema(description = "Key of the partner under which it is registered with ePortal") @NotBlank UUID id,
-    // To be removed in EID-6303
-    @Schema(description = "Unique name of the partner. Deprecated: use entityName.", deprecated = true)
-    @NotBlank
-    String name,
     @Schema(description = "Localized entity name map with required default key and BCP-47 locale keys")
     @NotNull
     @ValidLocalizedMap
@@ -29,5 +25,7 @@ public record BusinessPartnerListItemDto(
     @Schema(description = "Aggregated state of the trust process for this business partner")
     BusinessPartnerTrustStatusDto trustVerificationStatus,
     @Schema(description = "Time limit, if necessary, of the current aggregated state of the trust process")
-    Instant maxDateForTrustVerificationStatus
+    Instant maxDateForTrustVerificationStatus,
+    @Schema(description = "Hard delete is refused while false. Always false for governmental institutions.")
+    boolean hardDeleteAllowed
 ) implements ListItemDto {}

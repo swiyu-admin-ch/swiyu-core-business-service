@@ -1,6 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.jobs.service;
 
-import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.activeBusinessPartnerIdentityValidUntil;
+import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.businessPartnerIdentity;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.businessPartnerOfTypeGov;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.deactivatedBusinessPartnerIdentity;
 import static ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTestData.submittedSince;
@@ -159,7 +159,7 @@ class EmailNotificationJobIT {
     @Test
     void ignoresAPartnerWhoseIdentityIsNoLongerActive() {
         var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
-        partner.applyBusinessPartnerIdentityEvent(deactivatedBusinessPartnerIdentity());
+        partner.updateBusinessPartnerIdentity(deactivatedBusinessPartnerIdentity());
         repos.businessPartner.save(partner);
 
         job.triggerScheduledEmailNotifications();
@@ -217,7 +217,7 @@ class EmailNotificationJobIT {
         var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
         // Half a day in, so the partner sits inside the day rather than exactly on its boundary
         var validUntil = Instant.now().plus(Duration.ofDays(days)).minus(Duration.ofHours(12));
-        partner.applyBusinessPartnerIdentityEvent(activeBusinessPartnerIdentityValidUntil(validUntil));
+        partner.updateBusinessPartnerIdentity(businessPartnerIdentity(validUntil));
         repos.businessPartner.save(partner);
     }
 

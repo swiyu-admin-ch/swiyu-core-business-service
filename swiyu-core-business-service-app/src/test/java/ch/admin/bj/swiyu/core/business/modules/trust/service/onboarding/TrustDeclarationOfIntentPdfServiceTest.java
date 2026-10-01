@@ -1,7 +1,7 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding;
 
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.DEFAULT_ENTITY;
-import static ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTestData.trustOnboardingSubmission;
+import static ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTestData.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
@@ -19,7 +19,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -318,29 +317,7 @@ class TrustDeclarationOfIntentPdfServiceTest {
             base.getProofOfPossessions(),
             partnerType,
             signingRule,
-            signatories,
-            Instant.now()
-        );
-    }
-
-    private static TrustOnboardingSubmission submissionWithProofOfPossessions(
-        TrustOnboardingSubmission base,
-        List<ProofOfPossession> proofOfPossessions
-    ) {
-        return new TrustOnboardingSubmission(
-            base.getId(),
-            base.getPartnerId(),
-            base.getEntityName(),
-            base.getEntityAddress(),
-            base.getEntityEmail(),
-            base.getContactPerson(),
-            base.getUid(),
-            base.getIsRegisteredInCommercialRegister(),
-            proofOfPossessions,
-            base.getRequestedPartnerType(),
-            base.getSigningRule(),
-            base.getSignatories(),
-            Instant.now()
+            signatories
         );
     }
 

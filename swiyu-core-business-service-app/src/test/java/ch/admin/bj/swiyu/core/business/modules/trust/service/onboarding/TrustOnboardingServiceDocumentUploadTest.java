@@ -2,15 +2,17 @@ package ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding;
 
 import static ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocument.createTrustOnboardingSubissionPartnerDocument;
 import static ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentMapper.toPartnerDocumentDto;
-import static ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTestData.trustOnboardingSubmission;
-import static ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTestData.trustOnboardingSubmissionRequestDto;
+import static ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTestData.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.modules.documents.api.PartnerDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocumentType;
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
@@ -33,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -72,9 +75,6 @@ class TrustOnboardingServiceDocumentUploadTest {
     private TrustDeclarationOfIntentPdfService trustDeclarationOfIntentPdfService;
 
     @Mock
-    private TrustOnboardingSubmissionDocumentValidator trustOnboardingSubmissionDocumentValidator;
-
-    @Mock
     private TrustOnboardingSubmissionValidator trustOnboardingSubmissionValidator;
 
     @Mock
@@ -89,8 +89,19 @@ class TrustOnboardingServiceDocumentUploadTest {
     @Mock
     private DeclarationOfIntentValidator declarationOfIntentValidator;
 
+    @Mock
+    private TrustOnboardingSubmissionDocumentValidator trustOnboardingSubmissionDocumentValidator;
+
     @InjectMocks
     private TrustOnboardingService trustOnboardingService;
+
+    @BeforeEach
+    void setUp() {
+        // Initialize the mock validator to return empty errors by default
+        lenient()
+            .when(trustOnboardingSubmissionDocumentValidator.validateDocument(any(), any(), any()))
+            .thenReturn(new BeanPropertyBindingResult(new Object(), "file"));
+    }
 
     @Test
     void uploadTrustOnboardingSubmissionDocument_updatesDeclarationOfIntent_whenTypeIsDoi() {
@@ -221,7 +232,6 @@ class TrustOnboardingServiceDocumentUploadTest {
             .entityAddress(baseRequest.entityAddress())
             .entityEmail(baseRequest.entityEmail())
             .contactPerson(baseRequest.getContactPerson())
-            .correspondingLanguage(baseRequest.correspondingLanguage())
             .registryIds(Map.of("UID", "CHE-999.999.999"))
             .dids(baseRequest.dids())
             .requestedPartnerType(baseRequest.requestedPartnerType())
@@ -245,5 +255,32 @@ class TrustOnboardingServiceDocumentUploadTest {
 
     private DeclarationOfIntentValidationResult declarationOfIntentValidationResult() {
         return new DeclarationOfIntentValidationResult(JsonNodeFactory.instance.objectNode());
+    }
+
+    @Test
+    void uploadDocumentFailsForRenewalSubmission() {
+        var submission = trustOnboardingSubmission(
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            TrustOnboardingSubmissionType.RENEWAL
+        );
+        var file = new MockMultipartFile("doc.pdf", "doc.pdf", "application/pdf", "x".getBytes());
+        var errors = new BeanPropertyBindingResult(file, "file");
+        errors.reject("editing_blocked", "Cannot add documents to RENEWAL submission");
+
+        when(trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(submission.getId())).thenReturn(
+            submission
+        );
+        when(trustOnboardingSubmissionDocumentValidator.validateDocument(submission, file, null)).thenReturn(errors);
+
+        var request = TrustOnboardingSubmissionDocumentUploadRequestDto.builder()
+            .type(TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_OTHER)
+            .file(file)
+            .build();
+
+        var submissionId = submission.getId();
+        assertThatThrownBy(() -> trustOnboardingService.uploadTrustOnboardingSubmissionDocument(submissionId, request))
+            .isInstanceOf(ValidationException.class)
+            .hasMessageContaining("editing_blocked");
     }
 }

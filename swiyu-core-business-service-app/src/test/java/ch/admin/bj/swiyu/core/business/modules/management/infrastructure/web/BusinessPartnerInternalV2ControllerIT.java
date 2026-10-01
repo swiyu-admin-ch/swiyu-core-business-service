@@ -54,6 +54,10 @@ import tools.jackson.databind.ObjectMapper;
 class BusinessPartnerInternalV2ControllerIT {
 
     static final String BUSINESS_PARTNER_MANAGEMENT_BASE_URL = "/api/v2/internal/management/business-partners/";
+    static final String ALLOW_HARD_DELETE_PATH = "/allow-hard-delete";
+    static final String LOCK_HARD_DELETE_BODY = "{\"hardDeleteAllowed\": false}";
+    static final String ARM_HARD_DELETE_BODY = "{\"hardDeleteAllowed\": true}";
+    static final String DELETE_ROLE = "ti_@businesspartner_#delete";
 
     @Autowired
     ObjectMapper objectMapper;
@@ -318,7 +322,6 @@ class BusinessPartnerInternalV2ControllerIT {
         assertThat(businessEntities.getContent()).hasSize(1);
         var dbInsertedBusinessPartner = businessEntities.getContent().getFirst();
         assertThat(dbInsertedBusinessPartner.id()).isEqualTo(UUID.fromString("deadbeef-0000-0000-0000-000000000000"));
-        assertThat(dbInsertedBusinessPartner.name()).isEqualTo("Hello World AG");
         assertThat(LocalizedMapUtil.getDefaultValue(dbInsertedBusinessPartner.entityName())).isEqualTo(
             "Hello World AG"
         );
@@ -425,7 +428,6 @@ class BusinessPartnerInternalV2ControllerIT {
             BusinessPartnerDto.class
         );
         assertThat(businessPartnerDto.id()).isEqualTo(UUID.fromString(BusinessEntityTestData.ENTITY_A_S));
-        assertThat(businessPartnerDto.name()).isEqualTo("Hello World AG");
         assertThat(LocalizedMapUtil.getDefaultValue(businessPartnerDto.entityName())).isEqualTo("Hello World AG");
     }
 
@@ -480,5 +482,116 @@ class BusinessPartnerInternalV2ControllerIT {
 
     private BusinessPartnerDto toBusinessPartnerDto(String responseString) throws JacksonException {
         return objectMapper.readValue(responseString, BusinessPartnerDto.class);
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = DELETE_ROLE) // global role, like the devops profile
+    void allowHardDelete_locksAndArmsThePartner() throws Exception {
+        var partner = repos.businessPartner.save(
+            ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.businessPartnerOfTypeBusiness(
+                java.util.UUID.randomUUID()
+            )
+        );
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.put(
+                    BUSINESS_PARTNER_MANAGEMENT_BASE_URL + partner.getId() + ALLOW_HARD_DELETE_PATH
+                )
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .content(LOCK_HARD_DELETE_BODY)
+            )
+            .andExpect(status().isOk())
+            .andExpect(
+                org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.hardDeleteAllowed").value(
+                    false
+                )
+            );
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.put(
+                    BUSINESS_PARTNER_MANAGEMENT_BASE_URL + partner.getId() + ALLOW_HARD_DELETE_PATH
+                )
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .content(ARM_HARD_DELETE_BODY)
+            )
+            .andExpect(status().isOk())
+            .andExpect(
+                org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.hardDeleteAllowed").value(
+                    true
+                )
+            );
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = DELETE_ROLE)
+    void allowHardDelete_armingAGovernmentalPartner_isBadRequest() throws Exception {
+        var partner = repos.businessPartner.save(
+            ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.businessPartnerOfTypeGov(
+                java.util.UUID.randomUUID()
+            )
+        );
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.put(
+                    BUSINESS_PARTNER_MANAGEMENT_BASE_URL + partner.getId() + ALLOW_HARD_DELETE_PATH
+                )
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .content(ARM_HARD_DELETE_BODY)
+            )
+            .andExpect(status().isBadRequest());
+    }
+
+    /** A delete role bound to partner A must not allow toggling the safeguard of partner B. */
+    @Test
+    @WithJeapAuthenticationToken(bpRoles = "deadbeef-0000-0000-0000-000000000000 = ti_@businesspartner_#delete")
+    void allowHardDelete_withRoleForAnotherPartner_isForbidden() throws Exception {
+        var otherPartner = repos.businessPartner.save(
+            ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.businessPartnerOfTypeBusiness(
+                java.util.UUID.randomUUID()
+            )
+        );
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.put(
+                    BUSINESS_PARTNER_MANAGEMENT_BASE_URL + otherPartner.getId() + ALLOW_HARD_DELETE_PATH
+                )
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .content(LOCK_HARD_DELETE_BODY)
+            )
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(bpRoles = "deadbeef-0000-0000-0000-000000000000 = ti_@businesspartner_#write")
+    void allowHardDelete_withoutTheDeleteRole_isForbidden() throws Exception {
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.put(
+                    BUSINESS_PARTNER_MANAGEMENT_BASE_URL +
+                        "deadbeef-0000-0000-0000-000000000000" +
+                        ALLOW_HARD_DELETE_PATH
+                )
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .content(LOCK_HARD_DELETE_BODY)
+            )
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = DELETE_ROLE)
+    void allowHardDelete_unknownPartner_isNotFound() throws Exception {
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.put(
+                    BUSINESS_PARTNER_MANAGEMENT_BASE_URL + java.util.UUID.randomUUID() + ALLOW_HARD_DELETE_PATH
+                )
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .content(LOCK_HARD_DELETE_BODY)
+            )
+            .andExpect(status().isNotFound());
     }
 }

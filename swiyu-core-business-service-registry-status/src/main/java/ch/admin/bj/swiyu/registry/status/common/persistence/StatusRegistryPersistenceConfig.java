@@ -69,7 +69,7 @@ public class StatusRegistryPersistenceConfig {
         HikariConfig globalHikariConfig
     ) {
         var config = new HikariConfig();
-        config.setMaximumPoolSize(globalHikariConfig.getMaximumPoolSize());
+        globalHikariConfig.copyStateTo(config);
         config.setJdbcUrl(statusRegistryDataSourceProperties.getUrl());
         config.setUsername(statusRegistryDataSourceProperties.getUsername());
         config.setPassword(statusRegistryDataSourceProperties.getPassword());

@@ -107,6 +107,11 @@ public class TrustOnboardingSubmission {
     private TrustOnboardingSubmissionStatus status;
 
     @Getter
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    private TrustOnboardingSubmissionType type;
+
+    @Getter
     @Enumerated(EnumType.STRING)
     private TrustOnboardingRejectReason rejectReason;
 
@@ -136,21 +141,11 @@ public class TrustOnboardingSubmission {
         // JPA
     }
 
-    @VisibleForTesting
-    public TrustOnboardingSubmission(
-        UUID partnerId,
-        Map<String, String> entityName,
-        TrustOnboardingSubmissionStatus status
-    ) {
-        this.id = UUID.randomUUID();
-        this.partnerId = partnerId;
-        this.entityName = entityName;
-        this.status = status;
-        this.initiatedAt = Instant.now();
-        this.requestedPartnerType = BusinessPartnerType.BUSINESS;
-    }
-
+    /**
+     * Default constructor that creates a TrustOnboardingSubmission of type REGISTRATION.
+     */
     public TrustOnboardingSubmission( // NOSONAR
+        UUID id,
         UUID partnerId,
         Map<String, String> entityName,
         Address entityAddress,
@@ -164,7 +159,8 @@ public class TrustOnboardingSubmission {
         List<Signatory> signatories
     ) {
         this(
-            UUID.randomUUID(),
+            TrustOnboardingSubmissionType.REGISTRATION,
+            id,
             partnerId,
             entityName,
             entityAddress,
@@ -175,13 +171,12 @@ public class TrustOnboardingSubmission {
             proofOfPossessions,
             requestedPartnerType,
             signingRule,
-            signatories,
-            Instant.now()
+            signatories
         );
     }
 
-    @VisibleForTesting
     public TrustOnboardingSubmission( // NOSONAR
+        TrustOnboardingSubmissionType type,
         UUID id,
         UUID partnerId,
         Map<String, String> entityName,
@@ -191,10 +186,9 @@ public class TrustOnboardingSubmission {
         String uid,
         Boolean isRegisteredInCommercialRegister,
         List<ProofOfPossession> proofOfPossessions,
-        BusinessPartnerType partnerType,
+        BusinessPartnerType requestedPartnerType,
         SigningRule signingRule,
-        List<Signatory> signatories,
-        Instant initiatedAt
+        List<Signatory> signatories
     ) {
         this.id = id;
         this.partnerId = partnerId;
@@ -206,10 +200,11 @@ public class TrustOnboardingSubmission {
         this.isRegisteredInCommercialRegister = isRegisteredInCommercialRegister;
         this.proofOfPossessions = proofOfPossessions;
         this.status = TrustOnboardingSubmissionStatus.UNSUBMITTED;
-        this.initiatedAt = initiatedAt;
-        this.requestedPartnerType = partnerType;
+        this.initiatedAt = Instant.now();
+        this.requestedPartnerType = requestedPartnerType;
         this.signingRule = signingRule;
         this.signatories = signatories;
+        this.type = type;
     }
 
     public void markAsSubmitted() {
@@ -224,16 +219,6 @@ public class TrustOnboardingSubmission {
 
     public void markAsSucceeded() {
         this.status = TrustOnboardingSubmissionStatus.SUCCEEDED;
-    }
-
-    @VisibleForTesting
-    public void markAsExpired() {
-        this.status = TrustOnboardingSubmissionStatus.UNSUBMITTED_TIMEOUT;
-    }
-
-    @VisibleForTesting
-    public void setRequestedPartnerType(BusinessPartnerType requestedPartnerType) {
-        this.requestedPartnerType = requestedPartnerType;
     }
 
     public void markAsInformationRequested(String partnerNote) {
@@ -296,5 +281,15 @@ public class TrustOnboardingSubmission {
         this.signingRule = signingRule;
         this.signatories = signatories;
         this.isRegisteredInCommercialRegister = isRegisteredInCommercialRegister;
+    }
+
+    @VisibleForTesting
+    public void setInitiatedAt(Instant initiatedAt) {
+        this.initiatedAt = initiatedAt;
+    }
+
+    @VisibleForTesting
+    public void markAsExpired() {
+        this.status = TrustOnboardingSubmissionStatus.UNSUBMITTED_TIMEOUT;
     }
 }

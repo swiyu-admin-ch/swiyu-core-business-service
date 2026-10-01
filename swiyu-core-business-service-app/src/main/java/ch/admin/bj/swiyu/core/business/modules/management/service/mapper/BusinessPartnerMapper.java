@@ -15,7 +15,10 @@ import ch.admin.bj.swiyu.core.business.modules.management.api.*;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
+import ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityActivatedPayload;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -77,8 +80,6 @@ public class BusinessPartnerMapper {
         BusinessPartnerTypeDto type = toBusinessPartnerTypeDto(source.getType());
         return new BusinessPartnerDto(
             source.getId(),
-            // deprecated: derive from entityName default
-            LocalizedMapUtil.getDefaultValue(source.getEntityName()),
             source.getEntityName(),
             // deprecated: derive from contact.email
             source.getContactEmail(),
@@ -95,7 +96,8 @@ public class BusinessPartnerMapper {
             trustStatus,
             maxDateForTrustVerificationStatus,
             toContactDto(source.getContact()),
-            toBusinessPartnerIdentityDto(source.getBusinessPartnerIdentity())
+            toBusinessPartnerIdentityDto(source.getBusinessPartnerIdentity()),
+            source.isHardDeleteAllowed()
         );
     }
 
@@ -108,7 +110,6 @@ public class BusinessPartnerMapper {
      * @param maxDateForTrustVerificationStatus the computed deadline for the current trust verification
      *                    state, or {@code null} if not applicable
      */
-    @SuppressWarnings("java:S1874") // Remove with EID-6624
     public static BusinessPartnerListItemDto toBusinessPartnerListItemDto(
         BusinessEntity source,
         BusinessPartnerTrustStatusDto trustStatus,
@@ -117,7 +118,6 @@ public class BusinessPartnerMapper {
         BusinessPartnerTypeDto type = toBusinessPartnerTypeDto(source.getType());
         return new BusinessPartnerListItemDto(
             source.getId(),
-            LocalizedMapUtil.getDefaultValue(source.getEntityName()),
             source.getEntityName(),
             type,
             source.isPayedForTrustVerification(),
@@ -125,8 +125,37 @@ public class BusinessPartnerMapper {
             source.getAuditMetadata().getCreatedAt(),
             source.getAuditMetadata().getLastModifiedAt(),
             trustStatus,
-            maxDateForTrustVerificationStatus
+            maxDateForTrustVerificationStatus,
+            source.isHardDeleteAllowed()
         );
+    }
+
+    public static Language toLanguage(LanguageDto source) {
+        if (source == null) {
+            return null;
+        }
+        return Language.valueOf(source.name());
+    }
+
+    public static BusinessPartnerIdentity toBusinessPartnerIdentity(BusinessPartnerIdentityActivatedPayload payload) {
+        return new BusinessPartnerIdentity(
+            payload.getValidUntil(),
+            new ArrayList<>(payload.getTrustedIdentifier()),
+            toBusinessPartnerIdentityStatus(payload.getStatus()),
+            payload.getLastActivated(),
+            payload.getUid(),
+            new HashMap<>(payload.getEntityName()),
+            payload.getVersion()
+        );
+    }
+
+    public static BusinessPartnerIdentityStatus toBusinessPartnerIdentityStatus(
+        ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityStatus source
+    ) {
+        return switch (source) {
+            case DEACTIVATED -> BusinessPartnerIdentityStatus.DEACTIVATED;
+            case ACTIVE -> BusinessPartnerIdentityStatus.ACTIVE;
+        };
     }
 
     // ---------------------------------------------------------------------------
@@ -179,12 +208,5 @@ public class BusinessPartnerMapper {
             return null;
         }
         return LanguageDto.valueOf(source.name());
-    }
-
-    private static Language toLanguage(LanguageDto source) {
-        if (source == null) {
-            return null;
-        }
-        return Language.valueOf(source.name());
     }
 }

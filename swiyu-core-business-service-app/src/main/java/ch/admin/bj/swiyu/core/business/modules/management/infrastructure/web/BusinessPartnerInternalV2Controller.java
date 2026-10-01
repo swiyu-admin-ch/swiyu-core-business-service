@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.core.business.modules.management.infrastructure.web;
 import ch.admin.bit.jeap.security.resource.token.JeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
 import ch.admin.bj.swiyu.core.business.common.security.AuthSupport;
+import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerAllowHardDeleteDto;
 import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerDto;
 import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerListItemDto;
 import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerUpdateDto;
@@ -123,6 +124,31 @@ class BusinessPartnerInternalV2Controller {
         @RequestBody @Valid BusinessPartnerUpdateDto updateDto
     ) {
         return businessPartnerService.updateBusinessPartnerFromPortal(id, updateDto);
+    }
+
+    @PreAuthorize("hasRoleForPartner('businesspartner', 'delete', #id.toString())")
+    @PutMapping("/{id}/allow-hard-delete")
+    @ApiResponse(responseCode = "200", description = "Success")
+    @ApiResponse(
+        responseCode = "400",
+        description = "Business validation failed. Possible error codes: BUSINESS_DATA_INTEGRITY_VIOLATION.",
+        content = @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = ch.admin.bj.swiyu.core.business.common.api.ApiErrorDto.class)
+        )
+    )
+    @ApiResponse(responseCode = "401", description = "Missing authorization token")
+    @ApiResponse(responseCode = "403", description = "Not authorized")
+    @ApiResponse(responseCode = "404", description = "Business partner not found")
+    @Operation(
+        summary = "Toggle the hard-delete safeguard of a business partner.",
+        description = "Governmental institutions cannot be armed. Every change is audited."
+    )
+    public BusinessPartnerDto allowHardDelete(
+        @PathVariable @Valid UUID id,
+        @RequestBody @Valid BusinessPartnerAllowHardDeleteDto allowHardDeleteDto
+    ) {
+        return businessPartnerService.changeHardDeleteAllowed(id, allowHardDeleteDto.hardDeleteAllowed());
     }
 
     @PreAuthorize("hasRoleForPartner('businesspartner','read',#businessPartnerId)")

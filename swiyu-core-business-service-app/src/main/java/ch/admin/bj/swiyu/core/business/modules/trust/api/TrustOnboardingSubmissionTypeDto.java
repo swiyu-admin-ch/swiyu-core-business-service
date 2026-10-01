@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Submission type for trust onboarding")
 public enum TrustOnboardingSubmissionTypeDto {
     REGISTRATION,
-    PROFILE_CHANGE,
+    PROFILE_CHANGE_MANDATORY,
+    PROFILE_CHANGE_VOLUNTARY,
     RENEWAL,
 }

@@ -5,7 +5,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-core-business-service</artifactId>
-    <version>4.0.6-SNAPSHOT</version>
+    <version>4.2.3-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
@@ -76,6 +76,20 @@
             </dependency>
             <!-- CVE-OVERRIDE start -->
             <dependency>
+<!--            Allocation of Resources Without Limits or Throttling (new) [High Severity][https://security.snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-20059683] in com.fasterxml.jackson.core:jackson-databind@2.22.2-->
+<!--            introduced by com.networknt:json-schema-validator@1.5.9 > com.fasterxml.jackson.core:jackson-databind@2.22.2-->
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>2.22.3</version>
+            </dependency>
+            <dependency>
+<!--            Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-20059179] in com.fasterxml.jackson.core:jackson-core@2.22.2-->
+<!--            introduced by ch.admin.bj.swiyu:swiyu-discrete-validator-client@4.2.1-SNAPSHOT > com.fasterxml.jackson.jakarta.rs:jackson-jakarta-rs-base@2.22.2 > com.fasterxml.jackson.core:jackson-core@2.22.2-->
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>2.22.3</version>
+            </dependency>
+            <dependency>
 <!--            Allocation of Resources Without Limits or Throttling (new) [High Severity][https://security.snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-19778370] in com.fasterxml.jackson.core:jackson-databind@2.22.1-->
 <!--            introduced by com.networknt:json-schema-validator@1.5.9 > com.fasterxml.jackson.core:jackson-databind@2.22.1-->
                 <groupId>com.networknt</groupId>
@@ -88,6 +102,20 @@
                 <groupId>org.xerial.snappy</groupId>
                 <artifactId>snappy-java</artifactId>
                 <version>1.1.10.8</version>
+            </dependency>
+            <dependency>
+<!--            Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-JAVA-TOOLSJACKSONCORE-20059180] in tools.jackson.core:jackson-core@3.2.2-->
+<!--            introduced by ch.admin.bj.swiyu:swiyu-discrete-validator-client@4.2.1-SNAPSHOT > tools.jackson.core:jackson-databind@3.2.2 > tools.jackson.core:jackson-core@3.2.2-->
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>3.2.3</version>
+            </dependency>
+            <dependency>
+<!--            Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-JAVA-TOOLSJACKSONCORE-20059682] in tools.jackson.core:jackson-databind@3.2.2-->
+<!--            introduced by ch.admin.bj.swiyu:swiyu-discrete-validator-client@4.2.1-SNAPSHOT > tools.jackson.core:jackson-databind@3.2.2-->
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>3.2.3</version>
             </dependency>
             <dependency>
 <!--            Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-JAVA-TOOLSJACKSONCORE-19778371] in tools.jackson.core:jackson-databind@3.1.5-->

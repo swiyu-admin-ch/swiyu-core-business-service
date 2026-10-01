@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.2.3
+
+### Changed
+
+- refactorings around TrustOnboardingSubmission
+- improving of architectural rules
+
+## 4.2.2
+
+### Changed
+
+- fix CVE SNYK-JAVA-COMFASTERXMLJACKSONCORE-20059683, SNYK-JAVA-COMFASTERXMLJACKSONCORE-20059179, SNYK-JAVA-TOOLSJACKSONCORE-20059180, SNYK-JAVA-TOOLSJACKSONCORE-20059682
+
+## 4.2.1
+
+### Changed
+
+- Improve integration test
+
+## 4.2.0
+
+### Changed
+
+- Contract cleanup for localized organization names: remove deprecated BusinessPartner name fields, request-level correspondingLanguage and MultiLanguageText entityName
+
+## 4.1.3
+
+### Added
+
+- Add hardDeleteAllowed safeguard to business partners with ops toggle endpoint
+
+## 4.1.2
+
+### Changed
+
+- fix SonarQube issues
+
+## 4.1.1
+
+### Added
+
+- add GitHub action for SBOM generation
+
+## 4.1.0
+
+### Added
+
+- Create and update PROFILE_CHANGE (mandatory/voluntary) and RENEWAL trust-onboarding submissions from verified partner data
+
+## 4.0.7
+
+### Changed
+
+- make sure the global config is applied to all the Data sources
+
 ## 4.0.6
 
 ### Changed

@@ -102,6 +102,18 @@ public class DemoData {
                             Instant.now().minus(5, ChronoUnit.DAYS),
                             Instant.now().minus(35, ChronoUnit.DAYS)
                         )
+                    ),
+                    new DemoBusinessPartner.DemoTrustOnboarding(
+                        UUID.fromString("4b1a77c2-9d3e-4f2a-8c5d-1e0b6f7a8c9d"),
+                        DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionStatus.SUBMITTED,
+                        DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionType.RENEWAL,
+                        List.of(),
+                        new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask(
+                            UUID.fromString("0a5c29e1-8b4d-4c6e-9f3a-2d7b8e1c4f5a"),
+                            DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask.DemoTrustTaskStatus.OPENED,
+                            Instant.now().plus(1000, ChronoUnit.DAYS),
+                            Instant.now().minus(1, ChronoUnit.DAYS)
+                        )
                     )
                 ),
                 DemoBusinessPartner.DemoBusinessPartnerIdentity.of(
@@ -393,7 +405,7 @@ public class DemoData {
                     new DemoBusinessPartner.DemoTrustOnboarding(
                         UUID.fromString("3299cd25-8bab-47b7-9d46-f740be76e57e"),
                         DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionStatus.SUBMITTED,
-                        DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionType.PROFILE_CHANGE,
+                        DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionType.PROFILE_CHANGE_MANDATORY,
                         List.of(
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Declaration of intent.pdf",
@@ -935,7 +947,8 @@ public class DemoData {
 
             public enum DemoTrustOnboardingSubmissionType {
                 REGISTRATION,
-                PROFILE_CHANGE,
+                PROFILE_CHANGE_MANDATORY,
+                PROFILE_CHANGE_VOLUNTARY,
                 RENEWAL,
             }
 

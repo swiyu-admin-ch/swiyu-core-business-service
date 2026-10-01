@@ -15,11 +15,6 @@ import java.util.UUID;
 public record BusinessPartnerDto(
     @Schema(description = "Key of the partner under which it is registered with ePortal") @NotBlank UUID id,
 
-    @SuppressWarnings("java:S1133") // remove with EID-6624
-    @Deprecated(since = "3.42.5")
-    @Schema(description = "Unique name of the partner. Deprecated: use entityName.", deprecated = true)
-    String name,
-
     @Schema(description = "Localized entity name map with required default key and BCP-47 locale keys")
     @NotNull
     @ValidLocalizedMap
@@ -64,5 +59,8 @@ public record BusinessPartnerDto(
     @Schema(description = "Contact person details") ContactDto contact,
 
     @Schema(description = "Business partner identity as managed by the trust management service")
-    BusinessPartnerIdentityDto businessPartnerIdentity
+    BusinessPartnerIdentityDto businessPartnerIdentity,
+
+    @Schema(description = "Hard delete is refused while false. Always false for governmental institutions.")
+    boolean hardDeleteAllowed
 ) {}

@@ -8,7 +8,6 @@ import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -67,8 +66,7 @@ class TrustOnboardingSubmissionValidationTest {
             List.of(new ProofOfPossession("did:example:123", UUID.randomUUID().toString())),
             BusinessPartnerType.BUSINESS,
             SigningRule.SINGLE_SIGNATURE,
-            signatories,
-            Instant.now()
+            signatories
         );
     }
 }

@@ -6,6 +6,7 @@ import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.AuditMetadata;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
+import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessDataIntegrityViolationException;
 import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
 import com.google.common.annotations.VisibleForTesting;
 import jakarta.persistence.*;
@@ -52,7 +53,6 @@ public class BusinessEntity {
     private String defaultEntityName;
 
     @Enumerated(EnumType.STRING)
-    @Setter
     @NotNull
     private BusinessPartnerType type;
 
@@ -62,6 +62,15 @@ public class BusinessEntity {
 
     @NotNull
     private int payedForDidSlots;
+
+    /**
+     * First hard-delete safeguard: while false, CBS refuses every hard delete of this
+     * partner, regardless of the caller. Toggled explicitly by ops via
+     * {@link #allowHardDelete()} / {@link #unallowHardDelete()}; governmental institutions are
+     * always locked to false.
+     */
+    @NotNull
+    private boolean hardDeleteAllowed = true;
 
     @NotNull
     private boolean payedForTrustVerification;
@@ -114,6 +123,7 @@ public class BusinessEntity {
         this.payedForTrustVerification = false;
         this.address = address;
         this.uid = uid;
+        applyGovernmentalHardDeleteGuard();
     }
 
     /**
@@ -171,8 +181,35 @@ public class BusinessEntity {
      * Applies new BusinessPartnerIdentity data from a TMS BPI event.
      * This is the only path through which businessPartnerIdentity may be set.
      */
-    public void applyBusinessPartnerIdentityEvent(BusinessPartnerIdentity bpi) {
+    public void updateBusinessPartnerIdentity(BusinessPartnerIdentity bpi) {
         this.businessPartnerIdentity = bpi;
+    }
+
+    /**
+     * Changes the partner type. Changing it to GOVERNMENTAL_INSTITUTION locks the hard-delete
+     * safeguard.
+     */
+    public void changeType(BusinessPartnerType type) {
+        this.type = type;
+        applyGovernmentalHardDeleteGuard();
+    }
+
+    /**
+     * Arms the partner for hard delete. Refused for governmental institutions - they
+     * must never be hard-deletable.
+     */
+    public void allowHardDelete() {
+        if (type == BusinessPartnerType.GOVERNMENTAL_INSTITUTION) {
+            throw new BusinessDataIntegrityViolationException(
+                "Hard delete cannot be allowed for a governmental institution."
+            );
+        }
+        this.hardDeleteAllowed = true;
+    }
+
+    /** Locks the partner against hard delete. */
+    public void unallowHardDelete() {
+        this.hardDeleteAllowed = false;
     }
 
     /**
@@ -224,6 +261,8 @@ public class BusinessEntity {
         this.payedForDidSlots = source.payedForDidSlots;
         this.payedForTrustVerification = source.payedForTrustVerification;
         this.businessPartnerIdentity = source.businessPartnerIdentity;
+        this.hardDeleteAllowed = source.hardDeleteAllowed;
+        applyGovernmentalHardDeleteGuard();
     }
 
     public void setName(Map<String, String> entityName) {
@@ -253,5 +292,11 @@ public class BusinessEntity {
     @SuppressWarnings({ "java:S1874", "java:S1133" }) // Remove with EID-6624
     public String getContactPhone() {
         return contact != null ? contact.getPhone() : null;
+    }
+
+    private void applyGovernmentalHardDeleteGuard() {
+        if (type == BusinessPartnerType.GOVERNMENTAL_INSTITUTION) {
+            this.hardDeleteAllowed = false;
+        }
     }
 }

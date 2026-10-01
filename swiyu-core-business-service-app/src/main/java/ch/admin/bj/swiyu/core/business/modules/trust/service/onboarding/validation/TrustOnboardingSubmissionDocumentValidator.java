@@ -5,6 +5,7 @@ import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocument
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentValidatorErrorCodeDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionLimitProperties;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
+import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionType;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,11 +37,24 @@ public class TrustOnboardingSubmissionDocumentValidator {
             trustOnboardingSubmission,
             errors
         );
+        validateRenewalSubmissionCannotAddDocuments(trustOnboardingSubmission, errors);
         validateDocumentContentType(file, errors);
         validateDocumentSize(file, errors);
         validateStorageCapacity(trustOnboardingSubmission, errors);
 
         return errors;
+    }
+
+    private void validateRenewalSubmissionCannotAddDocuments(
+        TrustOnboardingSubmission trustOnboardingSubmission,
+        Errors errors
+    ) {
+        if (trustOnboardingSubmission.getType() == TrustOnboardingSubmissionType.RENEWAL) {
+            errors.reject(
+                TrustOnboardingSubmissionDocumentValidatorErrorCodeDto.EDITING_BLOCKED.toString(),
+                "Cannot add documents to RENEWAL submission"
+            );
+        }
     }
 
     private void validateDocumentContentType(MultipartFile file, Errors errors) {

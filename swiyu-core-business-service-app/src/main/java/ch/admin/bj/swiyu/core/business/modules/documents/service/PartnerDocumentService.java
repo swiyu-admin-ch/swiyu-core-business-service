@@ -212,6 +212,61 @@ public class PartnerDocumentService {
     }
 
     @Transactional
+    public void copyTrustOnboardingSubmissionDocuments(
+        @NotNull UUID sourceSubmissionId,
+        @NotNull UUID targetSubmissionId,
+        @NotNull UUID partnerId
+    ) {
+        var sourceDocuments = partnerDocumentsRepository.findAllByTrustOnboardingSubmissionId(sourceSubmissionId);
+        if (sourceDocuments.isEmpty()) {
+            return;
+        }
+
+        for (var sourceDoc : sourceDocuments) {
+            var bucketConfig = getBucketConfig(sourceDoc.getType());
+
+            // Download from source
+            var responseInputStream = s3ClientAdapter.getObject(
+                bucketConfig.bucketName(),
+                sourceDoc.getStorageObjectKey()
+            );
+            byte[] fileBytes;
+            try {
+                fileBytes = responseInputStream.readAllBytes();
+            } catch (IOException e) {
+                throw new InternalStorageException("Failed to read document from storage", e);
+            }
+
+            // Create new document for target submission
+            var newPartnerDocumentId = UUID.randomUUID();
+            var newStorageObjectKey = createObjectStorageKey(
+                partnerId,
+                bucketConfig.documentGroup(),
+                targetSubmissionId,
+                newPartnerDocumentId,
+                sourceDoc.getFileName()
+            );
+
+            // Upload to target
+            s3ClientAdapter.upload(bucketConfig.bucketName(), newStorageObjectKey, fileBytes);
+
+            // Create and save new PartnerDocument for target submission
+            var targetDoc = PartnerDocument.createTrustOnboardingSubissionPartnerDocument(
+                newPartnerDocumentId,
+                partnerId,
+                sourceDoc.getType(),
+                sourceDoc.getFileName(),
+                sourceDoc.getMediaType(),
+                newStorageObjectKey,
+                targetSubmissionId,
+                sourceDoc.getVirusScanId(),
+                Instant.now()
+            );
+            partnerDocumentsRepository.save(targetDoc);
+        }
+    }
+
+    @Transactional
     public void cleanupTrustOnboardingSubmissionDocuments() {
         // To assert that the lock is held (prevents misconfiguration errors)
         LockAssert.assertLocked();

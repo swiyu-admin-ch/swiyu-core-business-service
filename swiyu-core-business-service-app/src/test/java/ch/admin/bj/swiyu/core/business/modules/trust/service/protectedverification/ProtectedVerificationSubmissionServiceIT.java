@@ -71,7 +71,7 @@ class ProtectedVerificationSubmissionServiceIT {
         testRepositories.truncateTables();
         BusinessEntityTestData.insertTestBusinessPartners(testRepositories.businessPartner);
         var trustedEntity = testRepositories.businessPartner.findById(trustedPartnerId).orElseThrow();
-        trustedEntity.applyBusinessPartnerIdentityEvent(BusinessEntityTestData.activeBusinessPartnerIdentity());
+        trustedEntity.updateBusinessPartnerIdentity(BusinessEntityTestData.businessPartnerIdentity());
         testRepositories.businessPartner.save(trustedEntity);
     }
 

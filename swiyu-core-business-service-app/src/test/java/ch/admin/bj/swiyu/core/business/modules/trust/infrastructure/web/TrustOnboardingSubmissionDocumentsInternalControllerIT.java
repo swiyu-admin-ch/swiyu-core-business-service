@@ -11,12 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import ch.admin.bj.swiyu.antivirus.client.api.ScanApi;
 import ch.admin.bj.swiyu.antivirus.client.model.ScanResult;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
-import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
-import ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData;
-import ch.admin.bj.swiyu.core.business.test.TestRepositories;
-import ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionDocumentTestData;
-import ch.admin.bj.swiyu.core.business.test.WithExtendedJeapAuthenticationToken;
+import ch.admin.bj.swiyu.core.business.test.*;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
 import com.jayway.jsonpath.JsonPath;
 import java.time.Instant;
@@ -62,8 +58,9 @@ class TrustOnboardingSubmissionDocumentsInternalControllerIT {
         BusinessEntityTestData.insertTestBusinessPartners(testRepositories.businessPartner);
 
         // Arrange
+
         TrustOnboardingSubmission submission = testRepositories.trustOnboardingSubmission.save(
-            trustOnboardingSubmissionWithContactAddress()
+            trustOnboardingSubmission()
         );
         trustOnboardingSubmissionId = submission.getId();
         businessPartnerId = submission.getPartnerId();
@@ -403,32 +400,5 @@ class TrustOnboardingSubmissionDocumentsInternalControllerIT {
                     .param("type", testDocument.partnerDocumentType())
             )
             .andReturn();
-    }
-
-    private static TrustOnboardingSubmission trustOnboardingSubmissionWithContactAddress() {
-        var base = trustOnboardingSubmission();
-        var contactWithAddress = Contact.builder()
-            .firstName(base.getContactPerson().getFirstName())
-            .lastName(base.getContactPerson().getLastName())
-            .email(base.getContactPerson().getEmail())
-            .phone(base.getContactPerson().getPhone())
-            .correspondingLanguage(base.getContactPerson().getCorrespondingLanguage())
-            .build();
-
-        return new TrustOnboardingSubmission(
-            base.getId(),
-            base.getPartnerId(),
-            base.getEntityName(),
-            base.getEntityAddress(),
-            base.getEntityEmail(),
-            contactWithAddress,
-            base.getUid(),
-            base.getIsRegisteredInCommercialRegister(),
-            base.getProofOfPossessions(),
-            base.getRequestedPartnerType(),
-            base.getSigningRule(),
-            base.getSignatories(),
-            Instant.now()
-        );
     }
 }

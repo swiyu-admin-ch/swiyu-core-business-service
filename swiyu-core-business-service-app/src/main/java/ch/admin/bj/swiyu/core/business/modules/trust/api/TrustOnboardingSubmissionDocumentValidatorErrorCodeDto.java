@@ -8,7 +8,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public enum TrustOnboardingSubmissionDocumentValidatorErrorCodeDto {
     WRONG_CONTENT_TYPE("wrong_content_type"),
     FILE_SIZE("file_size"),
-    STORAGE_CAPACITY_EXCEEDED("storage_capacity_exceeded");
+    STORAGE_CAPACITY_EXCEEDED("storage_capacity_exceeded"),
+    EDITING_BLOCKED("editing_blocked");
 
     private String code;
 

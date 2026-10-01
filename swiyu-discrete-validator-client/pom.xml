@@ -7,7 +7,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-core-business-service</artifactId>
-        <version>4.0.6-SNAPSHOT</version>
+        <version>4.2.3-SNAPSHOT</version>
     </parent>
 
     <artifactId>swiyu-discrete-validator-client</artifactId>
@@ -274,13 +274,13 @@
         <dependency>
             <groupId>com.fasterxml.jackson.jakarta.rs</groupId>
             <artifactId>jackson-jakarta-rs-base</artifactId>
-            <version>2.22.2</version>
+            <version>2.22.3</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-jakarta-xmlbind-annotations</artifactId>
-            <version>2.22.2</version>
+            <version>2.22.3</version>
         </dependency>
 
         <!-- Apache HTTP client used by jersey-apache-connector -->

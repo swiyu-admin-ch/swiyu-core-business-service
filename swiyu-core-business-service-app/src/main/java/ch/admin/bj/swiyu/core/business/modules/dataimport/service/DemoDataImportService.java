@@ -1,5 +1,7 @@
 package ch.admin.bj.swiyu.core.business.modules.dataimport.service;
 
+import static ch.admin.bj.swiyu.core.business.modules.dataimport.service.DemoDataMapper.toBusinessPartnerIdentityStatus;
+
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
@@ -11,7 +13,6 @@ import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocument
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntry;
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntryRepository;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
-import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentUploadRequestDto;
@@ -19,6 +20,7 @@ import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.protectedverification.ProtectedVerificationSubmission;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.protectedverification.ProtectedVerificationSubmissionRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.TrustOnboardingService;
+import ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityUpdatedPayload;
 import ch.admin.bj.swiyu.registry.identifier.domain.DatastoreStatus;
 import ch.admin.bj.swiyu.registry.identifier.domain.IdentifierDatastoreEntity;
 import ch.admin.bj.swiyu.registry.identifier.domain.IdentifierDatastoreEntityRepository;
@@ -31,12 +33,12 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @SuppressWarnings({ "java:S1192", "java:S5803", "java:S1854" })
-@Component
+@Service
 @Profile("test-data-injection")
 @RequiredArgsConstructor
 @Slf4j
@@ -124,7 +126,11 @@ public class DemoDataImportService {
             demoCase.bp
                 .trustOnboardings()
                 .forEach(trustOnboarding -> {
-                    var sub = generateTrustOnboardingSubmission(trustOnboarding.submissionId(), demoCase.bp);
+                    var sub = generateTrustOnboardingSubmission(
+                        trustOnboarding.submissionId(),
+                        demoCase.bp,
+                        DemoDataMapper.toTrustOnboardingSubmissionType(trustOnboarding.submissionType())
+                    );
                     for (var demoDocument : trustOnboarding.documents()) {
                         trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
                             trustOnboarding.submissionId(),
@@ -189,7 +195,8 @@ public class DemoDataImportService {
 
     private TrustOnboardingSubmission generateTrustOnboardingSubmission(
         UUID tosId,
-        DemoData.DemoBusinessPartner demoData
+        DemoData.DemoBusinessPartner demoData,
+        TrustOnboardingSubmissionType submissionType
     ) {
         return generateTrustOnboardingSubmission(
             tosId,
@@ -200,12 +207,13 @@ public class DemoDataImportService {
             demoData.email(),
             DemoDataMapper.toBusinessPartnerType(demoData.type()),
             DemoDataMapper.toSignatoryRule(demoData.signatoryRule()),
-            DemoDataMapper.toSignatoryList(demoData.signatory())
+            DemoDataMapper.toSignatoryList(demoData.signatory()),
+            submissionType
         );
     }
 
     private TrustOnboardingSubmission generateTrustOnboardingSubmission( // NOSONAR
-        UUID tosId,
+        UUID trustOnboardingSubmissionId,
         UUID partnerId,
         Map<String, String> entityName,
         Address address,
@@ -213,27 +221,27 @@ public class DemoDataImportService {
         String email,
         BusinessPartnerType requestedPartnerType,
         SigningRule signingRule,
-        List<Signatory> signatories
+        List<Signatory> signatories,
+        TrustOnboardingSubmissionType submissionType
     ) {
         var pop = new ProofOfPossession("did:example:" + partnerId, UUID.randomUUID().toString());
         pop = pop.toValid();
-        return trustOnboardingSubmissionRepository.saveAndFlush(
-            new TrustOnboardingSubmission(
-                tosId,
-                partnerId,
-                entityName,
-                address,
-                email,
-                contact,
-                "CHE-123.456.789",
-                true,
-                List.of(pop),
-                requestedPartnerType,
-                signingRule,
-                signatories,
-                Instant.now()
-            )
+        var submission = new TrustOnboardingSubmission(
+            submissionType,
+            trustOnboardingSubmissionId,
+            partnerId,
+            entityName,
+            address,
+            email,
+            contact,
+            "CHE-123.456.789",
+            true,
+            List.of(pop),
+            requestedPartnerType,
+            signingRule,
+            signatories
         );
+        return trustOnboardingSubmissionRepository.saveAndFlush(submission);
     }
 
     private void deleteAllDocumentsByPartner(UUID partnerId) {
@@ -258,23 +266,25 @@ public class DemoDataImportService {
 
         Arrays.stream(DemoData.DemoCase.values())
             .filter(demoCase -> demoCase.bp.bpi() != null)
-            .forEach(demoCase -> {
-                var bpi = BusinessPartnerIdentity.builder()
-                    .status(DemoDataMapper.toBusinessPartnerIdentityStatus(demoCase.bp.bpi().status()))
-                    .validUntil(demoCase.bp.bpi().validUntil())
-                    .uid(demoCase.bp.uid())
-                    .entityName(demoCase.bp.names())
-                    .trustedIdentifier(
+            .forEach(demoCase ->
+                businessPartnerService.applyUpdatedBusinessPartnerIdentity(
+                    demoCase.bp.id(),
+                    new BusinessPartnerIdentityUpdatedPayload(
+                        demoCase.bp.id(),
+                        demoCase.bp.bpi().validUntil(),
                         demoCase.bp
                             .identifiers()
                             .stream()
                             .filter(DemoData.DemoBusinessPartner.DemoIdentifier::isTrustOnboarded)
                             .map(DemoData.DemoBusinessPartner.DemoIdentifier::did)
-                            .toList()
+                            .toList(),
+                        toBusinessPartnerIdentityStatus(demoCase.bp.bpi().status()),
+                        demoCase.bp.bpi().validUntil().minus(10, ChronoUnit.DAYS),
+                        demoCase.bp.uid(),
+                        demoCase.bp.names(),
+                        1L
                     )
-                    .tmsVersion(0L)
-                    .build();
-                businessPartnerService.applyBusinessPartnerIdentity(demoCase.bp.id(), bpi);
-            });
+                )
+            );
     }
 }

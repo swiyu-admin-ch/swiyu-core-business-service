@@ -3,8 +3,7 @@ package ch.admin.bj.swiyu.core.business.modules.management.service;
 import static ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType.GOVERNMENTAL_INSTITUTION;
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerType;
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerTypeDto;
-import static ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper.toAddress;
-import static ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper.toContact;
+import static ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper.*;
 import static org.springframework.util.StringUtils.hasText;
 
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
@@ -32,6 +31,8 @@ import ch.admin.bj.swiyu.core.business.modules.trust.domain.event.TiBusinessPart
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.publisher.DomainEventPublisher;
+import ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityActivatedPayload;
+import ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityUpdatedPayload;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.*;
@@ -52,12 +53,7 @@ public class BusinessPartnerService {
 
     private static final String BUSINESS_PARTNER_WITH_ID_S_NOT_FOUND = "Business partner with id '%s' not found.";
     private static final int PUBLISH_PAGE_SIZE = 500;
-    private static final Map<String, String> BUSINESS_PARTNER_SORT_FIELDS = Map.of(
-        "name",
-        "defaultEntityName",
-        "entityName",
-        "defaultEntityName"
-    );
+    private static final Map<String, String> BUSINESS_PARTNER_SORT_FIELDS = Map.of("entityName", "defaultEntityName");
     private final BusinessPartnerRepository businessPartnerRepository;
     private final TrustOnboardingSubmissionRepository trustOnboardingSubmissionRepository;
     private final TrustOnboardingSubmissionLimitProperties trustOnboardingSubmissionLimitProperties;
@@ -111,7 +107,7 @@ public class BusinessPartnerService {
             String.valueOf(businessPartner.getVersion()),
             AuditMapper.toAuditJson(businessPartner)
         );
-        publishEventFor(businessPartner.getId());
+        publishBusinessPartnerUpdatedEventFor(businessPartner.getId());
         pamsClient.createBusinessPartner(businessPartner, pamsUserAdminDirUid);
         return toBusinessPartnerDto(businessPartner);
     }
@@ -148,7 +144,7 @@ public class BusinessPartnerService {
             String.valueOf(businessPartner.getVersion()),
             AuditMapper.toAuditJson(businessPartner)
         );
-        publishEventFor(businessPartner.getId());
+        publishBusinessPartnerUpdatedEventFor(businessPartner.getId());
         return toBusinessEntityDto(businessPartner);
     }
 
@@ -185,7 +181,7 @@ public class BusinessPartnerService {
             String.valueOf(businessPartner.getVersion()),
             AuditMapper.toAuditJson(businessPartner)
         );
-        publishEventFor(businessPartner.getId());
+        publishBusinessPartnerUpdatedEventFor(businessPartner.getId());
         return toBusinessPartnerDto(businessPartner);
     }
 
@@ -429,16 +425,40 @@ public class BusinessPartnerService {
     }
 
     /**
-     * Applies a new BusinessPartnerIdentity received from a TMS BPI activated or updated event.
+     * Applies a new BusinessPartnerIdentity received from a TMS BPI activated or updated or activated event.
      */
     @Transactional
-    public void applyBusinessPartnerIdentity(UUID partnerId, BusinessPartnerIdentity bpi) {
-        log.info("Applying BusinessPartnerIdentity event for partner '{}'", partnerId);
-        BusinessEntity businessPartner = businessPartnerRepository
-            .findById(partnerId)
-            .orElseThrow(throwNotFoundException(partnerId));
-        businessPartner.applyBusinessPartnerIdentityEvent(bpi);
-        businessPartnerRepository.save(businessPartner);
+    public void applyActivatedBusinessPartnerIdentity(UUID partnerId, BusinessPartnerIdentityActivatedPayload event) {
+        log.info("Applying BusinessPartnerIdentityActivatedPayload for partner '{}'", partnerId);
+        applyBusinessPartnerIdentity(
+            partnerId,
+            new BusinessPartnerIdentity(
+                event.getValidUntil(),
+                new ArrayList<>(event.getTrustedIdentifier()),
+                BusinessPartnerIdentityStatus.ACTIVE,
+                event.getLastActivated(),
+                event.getUid(),
+                new HashMap<>(event.getEntityName()),
+                event.getVersion()
+            )
+        );
+    }
+
+    @Transactional
+    public void applyUpdatedBusinessPartnerIdentity(UUID partnerId, BusinessPartnerIdentityUpdatedPayload event) {
+        log.info("Applying BusinessPartnerIdentityUpdatedPayload for partner '{}'", partnerId);
+        applyBusinessPartnerIdentity(
+            partnerId,
+            new BusinessPartnerIdentity(
+                event.getValidUntil(),
+                new ArrayList<>(event.getTrustedIdentifier()),
+                toBusinessPartnerIdentityStatus(event.getStatus()),
+                event.getLastActivated(),
+                event.getUid(),
+                new HashMap<>(event.getEntityName()),
+                event.getVersion()
+            )
+        );
     }
 
     /**
@@ -459,7 +479,7 @@ public class BusinessPartnerService {
         var currentBpi = businessPartner.getBusinessPartnerIdentity();
         var deactivated = currentBpi != null;
         if (deactivated) {
-            businessPartner.applyBusinessPartnerIdentityEvent(currentBpi.withDeactivated(tmsVersion));
+            businessPartner.updateBusinessPartnerIdentity(currentBpi.withDeactivated(tmsVersion));
         }
         businessPartnerRepository.save(businessPartner);
         return deactivated;
@@ -516,7 +536,7 @@ public class BusinessPartnerService {
         var nameChanged = !previousDefaultName.equals(newDefaultName);
 
         businessPartner.update(entityName, email, address, uid, phone);
-        businessPartner.setType(type);
+        businessPartner.changeType(type);
 
         if (nameChanged) {
             pamsClient.updateBusinessPartner(businessPartner);
@@ -528,7 +548,36 @@ public class BusinessPartnerService {
             String.valueOf(businessPartner.getVersion()),
             AuditMapper.toAuditJson(businessPartner)
         );
-        publishEventFor(businessPartner.getId());
+        publishBusinessPartnerUpdatedEventFor(businessPartner.getId());
+    }
+
+    /**
+     * Toggles the hard-delete safeguard of a business partner. While the flag is false,
+     * CBS refuses every hard delete of the partner regardless of the caller. Arming a governmental
+     * institution is refused by the domain ({@link BusinessEntity#allowHardDelete()}).
+     * Every change is audited and published as TiBusinessPartnerUpdatedEvent.
+     */
+    @Transactional
+    public BusinessPartnerDto changeHardDeleteAllowed(UUID businessPartnerId, boolean hardDeleteAllowed) {
+        log.info("Setting hardDeleteAllowed={} for business partner '{}'", hardDeleteAllowed, businessPartnerId);
+        BusinessEntity businessPartner = businessPartnerRepository
+            .findById(businessPartnerId)
+            .orElseThrow(throwNotFoundException(businessPartnerId));
+
+        if (hardDeleteAllowed) {
+            businessPartner.allowHardDelete();
+        } else {
+            businessPartner.unallowHardDelete();
+        }
+
+        businessPartner = businessPartnerRepository.saveAndFlush(businessPartner);
+        auditPublisher.businessPartnerUpdated(
+            businessPartner.getId().toString(),
+            String.valueOf(businessPartner.getVersion()),
+            AuditMapper.toAuditJson(businessPartner)
+        );
+        publishBusinessPartnerUpdatedEventFor(businessPartner.getId());
+        return toBusinessPartnerDto(businessPartner);
     }
 
     /**
@@ -542,7 +591,7 @@ public class BusinessPartnerService {
         if (!businessPartnerRepository.existsById(businessPartnerId)) {
             throw throwNotFoundException(businessPartnerId).get();
         }
-        publishEventFor(businessPartnerId);
+        publishBusinessPartnerUpdatedEventFor(businessPartnerId);
     }
 
     /**
@@ -556,19 +605,9 @@ public class BusinessPartnerService {
         Page<UUID> ids;
         do {
             ids = businessPartnerRepository.findAllIds(pageable);
-            ids.forEach(this::publishEventFor);
+            ids.forEach(this::publishBusinessPartnerUpdatedEventFor);
             pageable = pageable.next();
         } while (ids.hasNext());
-    }
-
-    /**
-     * Must only be called for creates/updates of the partner itself - never for
-     * BusinessPartnerIdentity changes, which originate from TMS and would be echoed back.
-     */
-    private void publishEventFor(UUID businessPartnerId) {
-        domainEventPublisher.publishTiBusinessPartnerUpdatedEvent(
-            TiBusinessPartnerUpdatedEventBuilder.create().businessPartnerId(businessPartnerId).build()
-        );
     }
 
     @Transactional
@@ -630,6 +669,34 @@ public class BusinessPartnerService {
         return toBusinessPartnerDto(entity);
     }
 
+    @Transactional(readOnly = true)
+    public void validateBusinessPartnerExists(@Valid UUID businessEntityId)
+        throws BusinessDataIntegrityViolationException {
+        if (!businessPartnerRepository.existsById(businessEntityId)) {
+            throw new BusinessDataIntegrityViolationException(
+                "The business partner does not exist in this environment."
+            );
+        }
+    }
+
+    private void applyBusinessPartnerIdentity(UUID partnerId, BusinessPartnerIdentity bpi) {
+        var businessPartner = businessPartnerRepository
+            .findById(partnerId)
+            .orElseThrow(throwNotFoundException(partnerId));
+        businessPartner.updateBusinessPartnerIdentity(bpi);
+        businessPartnerRepository.save(businessPartner);
+    }
+
+    /**
+     * Must only be called for creates/updates of the partner itself - never for
+     * BusinessPartnerIdentity changes, which originate from TMS and would be echoed back.
+     */
+    private void publishBusinessPartnerUpdatedEventFor(UUID businessPartnerId) {
+        domainEventPublisher.publishTiBusinessPartnerUpdatedEvent(
+            TiBusinessPartnerUpdatedEventBuilder.create().businessPartnerId(businessPartnerId).build()
+        );
+    }
+
     private @NonNull BusinessPartnerType lookupBusinessPartnerType(UUID partnerId) {
         return businessPartnerRepository
             .findById(partnerId)
@@ -668,15 +735,5 @@ public class BusinessPartnerService {
             pageable,
             BUSINESS_PARTNER_SORT_FIELDS
         );
-    }
-
-    @Transactional(readOnly = true)
-    public void validateBusinessPartnerExists(@Valid UUID businessEntityId)
-        throws BusinessDataIntegrityViolationException {
-        if (!businessPartnerRepository.existsById(businessEntityId)) {
-            throw new BusinessDataIntegrityViolationException(
-                "The business partner does not exist in this environment."
-            );
-        }
     }
 }

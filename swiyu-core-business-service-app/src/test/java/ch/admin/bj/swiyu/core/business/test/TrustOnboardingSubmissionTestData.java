@@ -5,6 +5,7 @@ import static ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.Tr
 import static ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.TrustOnboardingMapper.toContactEntity;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.DEFAULT_ENTITY;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.entityNameLocalizedMap;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.hibernate.internal.util.collections.CollectionHelper.listOf;
 
@@ -12,6 +13,7 @@ import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
 import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
+import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
 import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerTrustStatusDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionRequestDto;
@@ -34,7 +36,6 @@ public class TrustOnboardingSubmissionTestData {
             .entityAddress(
                 AddressDto.builder().street("Test Street").postalCode("1234").city("Test City").country("CH").build()
             )
-            .correspondingLanguage(LanguageDto.DE)
             .registryIds(Map.of("UID", "CHE-123.456.789"))
             .entityEmail("test@example.com")
             .contactPerson(
@@ -88,7 +89,6 @@ public class TrustOnboardingSubmissionTestData {
                 )
             )
             .entityEmail("updated@email.com")
-            .correspondingLanguage(LanguageDto.DE)
             .entityAddress(
                 AddressDto.builder()
                     .street("Updated Test Street")
@@ -112,15 +112,52 @@ public class TrustOnboardingSubmissionTestData {
     }
 
     public static TrustOnboardingSubmission trustOnboardingSubmissionEmpty() {
-        return new TrustOnboardingSubmission(DEFAULT_ENTITY, null, UNSUBMITTED);
+        return new TrustOnboardingSubmission(
+            UUID.randomUUID(),
+            DEFAULT_ENTITY,
+            null,
+            null,
+            null,
+            null,
+            null,
+            false,
+            emptyList(),
+            BusinessPartnerType.BUSINESS,
+            null,
+            emptyList()
+        );
     }
 
     public static TrustOnboardingSubmission trustOnboardingSubmission() {
         return trustOnboardingSubmission(UUID.randomUUID(), DEFAULT_ENTITY);
     }
 
+    public static TrustOnboardingSubmission trustOnboardingSubmissionRenewal() {
+        return trustOnboardingSubmission(
+            UUID.randomUUID(),
+            DEFAULT_ENTITY,
+            UNSUBMITTED,
+            Instant.now(),
+            TrustOnboardingSubmissionType.RENEWAL
+        );
+    }
+
     public static TrustOnboardingSubmission trustOnboardingSubmission(UUID id, UUID partnerId) {
         return trustOnboardingSubmission(id, partnerId, TrustOnboardingSubmissionStatus.UNSUBMITTED, Instant.now());
+    }
+
+    public static TrustOnboardingSubmission trustOnboardingSubmission(
+        UUID id,
+        UUID partnerId,
+        TrustOnboardingSubmissionType type
+    ) {
+        return trustOnboardingSubmission(
+            id,
+            partnerId,
+            TrustOnboardingSubmissionStatus.UNSUBMITTED,
+            Instant.now(),
+            type
+        );
     }
 
     public static TrustOnboardingSubmission trustOnboardingSubmission(UUID id, UUID partnerId, Instant initiatedAt) {
@@ -141,25 +178,42 @@ public class TrustOnboardingSubmissionTestData {
         TrustOnboardingSubmissionStatus status,
         Instant initiatedAt
     ) {
+        return trustOnboardingSubmission(
+            id,
+            partnerId,
+            status,
+            initiatedAt,
+            TrustOnboardingSubmissionType.REGISTRATION
+        );
+    }
+
+    public static TrustOnboardingSubmission trustOnboardingSubmission(
+        UUID id,
+        UUID partnerId,
+        TrustOnboardingSubmissionStatus status,
+        Instant initiatedAt,
+        TrustOnboardingSubmissionType type
+    ) {
         TrustOnboardingSubmissionRequestDto dto = trustOnboardingSubmissionRequestDto();
         var proofOfPossessions = List.of(SUBMITTED, REJECTED).contains(status)
             ? proofOfPossessionValid(dto.getDids())
             : proofOfPossessionNotSupplied(dto.getDids());
         var submission = new TrustOnboardingSubmission(
+            type,
             id,
             partnerId,
             dto.getEntityName(),
             AddressMapper.toAddressEntity(dto.entityAddress()),
             dto.getEntityEmail(),
-            toContactEntity(dto.getContactPerson(), dto.correspondingLanguage()),
+            toContactEntity(dto.getContactPerson()),
             dto.getRegistryIds().get("UID"),
             true,
             proofOfPossessions,
             BusinessPartnerType.BUSINESS,
             SigningRule.SINGLE_SIGNATURE,
-            List.of(new Signatory("John", "Doe", "+41 79 123 45 67", "john.doe@example.com")),
-            initiatedAt
+            List.of(new Signatory("John", "Doe", "+41 79 123 45 67", "john.doe@example.com"))
         );
+        submission.setInitiatedAt(initiatedAt);
         switch (status) {
             case UNSUBMITTED_TIMEOUT -> submission.markAsExpired();
             case SUBMITTED -> submission.markAsSubmitted();
@@ -194,11 +248,67 @@ public class TrustOnboardingSubmissionTestData {
             .toList();
     }
 
-    private static List<ProofOfPossession> proofOfPossessionNotSupplied(List<String> dids) {
-        return dids
+    private static List<ProofOfPossession> proofOfPossessionNotSupplied(List<String> didsForProofOfPossession) {
+        return didsForProofOfPossession
             .stream()
             .map(did -> new ProofOfPossession(did, UUID.randomUUID().toString()))
             .toList();
+    }
+
+    public static TrustOnboardingSubmission submission(
+        BusinessPartnerType partnerType,
+        SigningRule signingRule,
+        List<Signatory> signatories,
+        Boolean isRegisteredInCommercialRegister
+    ) {
+        var base = trustOnboardingSubmission(UUID.randomUUID(), DEFAULT_ENTITY);
+        return new TrustOnboardingSubmission(
+            base.getId(),
+            base.getPartnerId(),
+            base.getEntityName(),
+            base.getEntityAddress(),
+            base.getEntityEmail(),
+            contactWithAddress(),
+            base.getUid(),
+            isRegisteredInCommercialRegister,
+            base.getProofOfPossessions(),
+            partnerType,
+            signingRule,
+            signatories
+        );
+    }
+
+    public static TrustOnboardingSubmission businessSubmission(SigningRule signingRule, List<Signatory> signatories) {
+        return submission(BusinessPartnerType.BUSINESS, signingRule, signatories, true);
+    }
+
+    public static TrustOnboardingSubmission submissionWithProofOfPossessions(
+        TrustOnboardingSubmission base,
+        List<ProofOfPossession> proofOfPossessions
+    ) {
+        return new TrustOnboardingSubmission(
+            base.getId(),
+            base.getPartnerId(),
+            base.getEntityName(),
+            base.getEntityAddress(),
+            base.getEntityEmail(),
+            base.getContactPerson(),
+            base.getUid(),
+            base.getIsRegisteredInCommercialRegister(),
+            proofOfPossessions,
+            base.getRequestedPartnerType(),
+            base.getSigningRule(),
+            base.getSignatories()
+        );
+    }
+
+    public static Signatory signatory(String firstName, String lastName) {
+        return new Signatory(
+            firstName,
+            lastName,
+            "+41 79 000 00 00",
+            "%s.%s@example.com".formatted(firstName, lastName)
+        );
     }
 
     public static Stream<Arguments> provideUpdateTrustStatus_aggregation_validation() {
@@ -280,5 +390,15 @@ public class TrustOnboardingSubmissionTestData {
                 List.of(TrustOnboardingSubmissionStatus.REJECTED, TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED)
             )
         );
+    }
+
+    public static Contact contactWithAddress() {
+        return Contact.builder()
+            .firstName("John")
+            .lastName("Doe")
+            .email("john.doe@example.com")
+            .phone("+41 79 123 45 67")
+            .correspondingLanguage(ch.admin.bj.swiyu.core.business.common.domain.Language.DE)
+            .build();
     }
 }

@@ -1015,7 +1015,7 @@ class TrustOnboardingServiceIT {
         // Given a partner with ACTIVE business partner identity and trustedIdentifier
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
-        partner.updateBusinessPartnerIdentity(businessPartnerIdentity());
+        repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId()));
         // Also update the contact on the BusinessEntity for correspondence language
         partner.applyPartialUpdateFromPortal(
             null,
@@ -1070,7 +1070,7 @@ class TrustOnboardingServiceIT {
         // Given a partner with ACTIVE BPI and validUntil within 3 years (RENEWAL_THRESHOLD)
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
-        partner.updateBusinessPartnerIdentity(businessPartnerIdentity());
+        repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId()));
         partner.applyPartialUpdateFromPortal(
             null,
             null,
@@ -1113,7 +1113,9 @@ class TrustOnboardingServiceIT {
         // Given a partner with ACTIVE BPI and validUntil OUTSIDE 3 years
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
-        partner.updateBusinessPartnerIdentity(businessPartnerIdentity(Instant.now().plus(Duration.ofDays(365 * 4))));
+        repos.businessPartnerIdentity.saveAndFlush(
+            businessPartnerIdentity(partner.getId(), Instant.now().plus(Duration.ofDays(365 * 4)))
+        );
         repos.businessPartner.saveAndFlush(partner);
 
         // And a previous successful REGISTRATION submission
@@ -1138,7 +1140,9 @@ class TrustOnboardingServiceIT {
         // Given a partner with ACTIVE BPI and validUntil OUTSIDE 3 years
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
-        partner.updateBusinessPartnerIdentity(businessPartnerIdentity(Instant.now().plus(Duration.ofDays(365 * 4))));
+        repos.businessPartnerIdentity.saveAndFlush(
+            businessPartnerIdentity(partner.getId(), Instant.now().plus(Duration.ofDays(365 * 4)))
+        );
         repos.businessPartner.saveAndFlush(partner);
 
         // And a previous successful REGISTRATION submission
@@ -1167,7 +1171,7 @@ class TrustOnboardingServiceIT {
         // Given a partner with ACTIVE BPI and validUntil WITHIN 3 years
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
-        partner.updateBusinessPartnerIdentity(businessPartnerIdentity());
+        repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId()));
         repos.businessPartner.saveAndFlush(partner);
 
         // And a previous successful REGISTRATION submission
@@ -1215,7 +1219,7 @@ class TrustOnboardingServiceIT {
         // Given a partner with ACTIVE BPI
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
-        partner.updateBusinessPartnerIdentity(businessPartnerIdentity());
+        repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId()));
         repos.businessPartner.saveAndFlush(partner);
 
         // NO previous submission exists
@@ -1235,7 +1239,7 @@ class TrustOnboardingServiceIT {
         // Given a partner with ACTIVE BPI but NO trustedIdentifier
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
-        partner.updateBusinessPartnerIdentity(businessPartnerIdentity(emptyList()));
+        repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId(), emptyList()));
         repos.businessPartner.saveAndFlush(partner);
 
         // And a previous successful REGISTRATION submission
@@ -1262,7 +1266,7 @@ class TrustOnboardingServiceIT {
         // Given a partner with ACTIVE BPI
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
-        partner.updateBusinessPartnerIdentity(businessPartnerIdentity());
+        repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId()));
         repos.businessPartner.saveAndFlush(partner);
 
         // And a previous submission with PoP nonces
@@ -1321,7 +1325,7 @@ class TrustOnboardingServiceIT {
         // Given a partner with ACTIVE BPI with a NEW DID not in previous submission
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
-        partner.updateBusinessPartnerIdentity(businessPartnerIdentity());
+        repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId()));
         repos.businessPartner.saveAndFlush(partner);
 
         // Verify BPI is loaded correctly

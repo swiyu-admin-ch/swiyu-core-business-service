@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class BusinessPartnerIdentityEventProcessor {
 
-    private final BusinessPartnerService businessPartnerService;
+    private final BusinessPartnerIdentityService businessPartnerIdentityService;
     private final EmailCommandPublisher emailCommandPublisher;
 
     @Transactional
@@ -29,7 +29,7 @@ public class BusinessPartnerIdentityEventProcessor {
         var payload = event.getPayload();
         var partnerId = UUID.fromString(payload.getBusinessPartnerIdentityId().toString());
         log.info("Processing TiBusinessPartnerIdentityActivatedEvent for partner '{}'", partnerId);
-        businessPartnerService.applyActivatedBusinessPartnerIdentity(partnerId, payload);
+        businessPartnerIdentityService.applyActivatedBusinessPartnerIdentity(partnerId, payload);
     }
 
     @Transactional
@@ -41,7 +41,7 @@ public class BusinessPartnerIdentityEventProcessor {
         var payload = event.getPayload();
         var partnerId = UUID.fromString(payload.getBusinessPartnerIdentityId().toString());
         log.info("Processing TiBusinessPartnerIdentityUpdatedEvent for partner '{}'", partnerId);
-        businessPartnerService.applyUpdatedBusinessPartnerIdentity(partnerId, payload);
+        businessPartnerIdentityService.applyUpdatedBusinessPartnerIdentity(partnerId, payload);
     }
 
     @Transactional
@@ -54,7 +54,7 @@ public class BusinessPartnerIdentityEventProcessor {
         var partnerId = UUID.fromString(payload.getBusinessPartnerIdentityId().toString());
         log.info("Processing TiBusinessPartnerIdentityDeactivatedEvent for partner '{}'", partnerId);
 
-        if (businessPartnerService.deactivateBusinessPartnerIdentity(partnerId, payload.getVersion())) {
+        if (businessPartnerIdentityService.deactivateBusinessPartnerIdentity(partnerId, payload.getVersion())) {
             emailCommandPublisher.trustIdentityExpired(partnerId);
         } else {
             log.warn(

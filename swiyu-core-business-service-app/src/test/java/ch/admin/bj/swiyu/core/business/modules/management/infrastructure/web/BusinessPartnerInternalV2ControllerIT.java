@@ -82,6 +82,7 @@ class BusinessPartnerInternalV2ControllerIT {
 
     @BeforeEach
     void setUp() {
+        repos.businessPartnerIdentity.deleteAll();
         repos.businessPartner.deleteAll();
         repos.businessPartner.flush();
     }

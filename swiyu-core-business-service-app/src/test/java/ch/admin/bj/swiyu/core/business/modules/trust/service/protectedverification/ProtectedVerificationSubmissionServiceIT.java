@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -64,15 +65,20 @@ class ProtectedVerificationSubmissionServiceIT {
     @Autowired
     TestRepositories testRepositories;
 
+    @Autowired
+    TestEntityManager testEntityManager;
+
     private final UUID trustedPartnerId = BusinessEntityTestData.DEFAULT_ENTITY;
 
     @BeforeEach
     void setUp() {
         testRepositories.truncateTables();
         BusinessEntityTestData.insertTestBusinessPartners(testRepositories.businessPartner);
-        var trustedEntity = testRepositories.businessPartner.findById(trustedPartnerId).orElseThrow();
-        trustedEntity.updateBusinessPartnerIdentity(BusinessEntityTestData.businessPartnerIdentity());
-        testRepositories.businessPartner.save(trustedEntity);
+        testRepositories.businessPartnerIdentity.saveAndFlush(
+            BusinessEntityTestData.businessPartnerIdentity(trustedPartnerId)
+        );
+        // the identity is mapped read-only on the partner: drop the cached partners so they are reloaded with it
+        testEntityManager.clear();
     }
 
     @Test

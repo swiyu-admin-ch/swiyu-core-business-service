@@ -76,4 +76,19 @@ class DemoDataImportServiceIT {
             TrustOnboardingSubmissionType.PROFILE_CHANGE_MANDATORY
         );
     }
+
+    @Test
+    void reimportingDemoData_overwritesThePartnersAndReappliesTheIdentities() {
+        setSystemSecurityContext();
+        demoDataImportService.generateBusinessPartners();
+        demoDataImportService.generateBusinessPartnerIdentities();
+        var identityCount = repos.businessPartnerIdentity.count();
+        assertThat(identityCount).isPositive();
+
+        // re-import over the existing partners and identities
+        demoDataImportService.generateBusinessPartners();
+        demoDataImportService.generateBusinessPartnerIdentities();
+
+        assertThat(repos.businessPartnerIdentity.count()).isEqualTo(identityCount);
+    }
 }

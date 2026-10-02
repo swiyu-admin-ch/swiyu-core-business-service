@@ -98,7 +98,7 @@ class BusinessPartnerIdentityEventProcessorIT {
 
     private UUID givenPartnerWithActiveIdentity() {
         var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
-        partner.updateBusinessPartnerIdentity(businessPartnerIdentity());
+        repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId()));
         return repos.businessPartner.save(partner).getId();
     }
 

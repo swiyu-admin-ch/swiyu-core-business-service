@@ -13,8 +13,9 @@ import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocument
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntry;
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntryRepository;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
-import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
+import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerIdentityService;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentUploadRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.protectedverification.ProtectedVerificationSubmission;
@@ -45,7 +46,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DemoDataImportService {
 
     private final BusinessPartnerRepository businessEntityRepository;
-    private final BusinessPartnerService businessPartnerService;
+    private final BusinessPartnerIdentityService businessPartnerIdentityService;
     private final IdentifierEntryRepository identifierEntryRepository;
     private final IdentifierDatastoreEntityRepository identifierDatastoreEntityRepository;
     private final PartnerDocumentsRepository partnerDocumentsRepository;
@@ -62,6 +63,12 @@ public class DemoDataImportService {
         var data = Arrays.stream(DemoData.DemoCase.values())
             .map(demoCase -> DemoDataMapper.toBusinessEntity(demoCase.bp))
             .toList();
+
+        // reset the identities before loading the partners, they are re-applied by
+        // generateBusinessPartnerIdentities()
+        businessPartnerIdentityService.deleteBusinessPartnerIdentities(
+            data.stream().map(BusinessEntity::getId).toList()
+        );
 
         for (var d : data) {
             var optDbEntity = businessEntityRepository.findById(d.getId());
@@ -267,7 +274,7 @@ public class DemoDataImportService {
         Arrays.stream(DemoData.DemoCase.values())
             .filter(demoCase -> demoCase.bp.bpi() != null)
             .forEach(demoCase ->
-                businessPartnerService.applyUpdatedBusinessPartnerIdentity(
+                businessPartnerIdentityService.applyUpdatedBusinessPartnerIdentity(
                     demoCase.bp.id(),
                     new BusinessPartnerIdentityUpdatedPayload(
                         demoCase.bp.id(),

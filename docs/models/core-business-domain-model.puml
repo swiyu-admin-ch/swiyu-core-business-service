@@ -38,12 +38,25 @@ package "Management" #E8F5E9 {
         -- embedded --
         + address : Address
         + contact : Contact
-        + businessPartnerIdentity : BusinessPartnerIdentity
         + auditMetadata : AuditMetadata
     }
 
+    entity BusinessPartnerIdentity <<entity>> {
+        + businessPartnerId : UUID <<PK, FK = BusinessEntity.id>>
+        + validUntil : Instant
+        + status : BusinessPartnerIdentityStatus
+        + lastActivated : Instant
+        + uid : String
+        + tmsVersion : Long
+        + version : Long
+        -- jsonb --
+        + trustedIdentifier : List<String>
+        + entityName : Map<String,String>
+    }
+
     BusinessEntity --> BusinessPartnerType : type
-    BusinessEntity --> BusinessPartnerIdentityStatus : businessPartnerIdentity.status
+    BusinessPartnerIdentity --> BusinessPartnerIdentityStatus : status
+    BusinessEntity ||--o| BusinessPartnerIdentity : "id = businessPartnerId (read-only)"
 }
 
 ' ========================
@@ -377,16 +390,6 @@ package "Common Value Objects" #EEEEFF {
         + jti : UUID
         + jwt : String
         + expiresAt : Instant
-    }
-
-    class BusinessPartnerIdentity <<embeddable>> {
-        + validUntil : Instant
-        + trustedIdentifier : List<String>
-        + status : BusinessPartnerIdentityStatus
-        + lastActivated : Instant
-        + uid : String
-        + entityName : Map<String,String>
-        + tmsVersion : Long
     }
 }
 

@@ -15,10 +15,7 @@ import ch.admin.bj.swiyu.core.business.modules.management.api.*;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
-import ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityActivatedPayload;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -135,18 +132,6 @@ public class BusinessPartnerMapper {
             return null;
         }
         return Language.valueOf(source.name());
-    }
-
-    public static BusinessPartnerIdentity toBusinessPartnerIdentity(BusinessPartnerIdentityActivatedPayload payload) {
-        return new BusinessPartnerIdentity(
-            payload.getValidUntil(),
-            new ArrayList<>(payload.getTrustedIdentifier()),
-            toBusinessPartnerIdentityStatus(payload.getStatus()),
-            payload.getLastActivated(),
-            payload.getUid(),
-            new HashMap<>(payload.getEntityName()),
-            payload.getVersion()
-        );
     }
 
     public static BusinessPartnerIdentityStatus toBusinessPartnerIdentityStatus(

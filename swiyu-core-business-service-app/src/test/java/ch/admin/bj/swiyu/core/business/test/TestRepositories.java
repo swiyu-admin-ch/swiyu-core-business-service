@@ -2,6 +2,7 @@ package ch.admin.bj.swiyu.core.business.test;
 
 import ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocumentsRepository;
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntryRepository;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityRepository;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
 import ch.admin.bj.swiyu.core.business.modules.status.domain.StatusListEntryRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustAdditionalDidsSubmissionRepository;
@@ -27,6 +28,7 @@ public class TestRepositories {
 
     public final IdentifierEntryRepository identifierEntry;
     public final BusinessPartnerRepository businessPartner;
+    public final BusinessPartnerIdentityRepository businessPartnerIdentity;
     public final VcSchemaSubmissionRepository vcSchemaSubmission;
     public final TrustOnboardingSubmissionRepository trustOnboardingSubmission;
     public final VqpsSubmissionRepository vqpsSubmission;
@@ -47,6 +49,7 @@ public class TestRepositories {
         // now each delete in separate transaction
         partnerDocuments.deleteAllInBatch();
         identifierEntry.deleteAllInBatch();
+        businessPartnerIdentity.deleteAllInBatch();
         businessPartner.deleteAllInBatch();
         vcSchemaSubmission.deleteAllInBatch();
         trustOnboardingSubmission.deleteAllInBatch();

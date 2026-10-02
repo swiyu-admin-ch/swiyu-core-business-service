@@ -32,16 +32,19 @@ import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitia
 import ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityStatus;
 import ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityUpdatedPayload;
 import ch.admin.bj.swiyu.messagetype.ti.TiBusinessPartnerUpdatedEvent;
+import jakarta.persistence.EntityManagerFactory;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
+import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -51,10 +54,17 @@ import org.springframework.test.context.jdbc.Sql;
  * Example of an integration test for a service class without bootstrapping the whole application.
  */
 @ActiveProfiles("test")
-@DataJpaTest
+@DataJpaTest(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
 @WithJeapAuthenticationToken(username = "test")
 @WithAllTestContainerInitializers
-@Import({ DataJpaTestConfiguration.class, DataJpaTestKafkaConfiguration.class, BusinessPartnerService.class })
+@Import(
+    {
+        DataJpaTestConfiguration.class,
+        DataJpaTestKafkaConfiguration.class,
+        BusinessPartnerService.class,
+        BusinessPartnerIdentityService.class,
+    }
+)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "/delete_business_entities.sql")
 class BusinessPartnerServiceIT {
@@ -76,6 +86,12 @@ class BusinessPartnerServiceIT {
 
     @Autowired
     BusinessPartnerService businessPartnerService;
+
+    @Autowired
+    BusinessPartnerIdentityService businessPartnerIdentityService;
+
+    @Autowired
+    EntityManagerFactory entityManagerFactory;
 
     @Test
     void getBusinessEntities() {
@@ -242,16 +258,147 @@ class BusinessPartnerServiceIT {
         ).isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * EID-7099: TMS sends the BPI events at the same time as the trust onboarding outcome, which updates
+     * the partner. Applying the identity must therefore never touch (and version-bump) the partner row,
+     * otherwise one of the two transactions fails with an OptimisticLockException.
+     */
     @Test
-    void deleteBusinessEntity_withExistingPartner() {
+    void applyingAndDeactivatingBusinessPartnerIdentity_doesNotBumpThePartnerVersion() {
         // GIVEN
-        var partner = repos.businessPartner.save(businessPartnerOfTypeBusiness(UUID.randomUUID()));
+        var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
+        repos.commit();
+        var versionBefore = repos.businessPartner.findById(partner.getId()).orElseThrow().getVersion();
+
+        // WHEN
+        businessPartnerIdentityService.applyUpdatedBusinessPartnerIdentity(
+            partner.getId(),
+            businessPartnerIdentityUpdatedPayload()
+        );
+        businessPartnerIdentityService.deactivateBusinessPartnerIdentity(partner.getId(), 2L);
+
+        // THEN
+        var reloaded = repos.businessPartner.findById(partner.getId()).orElseThrow();
+        assertThat(reloaded.getVersion()).isEqualTo(versionBefore);
+        assertThat(reloaded.getBusinessPartnerIdentity().getStatus()).isEqualTo(
+            ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus.DEACTIVATED
+        );
+        assertThat(reloaded.getBusinessPartnerIdentity().getTmsVersion()).isEqualTo(2L);
+    }
+
+    @Test
+    void savingAPartnerLoadedBeforeTheIdentityWasApplied_doesNotFailWithAnOptimisticLock() {
+        // GIVEN - the onboarding handler has loaded the partner
+        var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
+        repos.commit();
+        var loadedByOnboardingHandler = repos.businessPartner.findById(partner.getId()).orElseThrow();
+
+        // WHEN - the identity event is applied in between, then the onboarding handler saves the partner
+        businessPartnerIdentityService.applyUpdatedBusinessPartnerIdentity(
+            partner.getId(),
+            businessPartnerIdentityUpdatedPayload()
+        );
+        loadedByOnboardingHandler.applyPartialUpdateFromPortal("Updated Name AG", null, null, null);
+        repos.businessPartner.saveAndFlush(loadedByOnboardingHandler);
+
+        // THEN - both changes are kept
+        var reloaded = repos.businessPartner.findById(partner.getId()).orElseThrow();
+        assertThat(reloaded.getEntityName()).containsEntry("default", "Updated Name AG");
+        assertThat(reloaded.isBusinessPartnerIdentityActive()).isTrue();
+    }
+
+    @Test
+    void applyUpdatedBusinessPartnerIdentity_twice_updatesTheExistingIdentity() {
+        // GIVEN
+        var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
+        repos.businessPartnerIdentity.saveAndFlush(
+            BusinessEntityTestData.deactivatedBusinessPartnerIdentity(partner.getId())
+        );
         repos.commit();
 
-        // WHEN / THEN
-        Assertions.assertThat(businessPartnerService.getBusinessEntity(partner.getId())).isPresent();
-        businessPartnerService.deleteBusinessEntity(partner.getId());
-        Assertions.assertThat(businessPartnerService.getBusinessEntity(partner.getId())).isNotPresent();
+        // WHEN
+        businessPartnerIdentityService.applyUpdatedBusinessPartnerIdentity(
+            partner.getId(),
+            businessPartnerIdentityUpdatedPayload()
+        );
+
+        // THEN
+        assertThat(
+            repos.businessPartner.findById(partner.getId()).orElseThrow().isBusinessPartnerIdentityActive()
+        ).isTrue();
+    }
+
+    @Test
+    void applyUpdatedBusinessPartnerIdentity_unknownPartner_throws() {
+        var unknownId = UUID.randomUUID();
+        var payload = businessPartnerIdentityUpdatedPayload();
+        assertThatThrownBy(() ->
+            businessPartnerIdentityService.applyUpdatedBusinessPartnerIdentity(unknownId, payload)
+        ).isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    /**
+     * The identity is loaded eagerly; the list queries must fetch it in the same select instead of one
+     * extra select per partner.
+     */
+    @Test
+    void listingPartners_fetchesTheIdentitiesInTheSameQuery() {
+        // GIVEN - two partners with an identity, one without
+        var partnerA = repos.businessPartner.save(businessPartnerOfTypeBusiness(UUID.randomUUID()));
+        var partnerB = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
+        var partnerWithoutIdentity = repos.businessPartner.save(businessPartnerOfTypeBusiness(UUID.randomUUID()));
+        repos.businessPartnerIdentity.saveAndFlush(BusinessEntityTestData.businessPartnerIdentity(partnerA.getId()));
+        repos.businessPartnerIdentity.saveAndFlush(BusinessEntityTestData.businessPartnerIdentity(partnerB.getId()));
+        repos.commit();
+        var statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        statistics.clear();
+
+        // WHEN - pages are not full, so no count query is issued
+        var all = repos.businessPartner.findAll(PageRequest.of(0, 10));
+        var byIds = repos.businessPartner.findAllByIdIn(
+            List.of(partnerA.getId(), partnerB.getId(), partnerWithoutIdentity.getId()),
+            PageRequest.of(0, 10)
+        );
+
+        // THEN - one select per list query
+        assertThat(statistics.getPrepareStatementCount()).isEqualTo(2);
+        assertThat(all.getContent()).hasSize(3);
+        assertThat(byIds.getContent()).hasSize(3);
+        assertThat(byIds.getContent())
+            .filteredOn(partner -> partner.getId().equals(partnerWithoutIdentity.getId()))
+            .singleElement()
+            .satisfies(partner -> assertThat(partner.getBusinessPartnerIdentity()).isNull());
+        assertThat(byIds.getContent())
+            .filteredOn(partner -> !partner.getId().equals(partnerWithoutIdentity.getId()))
+            .allSatisfy(partner -> assertThat(partner.getBusinessPartnerIdentity()).isNotNull());
+    }
+
+    /**
+     * Creating an identity checks the partner and inserts without a select of the new row (@Version: a null version marks it as new);
+     * updating one skips the partner check, as an existing identity implies an existing partner.
+     */
+    @Test
+    void applyUpdatedBusinessPartnerIdentity_issuesNoUnnecessaryQueries() {
+        // GIVEN
+        var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
+        repos.commit();
+        var statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+
+        // WHEN / THEN - create: find identity, check partner, insert
+        statistics.clear();
+        businessPartnerIdentityService.applyUpdatedBusinessPartnerIdentity(
+            partner.getId(),
+            businessPartnerIdentityUpdatedPayload()
+        );
+        assertThat(statistics.getPrepareStatementCount()).isEqualTo(3);
+
+        // WHEN / THEN - update: find identity, update
+        statistics.clear();
+        businessPartnerIdentityService.applyUpdatedBusinessPartnerIdentity(
+            partner.getId(),
+            businessPartnerIdentityUpdatedPayload()
+        );
+        assertThat(statistics.getPrepareStatementCount()).isEqualTo(2);
     }
 
     @Test
@@ -306,12 +453,12 @@ class BusinessPartnerServiceIT {
     void deactivateBusinessPartnerIdentity_reportsThatAnIdentityWasDeactivated() {
         // GIVEN
         var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
-        partner.updateBusinessPartnerIdentity(BusinessEntityTestData.businessPartnerIdentity());
+        repos.businessPartnerIdentity.saveAndFlush(BusinessEntityTestData.businessPartnerIdentity(partner.getId()));
         repos.businessPartner.save(partner);
         repos.commit();
 
         // WHEN
-        var deactivated = businessPartnerService.deactivateBusinessPartnerIdentity(partner.getId(), 2L);
+        var deactivated = businessPartnerIdentityService.deactivateBusinessPartnerIdentity(partner.getId(), 2L);
 
         // THEN
         assertThat(deactivated).isTrue();
@@ -324,7 +471,7 @@ class BusinessPartnerServiceIT {
         repos.commit();
 
         // WHEN
-        var deactivated = businessPartnerService.deactivateBusinessPartnerIdentity(partner.getId(), 2L);
+        var deactivated = businessPartnerIdentityService.deactivateBusinessPartnerIdentity(partner.getId(), 2L);
 
         // THEN
         assertThat(deactivated).isFalse();
@@ -390,11 +537,11 @@ class BusinessPartnerServiceIT {
         repos.commit();
 
         // WHEN
-        businessPartnerService.applyUpdatedBusinessPartnerIdentity(
+        businessPartnerIdentityService.applyUpdatedBusinessPartnerIdentity(
             partner.getId(),
             businessPartnerIdentityUpdatedPayload()
         );
-        businessPartnerService.deactivateBusinessPartnerIdentity(partner.getId(), 2L);
+        businessPartnerIdentityService.deactivateBusinessPartnerIdentity(partner.getId(), 2L);
 
         // THEN
         verify(domainEventPublisher, never()).publishTiBusinessPartnerUpdatedEvent(

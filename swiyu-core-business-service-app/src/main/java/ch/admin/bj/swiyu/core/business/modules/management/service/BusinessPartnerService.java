@@ -31,8 +31,6 @@ import ch.admin.bj.swiyu.core.business.modules.trust.domain.event.TiBusinessPart
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.publisher.DomainEventPublisher;
-import ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityActivatedPayload;
-import ch.admin.bj.swiyu.messagetype.ti.BusinessPartnerIdentityUpdatedPayload;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.*;
@@ -425,67 +423,6 @@ public class BusinessPartnerService {
     }
 
     /**
-     * Applies a new BusinessPartnerIdentity received from a TMS BPI activated or updated or activated event.
-     */
-    @Transactional
-    public void applyActivatedBusinessPartnerIdentity(UUID partnerId, BusinessPartnerIdentityActivatedPayload event) {
-        log.info("Applying BusinessPartnerIdentityActivatedPayload for partner '{}'", partnerId);
-        applyBusinessPartnerIdentity(
-            partnerId,
-            new BusinessPartnerIdentity(
-                event.getValidUntil(),
-                new ArrayList<>(event.getTrustedIdentifier()),
-                BusinessPartnerIdentityStatus.ACTIVE,
-                event.getLastActivated(),
-                event.getUid(),
-                new HashMap<>(event.getEntityName()),
-                event.getVersion()
-            )
-        );
-    }
-
-    @Transactional
-    public void applyUpdatedBusinessPartnerIdentity(UUID partnerId, BusinessPartnerIdentityUpdatedPayload event) {
-        log.info("Applying BusinessPartnerIdentityUpdatedPayload for partner '{}'", partnerId);
-        applyBusinessPartnerIdentity(
-            partnerId,
-            new BusinessPartnerIdentity(
-                event.getValidUntil(),
-                new ArrayList<>(event.getTrustedIdentifier()),
-                toBusinessPartnerIdentityStatus(event.getStatus()),
-                event.getLastActivated(),
-                event.getUid(),
-                new HashMap<>(event.getEntityName()),
-                event.getVersion()
-            )
-        );
-    }
-
-    /**
-     * Sets the BPI status to DEACTIVATED, preserving all other BPI data.
-     *
-     * @return true if an identity existed and was deactivated, false if there was nothing to deactivate.
-     *         The caller decides how to react - whether to log, to notify the partner, or to ignore it -
-     *         because that depends on where the call comes from. This service also does not publish the
-     *         email itself: the publisher resolves the contact person through this very service, and the
-     *         two would form a bean cycle.
-     */
-    @Transactional
-    public boolean deactivateBusinessPartnerIdentity(UUID partnerId, long tmsVersion) {
-        log.info("Deactivating BusinessPartnerIdentity for partner '{}'", partnerId);
-        BusinessEntity businessPartner = businessPartnerRepository
-            .findById(partnerId)
-            .orElseThrow(throwNotFoundException(partnerId));
-        var currentBpi = businessPartner.getBusinessPartnerIdentity();
-        var deactivated = currentBpi != null;
-        if (deactivated) {
-            businessPartner.updateBusinessPartnerIdentity(currentBpi.withDeactivated(tmsVersion));
-        }
-        businessPartnerRepository.save(businessPartner);
-        return deactivated;
-    }
-
-    /**
      * Email address of the designated contact person of the business partner in the service portal,
      * i.e. the recipient of the partner notification emails. Null if the partner has no contact.
      */
@@ -610,14 +547,6 @@ public class BusinessPartnerService {
         } while (ids.hasNext());
     }
 
-    @Transactional
-    public void deleteBusinessEntity(UUID businessEntityId) {
-        log.info("Deleting business partner with id '{}'", businessEntityId);
-
-        businessPartnerRepository.deleteById(businessEntityId);
-        pamsClient.deleteBusinessPartner(businessEntityId.toString());
-    }
-
     @Transactional(readOnly = true)
     public boolean isGovernmental(UUID partnerId) {
         if (partnerId == null) {
@@ -677,14 +606,6 @@ public class BusinessPartnerService {
                 "The business partner does not exist in this environment."
             );
         }
-    }
-
-    private void applyBusinessPartnerIdentity(UUID partnerId, BusinessPartnerIdentity bpi) {
-        var businessPartner = businessPartnerRepository
-            .findById(partnerId)
-            .orElseThrow(throwNotFoundException(partnerId));
-        businessPartner.updateBusinessPartnerIdentity(bpi);
-        businessPartnerRepository.save(businessPartner);
     }
 
     /**

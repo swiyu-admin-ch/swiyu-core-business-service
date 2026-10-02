@@ -107,7 +107,7 @@ public class BusinessEntityTestData {
         entityA.addPayedForDidSlots(100);
         // Note: no BPI set — BPI only arrives via TMS events (TiBusinessPartnerIdentityActivatedEvent).
         // Tests that require a partner with an ACTIVE or DEACTIVATED BPI must set it explicitly
-        // using applyBusinessPartnerIdentityEvent(activeBusinessPartnerIdentity()).
+        // via TestRepositories.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partnerId)).
         return entityA;
     }
 
@@ -154,12 +154,16 @@ public class BusinessEntityTestData {
         );
     }
 
-    public static BusinessPartnerIdentity businessPartnerIdentity() {
-        return businessPartnerIdentity(Instant.now().plus(Duration.ofDays(365 * 3).minus(Duration.ofDays(10))));
+    public static BusinessPartnerIdentity businessPartnerIdentity(UUID partnerId) {
+        return businessPartnerIdentity(
+            partnerId,
+            Instant.now().plus(Duration.ofDays(365 * 3).minus(Duration.ofDays(10)))
+        );
     }
 
-    public static BusinessPartnerIdentity businessPartnerIdentity(List<String> trustedIdentifier) {
+    public static BusinessPartnerIdentity businessPartnerIdentity(UUID partnerId, List<String> trustedIdentifier) {
         return businessPartnerIdentity(
+            partnerId,
             Instant.now().plus(Duration.ofDays(365 * 3).minus(Duration.ofDays(10))),
             trustedIdentifier
         );
@@ -169,12 +173,17 @@ public class BusinessEntityTestData {
      * An active Trust Identity that expires at the given point in time. For the renewal reminders,
      * which select partners by exactly that date.
      */
-    public static BusinessPartnerIdentity businessPartnerIdentity(Instant validUntil) {
-        return businessPartnerIdentity(validUntil, List.of("did:example:partner1", "did:example:partner2"));
+    public static BusinessPartnerIdentity businessPartnerIdentity(UUID partnerId, Instant validUntil) {
+        return businessPartnerIdentity(partnerId, validUntil, List.of("did:example:partner1", "did:example:partner2"));
     }
 
-    private static BusinessPartnerIdentity businessPartnerIdentity(Instant validUntil, List<String> trustedIdentifier) {
+    private static BusinessPartnerIdentity businessPartnerIdentity(
+        UUID partnerId,
+        Instant validUntil,
+        List<String> trustedIdentifier
+    ) {
         return new BusinessPartnerIdentity(
+            partnerId,
             validUntil,
             trustedIdentifier,
             BusinessPartnerIdentityStatus.ACTIVE,
@@ -185,8 +194,9 @@ public class BusinessEntityTestData {
         );
     }
 
-    public static BusinessPartnerIdentity deactivatedBusinessPartnerIdentity() {
+    public static BusinessPartnerIdentity deactivatedBusinessPartnerIdentity(UUID partnerId) {
         return new BusinessPartnerIdentity(
+            partnerId,
             null,
             List.of("did:example:partner1", "did:example:partner2"),
             BusinessPartnerIdentityStatus.DEACTIVATED,

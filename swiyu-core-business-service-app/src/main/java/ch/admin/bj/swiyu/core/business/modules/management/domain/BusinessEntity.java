@@ -21,6 +21,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -89,17 +91,14 @@ public class BusinessEntity {
     @Valid
     private Contact contact;
 
-    @Embedded
-    @AttributeOverride(name = "validUntil", column = @Column(name = "bpi_valid_until"))
-    @AttributeOverride(
-        name = "trustedIdentifier",
-        column = @Column(name = "bpi_trusted_identifier", columnDefinition = "jsonb")
-    )
-    @AttributeOverride(name = "status", column = @Column(name = "bpi_status"))
-    @AttributeOverride(name = "lastActivated", column = @Column(name = "bpi_last_activated"))
-    @AttributeOverride(name = "uid", column = @Column(name = "bpi_uid"))
-    @AttributeOverride(name = "entityName", column = @Column(name = "bpi_entity_name", columnDefinition = "jsonb"))
-    @AttributeOverride(name = "tmsVersion", column = @Column(name = "bpi_tms_version"))
+    /**
+     * Read-only: the identity is written through {@code BusinessPartnerIdentityService} only, so that
+     * TMS BPI events never touch (and never version-bump) this entity. Joined on {@link #id}, as the
+     * identity id is the partner id; {@link NotFoundAction#IGNORE} because a partner may have no identity yet.
+     */
+    @OneToOne(fetch = FetchType.EAGER)
+    @NotFound(action = NotFoundAction.IGNORE)
+    @JoinColumn(name = "id", referencedColumnName = "business_partner_id", insertable = false, updatable = false)
     private BusinessPartnerIdentity businessPartnerIdentity;
 
     /**
@@ -178,14 +177,6 @@ public class BusinessEntity {
     }
 
     /**
-     * Applies new BusinessPartnerIdentity data from a TMS BPI event.
-     * This is the only path through which businessPartnerIdentity may be set.
-     */
-    public void updateBusinessPartnerIdentity(BusinessPartnerIdentity bpi) {
-        this.businessPartnerIdentity = bpi;
-    }
-
-    /**
      * Changes the partner type. Changing it to GOVERNMENTAL_INSTITUTION locks the hard-delete
      * safeguard.
      */
@@ -260,7 +251,6 @@ public class BusinessEntity {
         this.type = source.type;
         this.payedForDidSlots = source.payedForDidSlots;
         this.payedForTrustVerification = source.payedForTrustVerification;
-        this.businessPartnerIdentity = source.businessPartnerIdentity;
         this.hardDeleteAllowed = source.hardDeleteAllowed;
         applyGovernmentalHardDeleteGuard();
     }

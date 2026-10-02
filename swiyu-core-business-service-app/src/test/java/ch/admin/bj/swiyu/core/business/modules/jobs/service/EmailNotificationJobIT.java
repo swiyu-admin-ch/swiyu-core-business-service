@@ -159,7 +159,7 @@ class EmailNotificationJobIT {
     @Test
     void ignoresAPartnerWhoseIdentityIsNoLongerActive() {
         var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
-        partner.updateBusinessPartnerIdentity(deactivatedBusinessPartnerIdentity());
+        repos.businessPartnerIdentity.saveAndFlush(deactivatedBusinessPartnerIdentity(partner.getId()));
         repos.businessPartner.save(partner);
 
         job.triggerScheduledEmailNotifications();
@@ -217,7 +217,7 @@ class EmailNotificationJobIT {
         var partner = repos.businessPartner.save(businessPartnerOfTypeGov(UUID.randomUUID()));
         // Half a day in, so the partner sits inside the day rather than exactly on its boundary
         var validUntil = Instant.now().plus(Duration.ofDays(days)).minus(Duration.ofHours(12));
-        partner.updateBusinessPartnerIdentity(businessPartnerIdentity(validUntil));
+        repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId(), validUntil));
         repos.businessPartner.save(partner);
     }
 

@@ -7,7 +7,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-core-business-service</artifactId>
-        <version>4.2.4-SNAPSHOT</version>
+        <version>4.2.5-SNAPSHOT</version>
     </parent>
 
     <artifactId>swiyu-discrete-validator-client</artifactId>
@@ -271,6 +271,8 @@
             <artifactId>jackson-jakarta-rs-json-provider</artifactId>
         </dependency>
 
+        <!-- The two versions below are pinned on purpose: the validator does not work without them.
+             Do not let them follow the parent BOM. -->
         <dependency>
             <groupId>com.fasterxml.jackson.jakarta.rs</groupId>
             <artifactId>jackson-jakarta-rs-base</artifactId>

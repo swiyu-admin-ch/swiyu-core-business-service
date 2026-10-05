@@ -5,7 +5,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-core-business-service</artifactId>
-    <version>4.2.4-SNAPSHOT</version>
+    <version>4.2.5-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
@@ -15,7 +15,7 @@
             from the dependencyManagement section
          -->
         <!-- see https://github.com/jeap-admin-ch/jeap-spring-boot-parent/blob/main/CHANGELOG.md -->
-        <version>41.3.0</version>
+        <version>41.14.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -29,21 +29,6 @@
         <prettier.version>3.8.1</prettier.version>
         <prettier-plugin-java.version>2.8.1</prettier-plugin-java.version>
         <sonar.scm.disabled>true</sonar.scm.disabled>
-        <!-- CVE-OVERRIDE start -->
-        <!-- The embedded Tomcat that the Spring Boot parent pins, 11.0.23, carries three critical
-             issues, all of them authentication or authorisation bypasses: CVE-2026-65182 (security
-             constraint bypass), CVE-2026-65905 (replay against the DIGEST authenticator) and
-             CVE-2026-68525 (FORM authentication bypass). 11.0.25 is the first release with all three
-             fixed.
-
-             Set as a property rather than a dependencyManagement entry on tomcat-embed-core: the
-             starter also brings tomcat-embed-el and tomcat-embed-websocket, and the property is what
-             the Spring Boot BOM reads for all three. Pinning only the one Trivy names would leave the
-             other two behind and mix versions inside one Tomcat.
-
-             Remove once the jeap parent brings a Spring Boot that pins 11.0.25 or later. -->
-        <tomcat.version>11.0.25</tomcat.version>
-        <!-- CVE-OVERRIDE end -->
     </properties>
 
 
@@ -76,53 +61,11 @@
             </dependency>
             <!-- CVE-OVERRIDE start -->
             <dependency>
-<!--            Allocation of Resources Without Limits or Throttling (new) [High Severity][https://security.snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-20059683] in com.fasterxml.jackson.core:jackson-databind@2.22.2-->
-<!--            introduced by com.networknt:json-schema-validator@1.5.9 > com.fasterxml.jackson.core:jackson-databind@2.22.2-->
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>2.22.3</version>
-            </dependency>
-            <dependency>
-<!--            Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-20059179] in com.fasterxml.jackson.core:jackson-core@2.22.2-->
-<!--            introduced by ch.admin.bj.swiyu:swiyu-discrete-validator-client@4.2.1-SNAPSHOT > com.fasterxml.jackson.jakarta.rs:jackson-jakarta-rs-base@2.22.2 > com.fasterxml.jackson.core:jackson-core@2.22.2-->
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>2.22.3</version>
-            </dependency>
-            <dependency>
-<!--            Allocation of Resources Without Limits or Throttling (new) [High Severity][https://security.snyk.io/vuln/SNYK-JAVA-COMFASTERXMLJACKSONCORE-19778370] in com.fasterxml.jackson.core:jackson-databind@2.22.1-->
-<!--            introduced by com.networknt:json-schema-validator@1.5.9 > com.fasterxml.jackson.core:jackson-databind@2.22.1-->
-                <groupId>com.networknt</groupId>
-                <artifactId>json-schema-validator</artifactId>
-                <version>3.0.6</version>
-            </dependency>
-            <dependency>
 <!--            Out-of-bounds Write [High Severity][https://security.snyk.io/vuln/SNYK-JAVA-ORGXERIALSNAPPY-19778376] in org.xerial.snappy:snappy-java@1.1.10.7-->
 <!--            introduced by ch.admin.bit.jeap:jeap-messaging-infrastructure-kafka-test@18.14.0 > org.springframework.kafka:spring-kafka-test@4.1.1 > org.apache.kafka:kafka-clients@4.2.1 > org.xerial.snappy:snappy-java@1.1.10.7-->
                 <groupId>org.xerial.snappy</groupId>
                 <artifactId>snappy-java</artifactId>
                 <version>1.1.10.8</version>
-            </dependency>
-            <dependency>
-<!--            Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-JAVA-TOOLSJACKSONCORE-20059180] in tools.jackson.core:jackson-core@3.2.2-->
-<!--            introduced by ch.admin.bj.swiyu:swiyu-discrete-validator-client@4.2.1-SNAPSHOT > tools.jackson.core:jackson-databind@3.2.2 > tools.jackson.core:jackson-core@3.2.2-->
-                <groupId>tools.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>3.2.3</version>
-            </dependency>
-            <dependency>
-<!--            Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-JAVA-TOOLSJACKSONCORE-20059682] in tools.jackson.core:jackson-databind@3.2.2-->
-<!--            introduced by ch.admin.bj.swiyu:swiyu-discrete-validator-client@4.2.1-SNAPSHOT > tools.jackson.core:jackson-databind@3.2.2-->
-                <groupId>tools.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>3.2.3</version>
-            </dependency>
-            <dependency>
-<!--            Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-JAVA-TOOLSJACKSONCORE-19778371] in tools.jackson.core:jackson-databind@3.1.5-->
-<!--            introduced by ch.admin.bj.swiyu:swiyu-discrete-validator-client@4.0.0-SNAPSHOT-20260916071558-f59ff90f > tools.jackson.core:jackson-databind@3.1.5-->
-                <groupId>tools.jackson.core</groupId>
-                <artifactId>jackson-databind-nullable</artifactId>
-                <version>3.1.6</version>
             </dependency>
             <!-- CVE-OVERRIDE end -->
 

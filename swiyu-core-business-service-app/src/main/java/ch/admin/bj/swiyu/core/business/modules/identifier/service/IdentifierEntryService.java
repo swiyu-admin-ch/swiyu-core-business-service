@@ -4,6 +4,7 @@ import static ch.admin.bj.swiyu.core.business.common.api.utils.PageableUtils.toD
 
 import ch.admin.bj.swiyu.core.business.common.api.ApiObjectDto;
 import ch.admin.bj.swiyu.core.business.common.api.CountLimitDto;
+import ch.admin.bj.swiyu.core.business.common.api.IdentifierStatusDto;
 import ch.admin.bj.swiyu.core.business.common.api.IdentifierUpdateRequestDto;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditMapper;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
@@ -51,6 +52,16 @@ public class IdentifierEntryService {
                 identifierLimitProperties.defaultMaxCount()
             )
         );
+    }
+
+    @Transactional(readOnly = true)
+    public long count() {
+        return identifierEntryRepository.count();
+    }
+
+    @Transactional(readOnly = true)
+    public long countByStatus(IdentifierStatusDto status) {
+        return identifierEntryRepository.countByStatus(toIdentifierStatus(status));
     }
 
     @Transactional
@@ -185,6 +196,15 @@ public class IdentifierEntryService {
             businessEntityId.toString(),
             AuditMapper.toAuditJson(entry)
         );
+    }
+
+    private static IdentifierStatus toIdentifierStatus(IdentifierStatusDto status) {
+        return switch (status) {
+            case NOT_INITIALIZED -> IdentifierStatus.NOT_INITIALIZED;
+            case INITIALIZED -> IdentifierStatus.INITIALIZED;
+            case USER_DEACTIVATED -> IdentifierStatus.USER_DEACTIVATED;
+            case DEACTIVATED_BY_MIGRATION_BECAUSE_OF_UNSUPPORTED_FORMAT -> IdentifierStatus.DEACTIVATED_BY_MIGRATION_BECAUSE_OF_UNSUPPORTED_FORMAT;
+        };
     }
 
     private boolean isDidLogDeactivated(String didLog) {

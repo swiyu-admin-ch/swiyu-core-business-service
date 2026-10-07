@@ -28,6 +28,9 @@ app:
     trust-additional-dids-submission-cleanup-interval: 1m
     trust-onboarding-submission-cleanup-interval: 1m
     trust-onboarding-document-cleanup-interval: 1h
+    statistics:
+      enabled: true
+      export-interval: "0 */5 * * * *" # every 5 min
     email-notification:
       # Nightly, outside office hours. Sends mail, so unlike the cleanup jobs the time of day matters.
       cron: ${EMAIL_NOTIFICATION_CRON:0 15 3 * * *}

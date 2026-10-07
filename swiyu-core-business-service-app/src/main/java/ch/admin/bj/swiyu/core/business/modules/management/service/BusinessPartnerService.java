@@ -548,6 +548,16 @@ public class BusinessPartnerService {
     }
 
     @Transactional(readOnly = true)
+    public long count() {
+        return businessPartnerRepository.count();
+    }
+
+    @Transactional(readOnly = true)
+    public long countByType(BusinessPartnerTypeDto type) {
+        return businessPartnerRepository.countByType(toBusinessPartnerType(type));
+    }
+
+    @Transactional(readOnly = true)
     public boolean isGovernmental(UUID partnerId) {
         if (partnerId == null) {
             throw new IllegalArgumentException("BusinessPartnerId cannot be null");

@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.management.domain;
 
+import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.email.ExpiringPartnerIdentity;
 import java.time.Instant;
 import java.util.List;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface BusinessPartnerRepository extends JpaRepository<BusinessEntity, UUID> {
+    long countByType(BusinessPartnerType type);
+
     /**
      * Fetches the {@link BusinessPartnerIdentity} in the same query - it is loaded eagerly and would
      * otherwise cost one extra select per partner on the page.

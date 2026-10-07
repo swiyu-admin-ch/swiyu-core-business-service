@@ -116,6 +116,9 @@ app:
   jobs:
     trust-additional-dids-submission-cleanup-interval: 10m
     trust-onboarding-submission-cleanup-interval: 10m
+    statistics:
+      enabled: false
+      export-interval: "0 * * * * *"
     email-notification:
       # 29th of February - the tests invoke the job directly, the scheduler must never fire on its own.
       cron: "0 0 0 29 2 ?"

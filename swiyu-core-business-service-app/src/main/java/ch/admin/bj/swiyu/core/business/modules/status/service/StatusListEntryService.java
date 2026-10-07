@@ -39,6 +39,11 @@ public class StatusListEntryService {
     private final BusinessPartnerService businessPartnerService;
 
     @Transactional(readOnly = true)
+    public long count() {
+        return statusListEntryRepository.count();
+    }
+
+    @Transactional(readOnly = true)
     public StatusListEntryLimitsDto getLimits(@Valid @NotNull UUID businessEntityId) {
         return new StatusListEntryLimitsDto(
             new CountLimitDto(

@@ -15,6 +15,8 @@ public interface IdentifierEntryRepository
 
     long countByBusinessEntityId(UUID businessEntityId);
 
+    long countByStatus(IdentifierStatus status);
+
     boolean existsByIdAndBusinessEntityId(UUID didEntryId, @NotNull UUID businessEntityId);
 
     boolean existsByBusinessEntityIdAndDid(UUID businessEntityId, String did);

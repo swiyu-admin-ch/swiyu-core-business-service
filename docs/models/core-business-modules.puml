@@ -20,6 +20,7 @@ component "Identifier" as identifier #F3E5F5
 component "Documents" as documents #FCE4EC
 component "Trust" as trust #E0F7FA
 component "DataImport" as dataimport #F5F5F5
+component "Offboarding" as offboarding #EDE7F6
 
 ' ========================
 ' DEPENDENCIES
@@ -43,5 +44,11 @@ jobs --> documents
 jobs --> trust
 
 email --> management
+
+offboarding --> management
+offboarding --> status
+offboarding --> identifier
+offboarding --> documents
+offboarding --> trust
 
 @enduml

@@ -19,7 +19,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = StatuslistSchemaTestData.class)
-public class DidTdwSchemaTest {
+class DidTdwSchemaTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private static JsonSchema schema;
@@ -28,7 +28,7 @@ public class DidTdwSchemaTest {
     StatuslistSchemaTestData testData;
 
     @BeforeAll
-    public static void loadSchema() throws Exception {
+    static void loadSchema() throws Exception {
         var schemaStream = DidTdwSchemaTest.class.getClassLoader().getResourceAsStream("schema/didtdw.schema.json");
 
         var factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
@@ -37,7 +37,7 @@ public class DidTdwSchemaTest {
     }
 
     @Test
-    public void testWitnessMustNotBePresent() throws Exception {
+    void testWitnessMustNotBePresent() throws Exception {
         var json = testData.noWitness();
 
         var document = mapper.readTree(json);

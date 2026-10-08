@@ -81,6 +81,35 @@ public enum AuditUseCase {
         DataJsonFieldName.EMAIL_DATA,
         null, // no non-json value sent
         AuditEventType.CREATED
+    ),
+    /** The DELETED use cases carry the full snapshot: afterwards the audit record is the only trace left. */
+    BUSINESS_PARTNER_DELETED(
+        Category.BUSINESS_PARTNER,
+        ObjectType.BUSINESS_PARTNER,
+        DataJsonFieldName.BUSINESS_PARTNER_DATA,
+        null, // no non-json value sent
+        AuditEventType.DELETED
+    ),
+    BUSINESS_PARTNER_DOCUMENT_DELETED(
+        Category.BUSINESS_PARTNER,
+        ObjectType.BUSINESS_PARTNER_DOCUMENT,
+        DataJsonFieldName.TRUST_ONBOARDING_DOCUMENT_META,
+        null, // no non-json value sent (only s3 file)
+        AuditEventType.DELETED
+    ),
+    IDENTIFIER_ENTRY_DELETED(
+        Category.IDENTIFIER_REGISTRY,
+        ObjectType.IDENTIFIER_ENTRY,
+        DataJsonFieldName.IDENTIFIER_ENTRY_META,
+        DataValueFieldName.IDENTIFIER_ENTRY_DID_DOC,
+        AuditEventType.DELETED
+    ),
+    STATUS_LIST_DELETED(
+        Category.STATUS_REGISTRY,
+        ObjectType.STATUS_LIST,
+        DataJsonFieldName.STATUS_LIST_META,
+        DataValueFieldName.STATUS_LIST_JWT,
+        AuditEventType.DELETED
     );
 
     private final String category;

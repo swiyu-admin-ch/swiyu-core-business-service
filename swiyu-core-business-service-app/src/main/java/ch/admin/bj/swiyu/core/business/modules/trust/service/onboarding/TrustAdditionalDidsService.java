@@ -220,4 +220,10 @@ public class TrustAdditionalDidsService {
                 )
             );
     }
+
+    @Transactional
+    public void hardDeleteByPartnerId(UUID partnerId) {
+        log.info("Hard deleting all TrustAdditionalDidsSubmissions of business partner '{}'", partnerId);
+        repository.deleteByPartnerId(partnerId);
+    }
 }

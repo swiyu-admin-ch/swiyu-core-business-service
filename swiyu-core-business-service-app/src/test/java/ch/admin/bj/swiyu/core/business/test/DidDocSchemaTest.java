@@ -18,7 +18,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = StatuslistSchemaTestData.class)
-public class DidDocSchemaTest {
+class DidDocSchemaTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private static JsonSchema schema;
@@ -27,7 +27,7 @@ public class DidDocSchemaTest {
     StatuslistSchemaTestData testData;
 
     @BeforeAll
-    public static void loadSchema() throws Exception {
+    static void loadSchema() throws Exception {
         var schemaInputStream = DidDocSchemaTest.class.getClassLoader().getResourceAsStream(
             "schema/diddoc.schema.json"
         );
@@ -38,7 +38,7 @@ public class DidDocSchemaTest {
 
     @Test
     @Disabled("Can be enabled again, when EID-5275 is done")
-    public void testControllerMustNotBePresent() throws Exception {
+    void testControllerMustNotBePresent() throws Exception {
         var json = testData.controller();
 
         var document = mapper.readTree(json);
@@ -47,7 +47,7 @@ public class DidDocSchemaTest {
     }
 
     @Test
-    public void testPublicKeyMultibaseMustNotBePresent() throws Exception {
+    void testPublicKeyMultibaseMustNotBePresent() throws Exception {
         var json = testData.pubKeyMulti();
 
         var document = mapper.readTree(json);

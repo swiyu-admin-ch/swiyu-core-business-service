@@ -133,8 +133,9 @@ class EmailCommandProcessorIT {
 
         assertThat(received.getContentType()).startsWith("multipart/");
         var types = contentTypesOf(received);
-        assertThat(types).anyMatch(type -> type.startsWith("text/plain"));
-        assertThat(types).anyMatch(type -> type.startsWith("text/html"));
+        assertThat(types)
+            .anyMatch(type -> type.startsWith("text/plain"))
+            .anyMatch(type -> type.startsWith("text/html"));
     }
 
     @Test

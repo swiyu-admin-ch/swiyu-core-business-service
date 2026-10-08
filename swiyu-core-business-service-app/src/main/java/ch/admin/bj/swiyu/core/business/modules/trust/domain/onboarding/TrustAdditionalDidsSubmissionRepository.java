@@ -16,4 +16,6 @@ public interface TrustAdditionalDidsSubmissionRepository extends JpaRepository<T
         "UPDATE TrustAdditionalDidsSubmission e SET e.status = 'UNSUBMITTED_TIMEOUT' WHERE e.status = 'UNSUBMITTED' AND e.auditMetadata.createdAt <= :maxAgeTimestamp"
     )
     int updateStatusToTimeout(@Param("maxAgeTimestamp") Instant maxAgeTimestamp);
+
+    void deleteByPartnerId(UUID partnerId);
 }

@@ -6,6 +6,7 @@
 
 package ch.admin.bj.swiyu.registry.identifier.domain;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,4 +16,6 @@ public interface DidEntityRepository extends JpaRepository<DidEntity, Long> {
     List<DidEntity> findByBase_Id(UUID baseId); // NOSONAR naming based on convention
 
     Optional<DidEntity> findByBase_IdAndFileType(UUID baseId, DidType fileType); // NOSONAR naming based on convention
+
+    void deleteByBase_IdIn(Collection<UUID> baseIds); // NOSONAR naming based on convention
 }

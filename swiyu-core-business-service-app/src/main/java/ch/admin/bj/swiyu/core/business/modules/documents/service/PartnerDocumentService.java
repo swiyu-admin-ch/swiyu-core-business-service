@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.core.business.common.antivirus.AntivirusClient;
 import ch.admin.bj.swiyu.core.business.common.antivirus.AntivirusScanResult;
 import ch.admin.bj.swiyu.core.business.common.api.utils.PageableUtils;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
+import ch.admin.bj.swiyu.core.business.common.audit.AuditTrigger;
 import ch.admin.bj.swiyu.core.business.common.exceptions.DocumentNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ExternalSystemException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.InternalStorageException;
@@ -36,11 +37,13 @@ import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockAssert;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Slf4j
 @Service
@@ -263,6 +266,40 @@ public class PartnerDocumentService {
                 Instant.now()
             );
             partnerDocumentsRepository.save(targetDoc);
+        }
+    }
+
+    @Transactional
+    public void hardDeleteByPartnerId(@NotNull UUID partnerId, AuditTrigger trigger) {
+        var documents = partnerDocumentsRepository.findAllByPartnerId(partnerId);
+        log.info("Hard deleting {} documents of business partner '{}'", documents.size(), partnerId);
+        for (var document : documents) {
+            auditPublisher.businessPartnerDocumentDeleted(
+                document.getId().toString(),
+                String.valueOf(document.getVersion()),
+                partnerId.toString(),
+                toAuditJson(document),
+                trigger
+            );
+            deleteFromStorage(document);
+        }
+        partnerDocumentsRepository.deleteAll(documents);
+    }
+
+    /** Treats "not there" as done, so a retry of a partially completed hard delete gets through. */
+    private void deleteFromStorage(PartnerDocument document) {
+        var bucketConfig = getBucketConfig(document.getType());
+        try {
+            s3ClientAdapter.deleteObject(bucketConfig.bucketName(), document.getStorageObjectKey());
+        } catch (S3Exception e) {
+            if (e.statusCode() != HttpStatus.NOT_FOUND.value()) {
+                throw e;
+            }
+            log.info(
+                "S3 object '{}' of document '{}' is already gone, treating as deleted",
+                document.getStorageObjectKey(),
+                document.getId()
+            );
         }
     }
 

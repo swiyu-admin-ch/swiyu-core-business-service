@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.core.business.common.api.IdentifierStatusDto;
 import ch.admin.bj.swiyu.core.business.common.api.IdentifierUpdateRequestDto;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditMapper;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
+import ch.admin.bj.swiyu.core.business.common.audit.AuditTrigger;
 import ch.admin.bj.swiyu.core.business.common.did.DidUtil;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ObjectCountLimitApiException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
@@ -169,6 +170,45 @@ public class IdentifierEntryService {
         entry.setDescription(updateRequestDto.description());
         identifierEntryRepository.save(entry);
         auditDescriptionChanged(entry, businessEntityId);
+    }
+
+    /**
+     * Registry rows first, core rows second: the core entries are the only pointer into the registry DB,
+     * so losing them first would orphan the registry data. Separate transaction managers, so the registry
+     * delete commits on its own when it returns.
+     */
+    @Transactional
+    public void hardDeleteByPartnerId(UUID businessEntityId, AuditTrigger trigger) {
+        var entries = identifierEntryRepository.findAllByBusinessEntityId(businessEntityId);
+        log.info("Hard deleting {} identifier entries of business partner '{}'", entries.size(), businessEntityId);
+        for (var entry : entries) {
+            auditDeleted(entry, businessEntityId, didLogOf(entry), trigger);
+        }
+        identifierRegistryService.hardDelete(entries.stream().map(IdentifierEntry::getId).toList());
+        identifierEntryRepository.deleteAll(entries);
+    }
+
+    /** {@code null} if a previous, partially completed run already removed it. */
+    private String didLogOf(IdentifierEntry entry) {
+        var didLog = identifierRegistryService.findDidTdwFile(entry.getId());
+        if (didLog.isEmpty()) {
+            log.warn(
+                "No DID log found for identifier entry '{}', auditing its deletion without the DID log",
+                entry.getId()
+            );
+        }
+        return didLog.orElse(null);
+    }
+
+    private void auditDeleted(IdentifierEntry entry, UUID businessEntityId, String didLog, AuditTrigger trigger) {
+        auditPublisher.identifierEntryDeleted(
+            entry.getId().toString(),
+            String.valueOf(entry.getUploadCount()),
+            businessEntityId.toString(),
+            AuditMapper.toAuditJson(entry),
+            didLog,
+            trigger
+        );
     }
 
     private void auditCreated(IdentifierEntry entry, UUID businessEntityId) {

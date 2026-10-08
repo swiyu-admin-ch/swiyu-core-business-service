@@ -138,4 +138,10 @@ public class ProtectedVerificationSubmissionService {
     private static boolean isAhv(ProtectedVerificationCategory category) {
         return category == ProtectedVerificationCategory.PERSONAL_ADMINISTRATIVE_NUMBER;
     }
+
+    @Transactional
+    public void hardDeleteByPartnerId(UUID partnerId) {
+        log.info("Hard deleting all ProtectedVerificationSubmissions of business partner '{}'", partnerId);
+        protectedVerificationSubmissionRepository.deleteByPartnerId(partnerId);
+    }
 }

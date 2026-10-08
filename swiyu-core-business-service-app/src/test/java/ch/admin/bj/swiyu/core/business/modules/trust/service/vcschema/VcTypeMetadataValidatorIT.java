@@ -55,7 +55,7 @@ class VcTypeMetadataValidatorIT {
     }
 
     @Test
-    public void testValidateVcTypeMetadata_ValidMetadata() throws Exception {
+    void testValidateVcTypeMetadata_ValidMetadata() throws Exception {
         // Given
         String vcTypeMetadata = testData.validTypeMetadata();
 
@@ -64,7 +64,7 @@ class VcTypeMetadataValidatorIT {
     }
 
     @Test
-    public void testValidateVcTypeMetadata_InvalidMetadata() throws Exception {
+    void testValidateVcTypeMetadata_InvalidMetadata() {
         // Given
         String vcTypeMetadata = testData.invalidTypeMetadata();
 
@@ -77,7 +77,7 @@ class VcTypeMetadataValidatorIT {
     }
 
     @Test
-    public void testValidateVcTypeMetadata_InvalidMetadata_WrongVCT() throws Exception {
+    void testValidateVcTypeMetadata_InvalidMetadata_WrongVCT() {
         // Given
         String vcTypeMetadata = testData.wrongVcMetadata();
 
@@ -90,7 +90,7 @@ class VcTypeMetadataValidatorIT {
     }
 
     @Test
-    public void testValidateVcTypeMetadata_NullMetadata() {
+    void testValidateVcTypeMetadata_NullMetadata() {
         // Then
         VcTypeMetadataValidationFailedException exception = assertThrows(
             VcTypeMetadataValidationFailedException.class,
@@ -100,7 +100,7 @@ class VcTypeMetadataValidatorIT {
     }
 
     @Test
-    public void testValidateVcTypeMetadata_EmptyMetadata() {
+    void testValidateVcTypeMetadata_EmptyMetadata() {
         // Then
         VcTypeMetadataValidationFailedException exception = assertThrows(
             VcTypeMetadataValidationFailedException.class,

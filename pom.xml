@@ -5,7 +5,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-core-business-service</artifactId>
-    <version>4.3.0-SNAPSHOT</version>
+    <version>4.4.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
@@ -29,6 +29,21 @@
         <prettier.version>3.8.1</prettier.version>
         <prettier-plugin-java.version>2.8.1</prettier-plugin-java.version>
         <sonar.scm.disabled>true</sonar.scm.disabled>
+        <!-- CVE-OVERRIDE start -->
+        <!-- The embedded Tomcat that the jeap parent pins, 11.0.25, carries a critical authentication
+             bypass: CVE-2026-69484 (authentication bypass by alternate name, SNYK-JAVA-
+             ORGAPACHETOMCATEMBED-20552494). 11.0.26 is the first release with it fixed.
+
+             Set as a property rather than a dependencyManagement entry on tomcat-embed-websocket, the
+             artifact Snyk names: the starter also brings tomcat-embed-core and tomcat-embed-el at the
+             same release, and the property is what the Spring Boot BOM reads for all three. Pinning
+             only the one that is reported would mix versions inside one Tomcat.
+
+             A parent bump does not help here - checked against every jeap parent up to 41.17.1, all of
+             them still pin 11.0.25. Remove this override once a parent brings a Spring Boot that pins
+             11.0.26 or later. -->
+        <tomcat.version>11.0.26</tomcat.version>
+        <!-- CVE-OVERRIDE end -->
     </properties>
 
 

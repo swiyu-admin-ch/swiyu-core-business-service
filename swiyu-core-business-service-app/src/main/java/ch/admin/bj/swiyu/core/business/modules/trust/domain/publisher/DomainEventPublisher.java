@@ -4,6 +4,7 @@ import static net.logstash.logback.argument.StructuredArguments.kv;
 
 import ch.admin.bit.jeap.messaging.avro.AvroMessage;
 import ch.admin.bit.jeap.messaging.transactionaloutbox.outbox.TransactionalOutbox;
+import ch.admin.bj.swiyu.messagetype.ti.TiBusinessPartnerHardDeletedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiBusinessPartnerUpdatedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiProtectedVerificationSubmissionAcceptedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiTrustAddDidSubmissionSubmittedEvent;
@@ -110,6 +111,20 @@ public class DomainEventPublisher {
             topicName,
             BeanReferenceMessageKey.newBuilder()
                 .setNamespace(TiBusinessPartnerUpdatedEvent.TypeRef.SYSTEM_NAME)
+                .setName(topicName)
+                .setId(event.getPayload().getBusinessPartnerId().toString())
+                .build(),
+            event
+        );
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void publishTiBusinessPartnerHardDeletedEvent(@NonNull TiBusinessPartnerHardDeletedEvent event) {
+        var topicName = TiBusinessPartnerHardDeletedEvent.TypeRef.DEFAULT_TOPIC;
+        sendEvent(
+            topicName,
+            BeanReferenceMessageKey.newBuilder()
+                .setNamespace(TiBusinessPartnerHardDeletedEvent.TypeRef.SYSTEM_NAME)
                 .setName(topicName)
                 .setId(event.getPayload().getBusinessPartnerId().toString())
                 .build(),

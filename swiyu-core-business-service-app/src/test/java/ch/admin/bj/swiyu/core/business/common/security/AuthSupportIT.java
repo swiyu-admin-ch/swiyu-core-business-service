@@ -60,7 +60,7 @@ class AuthSupportIT {
         // WHEN
         var result = authSupport.getPartnerIdForRole("trustonboardingsubmission", "read");
         // THEN
-        assertThat(result.toString()).isEqualTo("00000000-0000-0000-0000-000000000000");
+        assertThat(result).hasToString("00000000-0000-0000-0000-000000000000");
     }
 
     @Test

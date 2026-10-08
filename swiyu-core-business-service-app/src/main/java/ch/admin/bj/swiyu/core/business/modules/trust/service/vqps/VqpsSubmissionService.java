@@ -133,4 +133,10 @@ public class VqpsSubmissionService {
     private static @NonNull Supplier<ResourceNotFoundException> handleSubmissionNotFound(UUID submissionId) {
         return () -> new ResourceNotFoundException("No VqpsSubmission found with id " + submissionId);
     }
+
+    @Transactional
+    public void hardDeleteByPartnerId(UUID partnerId) {
+        log.info("Hard deleting all VqpsSubmissions of business partner '{}'", partnerId);
+        vqpsSubmissionRepository.deleteByPartnerId(partnerId);
+    }
 }

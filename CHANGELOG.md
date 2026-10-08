@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.1
+
+### Fixed
+
+- Raise the embedded Tomcat to 11.0.26 for a critical authentication bypass (CVE-2026-69484, authentication bypass by
+  alternate name) reported by Snyk on `tomcat-embed-websocket`. Pinned via the `tomcat.version` property so that
+  `tomcat-embed-core` and `tomcat-embed-el` move with it instead of mixing releases inside one Tomcat. A parent bump is
+  no alternative: every jeap parent up to 41.17.1 still pins 11.0.25.
+
+## 4.4.0
+
+### Added
+
+- Offboarding: CBS consumes `TiHardDeleteBusinessPartnerCommand` and irreversibly deletes a business partner with all
+  its data - core DB, status-registry DB, identifier-registry DB, the onboarding documents in S3 and the partner in
+  PAMS. The deletion runs per datasource in a fixed order (children before parents, registry rows before the core rows
+  that point at them) and can be repeated: a redelivered command resumes an interrupted run instead of failing.
+- Offboarding safeguard is enforced on deletion: a partner whose `hardDeleteAllowed` flag is not set is refused with a
+  visible error and the command is kept for resending, so ops can arm the partner and retry. Nothing is deleted in that
+  case.
+- Audit records with the pre-deletion snapshot for every deleted object: `BUSINESS_PARTNER_DELETED`,
+  `BUSINESS_PARTNER_DOCUMENT_DELETED`, `IDENTIFIER_ENTRY_DELETED` (including the DID log) and `STATUS_LIST_DELETED`
+  (including the status list). The trigger is taken from the deletion command, so the audit names the person who ordered
+  the offboarding and not the consuming service.
+- `TiBusinessPartnerHardDeletedEvent` is published after the core DB rows are gone, in the same transaction, so the
+  trust management service can clean up its own data.
+
 ## 4.3.0
 
 ### Added

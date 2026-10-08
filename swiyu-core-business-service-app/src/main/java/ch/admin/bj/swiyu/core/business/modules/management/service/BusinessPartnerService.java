@@ -11,10 +11,13 @@ import ch.admin.bj.swiyu.core.business.common.api.ListItemDto;
 import ch.admin.bj.swiyu.core.business.common.api.utils.PageableUtils;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditMapper;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
+import ch.admin.bj.swiyu.core.business.common.audit.AuditTrigger;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.email.ExpiringPartnerIdentity;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessDataIntegrityViolationException;
+import ch.admin.bj.swiyu.core.business.common.exceptions.ExternalSystemException;
+import ch.admin.bj.swiyu.core.business.common.exceptions.HardDeleteNotAllowedException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.identifier.api.IdentifierEntryFilterDto;
@@ -22,11 +25,13 @@ import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntr
 import ch.admin.bj.swiyu.core.business.modules.management.api.*;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentity;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityRepository;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper;
 import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionLimitProperties;
+import ch.admin.bj.swiyu.core.business.modules.trust.domain.event.TiBusinessPartnerHardDeletedEventBuilder;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.event.TiBusinessPartnerUpdatedEventBuilder;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionRepository;
@@ -41,6 +46,7 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +59,7 @@ public class BusinessPartnerService {
     private static final int PUBLISH_PAGE_SIZE = 500;
     private static final Map<String, String> BUSINESS_PARTNER_SORT_FIELDS = Map.of("entityName", "defaultEntityName");
     private final BusinessPartnerRepository businessPartnerRepository;
+    private final BusinessPartnerIdentityRepository businessPartnerIdentityRepository;
     private final TrustOnboardingSubmissionRepository trustOnboardingSubmissionRepository;
     private final TrustOnboardingSubmissionLimitProperties trustOnboardingSubmissionLimitProperties;
     private final PamsClient pamsClient;
@@ -515,6 +522,73 @@ public class BusinessPartnerService {
         );
         publishBusinessPartnerUpdatedEventFor(businessPartner.getId());
         return toBusinessPartnerDto(businessPartner);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean businessPartnerExists(UUID businessPartnerId) {
+        return businessPartnerRepository.existsById(businessPartnerId);
+    }
+
+    /**
+     * Refuses the deletion unless ops has armed the partner. The single place that decides this - every
+     * step of the hard delete calls it rather than reading the flag itself, so arming cannot be bypassed
+     * by entering the sequence somewhere in the middle.
+     */
+    @Transactional(readOnly = true)
+    public void validateHardDeleteAllowed(UUID businessPartnerId) {
+        validateHardDeleteAllowed(loadBusinessPartner(businessPartnerId));
+    }
+
+    private static void validateHardDeleteAllowed(BusinessEntity businessPartner) {
+        if (!businessPartner.isHardDeleteAllowed()) {
+            throw new HardDeleteNotAllowedException(businessPartner.getId());
+        }
+    }
+
+    private BusinessEntity loadBusinessPartner(UUID businessPartnerId) {
+        return businessPartnerRepository
+            .findById(businessPartnerId)
+            .orElseThrow(throwNotFoundException(businessPartnerId));
+    }
+
+    /** Treats 404 as done, so a retry of a partially completed hard delete gets through. */
+    public void deleteFromPams(UUID businessPartnerId) {
+        // Loads the partner itself instead of calling the transactional validateHardDeleteAllowed(UUID): no
+        // transaction must stay open across the PAMS call, and the in-class call would bypass the proxy anyway.
+        validateHardDeleteAllowed(loadBusinessPartner(businessPartnerId));
+        try {
+            pamsClient.deleteBusinessPartner(businessPartnerId.toString());
+        } catch (ExternalSystemException e) {
+            if (!HttpStatus.NOT_FOUND.isSameCodeAs(e.getHttpStatusCode())) {
+                throw e;
+            }
+            log.info("Business partner '{}' is unknown to PAMS, treating as deleted", businessPartnerId);
+        }
+    }
+
+    /**
+     * Last step of the hard delete - every other table of the partner must be empty by now. Audit,
+     * deletion and the event for TMS share one transaction, so the event only goes out if the rows are
+     * really gone. The safeguard is re-checked because this is the point of no return.
+     */
+    @Transactional
+    public void hardDeleteBusinessPartner(UUID businessPartnerId, AuditTrigger trigger) {
+        var businessPartner = loadBusinessPartner(businessPartnerId);
+        validateHardDeleteAllowed(businessPartner);
+        log.info("Hard deleting business partner '{}'", businessPartnerId);
+
+        auditPublisher.businessPartnerDeleted(
+            businessPartnerId.toString(),
+            String.valueOf(businessPartner.getVersion()),
+            AuditMapper.toAuditJson(businessPartner),
+            trigger
+        );
+
+        businessPartnerIdentityRepository.deleteById(businessPartnerId);
+        businessPartnerRepository.delete(businessPartner);
+        domainEventPublisher.publishTiBusinessPartnerHardDeletedEvent(
+            TiBusinessPartnerHardDeletedEventBuilder.create().businessPartnerId(businessPartnerId).build()
+        );
     }
 
     /**

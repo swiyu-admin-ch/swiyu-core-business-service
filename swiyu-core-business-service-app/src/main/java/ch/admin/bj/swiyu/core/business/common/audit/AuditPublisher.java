@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.core.business.common.audit;
 
 import static ch.admin.bit.jeap.audit.record.create.AuditObjectDataRole.NEW;
+import static ch.admin.bit.jeap.audit.record.create.AuditObjectDataRole.OLD;
 import static ch.admin.bj.swiyu.core.business.common.audit.AuditEventDataKey.BUSINESS_PARTNER_ID;
 import static ch.admin.bj.swiyu.core.business.common.audit.AuditEventDataKey.USE_CASE_CATEGORY_ID;
 import static ch.admin.bj.swiyu.core.business.common.audit.AuditUseCase.*;
@@ -116,6 +117,93 @@ public class AuditPublisher {
         publishAuditEvent(BUSINESS_PARTNER_UPDATED, businessPartnerId, version, businessPartnerId, businessPartnerJson);
     }
 
+    /**
+     * @param trigger who ordered the deletion. Needed only because the hard delete runs in a Kafka
+     *     consumer, where the security context holds this service and not the person in TMS who ordered
+     *     it - that person travels in the command payload. A new audit method does <b>not</b> need this
+     *     parameter unless it, too, audits an action ordered from outside the current request; see
+     *     {@link AuditTrigger}.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void businessPartnerDeleted(
+        String businessPartnerId,
+        String version,
+        String businessPartnerJson,
+        AuditTrigger trigger
+    ) {
+        publishDeletedEvent(
+            BUSINESS_PARTNER_DELETED,
+            businessPartnerId,
+            version,
+            businessPartnerId,
+            businessPartnerJson,
+            null,
+            trigger
+        );
+    }
+
+    /** @param trigger see {@link #businessPartnerDeleted} - same reason, same caller. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void businessPartnerDocumentDeleted(
+        String documentId,
+        String version,
+        String businessPartnerId,
+        String partnerDocumentJson,
+        AuditTrigger trigger
+    ) {
+        publishDeletedEvent(
+            BUSINESS_PARTNER_DOCUMENT_DELETED,
+            documentId,
+            version,
+            businessPartnerId,
+            partnerDocumentJson,
+            null,
+            trigger
+        );
+    }
+
+    /** @param trigger see {@link #businessPartnerDeleted} - same reason, same caller. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void identifierEntryDeleted(
+        String identifierEntryId,
+        String uploadCount,
+        String businessPartnerId,
+        String identifierEntryJson,
+        String didLog,
+        AuditTrigger trigger
+    ) {
+        publishDeletedEvent(
+            IDENTIFIER_ENTRY_DELETED,
+            identifierEntryId,
+            uploadCount,
+            businessPartnerId,
+            identifierEntryJson,
+            didLog,
+            trigger
+        );
+    }
+
+    /** @param trigger see {@link #businessPartnerDeleted} - same reason, same caller. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void statusListEntryDeleted(
+        String statusListEntryId,
+        String uploadCount,
+        String businessPartnerId,
+        String statusListEntryJson,
+        String statusListVc,
+        AuditTrigger trigger
+    ) {
+        publishDeletedEvent(
+            STATUS_LIST_DELETED,
+            statusListEntryId,
+            uploadCount,
+            businessPartnerId,
+            statusListEntryJson,
+            statusListVc,
+            trigger
+        );
+    }
+
     @Transactional(propagation = Propagation.MANDATORY)
     public void trustOnboardingDocumentUploaded(
         String documentId,
@@ -199,11 +287,47 @@ public class AuditPublisher {
         sender.auditEvent(builder.build());
     }
 
+    /** Snapshot of data that is about to be deleted, so stored as {@code OLD}. */
+    private void publishDeletedEvent(
+        AuditUseCase useCase,
+        String objectId,
+        String version,
+        String businessPartnerId,
+        String dataJson,
+        String dataValue,
+        AuditTrigger trigger
+    ) {
+        logAuditEvent(useCase, businessPartnerId);
+        var builder = withCommonFields(useCase, objectId, version, businessPartnerId, trigger).addAuditObjectDataJSON(
+            OLD,
+            useCase.getDataJsonFieldName(),
+            dataJson
+        );
+        if (dataValue != null) {
+            builder.addAuditObjectDataValue(OLD, useCase.getDataValueFieldName(), dataValue);
+        }
+        sender.auditEvent(builder.build());
+    }
+
     private CreateAuditRecordCommandBuilder withCommonFields(
         AuditUseCase useCase,
         String objectId,
         String version,
         String businessPartnerId
+    ) {
+        return withCommonFields(useCase, objectId, version, businessPartnerId, null);
+    }
+
+    /**
+     * {@code trigger == null} derives it from the security context of the current request - that is the
+     * normal case and what every audit use case other than the hard delete passes.
+     */
+    private CreateAuditRecordCommandBuilder withCommonFields(
+        AuditUseCase useCase,
+        String objectId,
+        String version,
+        String businessPartnerId,
+        AuditTrigger trigger
     ) {
         // create the builder
         var timestamp = Instant.now();
@@ -211,11 +335,15 @@ public class AuditPublisher {
         var systemName = kafkaProperties.getSystemName();
         var builder = CreateAuditRecordCommandBuilder.createCommandBuilder(serviceName, systemName, timestamp);
         // add trigger infos
-        var auditor = getCurrentAuditor(SecurityContextHolder.getContext().getAuthentication());
-        if (auditor.isSystem()) {
-            builder.setTriggerSystem(DEPARTMENT_NAME, systemName, serviceName);
+        if (trigger != null) {
+            trigger.applyTo(builder);
         } else {
-            builder.setTriggerUser(auditor.auditUserId(), auditor.identityProvider());
+            var auditor = getCurrentAuditor(SecurityContextHolder.getContext().getAuthentication());
+            if (auditor.isSystem()) {
+                builder.setTriggerSystem(DEPARTMENT_NAME, systemName, serviceName);
+            } else {
+                builder.setTriggerUser(auditor.auditUserId(), auditor.identityProvider());
+            }
         }
         // common properties
         return builder

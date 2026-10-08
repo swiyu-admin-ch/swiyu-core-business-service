@@ -90,9 +90,9 @@ class DevHtmlEmailPreviewTest {
         );
 
         assertThat(PREVIEW_DIR.resolve("index.html")).exists();
-        assertThat(
-            Arrays.stream(EmailType.values()).map(type -> PREVIEW_DIR.resolve(type.getTemplateName() + ".html"))
-        ).allSatisfy(page -> assertThat(page).exists());
+        assertThat(Arrays.stream(EmailType.values()).map(type -> PREVIEW_DIR.resolve(type.getTemplateName() + ".html")))
+            .isNotEmpty()
+            .allSatisfy(page -> assertThat(page).exists());
     }
 
     /**

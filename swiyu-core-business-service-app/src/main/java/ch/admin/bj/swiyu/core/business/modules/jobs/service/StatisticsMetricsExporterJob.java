@@ -90,12 +90,12 @@ public class StatisticsMetricsExporterJob {
         statusListCount.set(statusListEntryService.count());
         identifierCount.set(identifierEntryService.count());
 
-        for (BusinessPartnerTypeDto type : businessPartnerCountByType.keySet()) {
-            businessPartnerCountByType.get(type).set(businessPartnerService.countByType(type));
+        for (var entry : businessPartnerCountByType.entrySet()) {
+            entry.getValue().set(businessPartnerService.countByType(entry.getKey()));
         }
 
-        for (IdentifierStatusDto status : identifierCountByStatus.keySet()) {
-            identifierCountByStatus.get(status).set(identifierEntryService.countByStatus(status));
+        for (var entry : identifierCountByStatus.entrySet()) {
+            entry.getValue().set(identifierEntryService.countByStatus(entry.getKey()));
         }
     }
 }

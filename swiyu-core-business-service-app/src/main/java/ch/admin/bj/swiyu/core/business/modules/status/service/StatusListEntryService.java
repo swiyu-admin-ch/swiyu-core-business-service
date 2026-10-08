@@ -5,6 +5,7 @@ import ch.admin.bj.swiyu.core.business.common.api.CountLimitDto;
 import ch.admin.bj.swiyu.core.business.common.api.utils.PageableUtils;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditMapper;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
+import ch.admin.bj.swiyu.core.business.common.audit.AuditTrigger;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessDataIntegrityViolationException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ObjectCountLimitApiException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
@@ -21,12 +22,14 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @AllArgsConstructor
 @Service
 public class StatusListEntryService {
@@ -108,6 +111,45 @@ public class StatusListEntryService {
         statusListRegistryService.publishStatusList(entry.getStatusRegistryEntryId(), statusListVc);
         entry.increaseUploadCount();
         auditChanged(entry, businessEntityId, statusListVc);
+    }
+
+    /**
+     * Registry rows first, core rows second: the core entries are the only pointer into the registry DB,
+     * so losing them first would orphan the registry data. Separate transaction managers, so the registry
+     * delete commits on its own when it returns.
+     */
+    @Transactional
+    public void hardDeleteByPartnerId(UUID businessEntityId, AuditTrigger trigger) {
+        var entries = statusListEntryRepository.findAllByBusinessEntityId(businessEntityId);
+        log.info("Hard deleting {} status list entries of business partner '{}'", entries.size(), businessEntityId);
+        for (var entry : entries) {
+            auditDeleted(entry, businessEntityId, statusListVcOf(entry), trigger);
+        }
+        statusListRegistryService.hardDelete(entries.stream().map(StatusListEntry::getStatusRegistryEntryId).toList());
+        statusListEntryRepository.deleteAll(entries);
+    }
+
+    /** {@code null} if a previous, partially completed run already removed it. */
+    private String statusListVcOf(StatusListEntry entry) {
+        var statusListVc = statusListRegistryService.findStatusListVc(entry.getStatusRegistryEntryId());
+        if (statusListVc.isEmpty()) {
+            log.warn(
+                "No status list found for entry '{}', auditing its deletion without the status list",
+                entry.getStatusRegistryEntryId()
+            );
+        }
+        return statusListVc.orElse(null);
+    }
+
+    private void auditDeleted(StatusListEntry entry, UUID businessEntityId, String statusListVc, AuditTrigger trigger) {
+        auditPublisher.statusListEntryDeleted(
+            entry.getStatusRegistryEntryId().toString(),
+            String.valueOf(entry.getUploadCount()),
+            businessEntityId.toString(),
+            AuditMapper.toAuditJson(entry),
+            statusListVc,
+            trigger
+        );
     }
 
     private void auditCreated(StatusListEntry entry, UUID businessEntityId) {

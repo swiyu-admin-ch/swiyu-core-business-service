@@ -37,7 +37,7 @@ import tools.jackson.databind.ObjectMapper;
 @AutoConfigureMockMvc
 @WithAllTestContainerInitializers
 @EmbeddedKafka
-public class VcSchemaSubmissionsB2BControllerIT {
+class VcSchemaSubmissionsB2BControllerIT {
 
     private static final String VC_SCHEMA_SUBMISSIONS_B2B_BASE_URL = "/api/v1/trust/";
 

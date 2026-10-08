@@ -274,6 +274,11 @@ public class ArchitectureTest {
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.jobs.service.."),
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.(**).[api|service]..")
             )
+            // offboarding -> any service: it orchestrates the deletion, each module owns its own data
+            .ignoreDependency(
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.offboarding.service.."),
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.(**).service..")
+            )
             // demodata -> allow all
             .ignoreDependency(resideInAPackage("..core.business.modules.dataimport.."), alwaysTrue());
     }

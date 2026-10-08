@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.core.business.modules.identifier.domain;
 
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,4 +21,6 @@ public interface IdentifierEntryRepository
     boolean existsByIdAndBusinessEntityId(UUID didEntryId, @NotNull UUID businessEntityId);
 
     boolean existsByBusinessEntityIdAndDid(UUID businessEntityId, String did);
+
+    List<IdentifierEntry> findAllByBusinessEntityId(UUID businessEntityId);
 }

@@ -18,7 +18,9 @@ import ch.admin.bj.swiyu.registry.identifier.common.exception.DidEntityNotReadyE
 import ch.admin.bj.swiyu.registry.identifier.domain.*;
 import jakarta.validation.Valid;
 import java.text.MessageFormat;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 @AllArgsConstructor
 public class IdentifierRegistryService {
 
+    private static final String IDENTIFIER_REGISTRY_TX_MANAGER = "identifierRegistryTransactionManager";
+
     private final DidEntityRepository didEntityRepository;
     private final IdentifierDatastoreEntityRepository identifierDatastoreEntityRepository;
     private final IdentifierRegistryProperties identifierRegistryProperties;
@@ -40,7 +44,7 @@ public class IdentifierRegistryService {
         );
     }
 
-    @Transactional(transactionManager = "identifierRegistryTransactionManager")
+    @Transactional(transactionManager = IDENTIFIER_REGISTRY_TX_MANAGER)
     public DatastoreEntityResponseDto createDatastoreEntity() {
         log.debug("Creating new DatastoreEntity");
         var datastoreEntity = createEmptyDatastoreEntity();
@@ -48,7 +52,7 @@ public class IdentifierRegistryService {
         return toDatastoreEntityResponseDto(datastoreEntity, didEntities);
     }
 
-    @Transactional(readOnly = true, transactionManager = "identifierRegistryTransactionManager")
+    @Transactional(readOnly = true, transactionManager = IDENTIFIER_REGISTRY_TX_MANAGER)
     public DatastoreEntityResponseDto getDatastoreEntity(@Valid UUID id) {
         log.debug("Looking up datastore entity for id: {}", id);
         var datastoreEntity = getDatastoreEntityById(id);
@@ -56,7 +60,7 @@ public class IdentifierRegistryService {
         return toDatastoreEntityResponseDto(datastoreEntity, didEntities);
     }
 
-    @Transactional(transactionManager = "identifierRegistryTransactionManager")
+    @Transactional(transactionManager = IDENTIFIER_REGISTRY_TX_MANAGER)
     public DatastoreEntityResponseDto updateDidTdwEntry(@Valid UUID id, String content) {
         log.debug("Updating did:tdw entry for id: {}", id);
         var datastoreEntity = saveNewDidAndActivateDatastore(id, DidType.DID_TDW, content);
@@ -64,13 +68,31 @@ public class IdentifierRegistryService {
         return toDatastoreEntityResponseDto(datastoreEntity, didEntities);
     }
 
-    @Transactional(readOnly = true, transactionManager = "identifierRegistryTransactionManager")
+    @Transactional(readOnly = true, transactionManager = IDENTIFIER_REGISTRY_TX_MANAGER)
     public String getDidTdwFile(UUID datastoreEntityId) {
         var didEntity = this.didEntityRepository.findByBase_IdAndFileType(
             datastoreEntityId,
             DidType.DID_TDW
         ).orElseThrow(() -> new DidEntityNotFoundException(datastoreEntityId.toString()));
         return didEntity.getContent();
+    }
+
+    /** Unlike {@link #getDidTdwFile(UUID)} this does not throw on a missing entry. */
+    @Transactional(readOnly = true, transactionManager = IDENTIFIER_REGISTRY_TX_MANAGER)
+    public Optional<String> findDidTdwFile(UUID datastoreEntityId) {
+        return didEntityRepository
+            .findByBase_IdAndFileType(datastoreEntityId, DidType.DID_TDW)
+            .map(DidEntity::getContent);
+    }
+
+    @Transactional(transactionManager = IDENTIFIER_REGISTRY_TX_MANAGER)
+    public void hardDelete(Collection<UUID> datastoreEntityIds) {
+        if (datastoreEntityIds.isEmpty()) {
+            return;
+        }
+        log.info("Hard deleting {} identifier datastore entries", datastoreEntityIds.size());
+        didEntityRepository.deleteByBase_IdIn(datastoreEntityIds);
+        identifierDatastoreEntityRepository.deleteAllById(datastoreEntityIds);
     }
 
     private IdentifierDatastoreEntity getDatastoreEntityById(UUID datastoreEntityId) {

@@ -18,7 +18,9 @@ import ch.admin.bj.swiyu.registry.status.common.exception.StatusListNotReadyExce
 import ch.admin.bj.swiyu.registry.status.domain.*;
 import java.text.MessageFormat;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,18 +32,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class StatusListRegistryService {
 
+    private static final String STATUS_REGISTRY_TX_MANAGER = "statusRegistryTransactionManager";
+
     private final VcEntityRepository vcEntityRepository;
     private final StatusListDatastoreEntityRepository statusListDatastoreEntityRepository;
     private final StatusRegistryProperties statusRegistryProperties;
 
-    @Transactional(transactionManager = "statusRegistryTransactionManager")
+    @Transactional(transactionManager = STATUS_REGISTRY_TX_MANAGER)
     public DatastoreEntityResponseDto createDatastoreEntry() {
         var datastoreEntity = statusListDatastoreEntityRepository.save(new StatusListDatastoreEntity());
         log.info("created datastore entry with id: {}", datastoreEntity.getId());
         return toDatastoreEntityResponseDto(datastoreEntity, getAllDatastoreFileEntity(datastoreEntity.getId()));
     }
 
-    @Transactional(transactionManager = "statusRegistryTransactionManager")
+    @Transactional(transactionManager = STATUS_REGISTRY_TX_MANAGER)
     public DatastoreEntityResponseDto publishStatusList(UUID datastoreEntryId, String statusListVc) {
         var datastoreEntity = getDatastoreEntityById(datastoreEntryId);
         validateCanEdit(datastoreEntity);
@@ -68,13 +72,31 @@ public class StatusListRegistryService {
         return toDatastoreEntityResponseDto(datastoreEntity, getAllDatastoreFileEntity(datastoreEntryId));
     }
 
-    @Transactional(readOnly = true, transactionManager = "statusRegistryTransactionManager")
+    @Transactional(readOnly = true, transactionManager = STATUS_REGISTRY_TX_MANAGER)
     public String getStatusListVc(UUID datastoreEntityId) {
         var vcEntity = this.vcEntityRepository.findByBase_IdAndVcType(datastoreEntityId, VcType.TokenStatusListJWT);
         if (vcEntity.isEmpty()) {
             throw new StatusListNotFoundException(datastoreEntityId.toString());
         }
         return vcEntity.get().getRawVc();
+    }
+
+    /** Unlike {@link #getStatusListVc(UUID)} this does not throw on a missing entry. */
+    @Transactional(readOnly = true, transactionManager = STATUS_REGISTRY_TX_MANAGER)
+    public Optional<String> findStatusListVc(UUID datastoreEntityId) {
+        return vcEntityRepository
+            .findByBase_IdAndVcType(datastoreEntityId, VcType.TokenStatusListJWT)
+            .map(VcEntity::getRawVc);
+    }
+
+    @Transactional(transactionManager = STATUS_REGISTRY_TX_MANAGER)
+    public void hardDelete(Collection<UUID> datastoreEntityIds) {
+        if (datastoreEntityIds.isEmpty()) {
+            return;
+        }
+        log.info("Hard deleting {} status list datastore entries", datastoreEntityIds.size());
+        vcEntityRepository.deleteByBase_IdIn(datastoreEntityIds);
+        statusListDatastoreEntityRepository.deleteAllById(datastoreEntityIds);
     }
 
     private Map<String, VcEntityResponseDto> getAllDatastoreFileEntity(UUID id) {

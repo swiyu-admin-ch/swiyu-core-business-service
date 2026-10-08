@@ -20,6 +20,7 @@ import org.springframework.context.annotation.Configuration;
 )
 @JeapMessageProducerContract(value = TiVqpsSubmissionAcceptedEvent.TypeRef.class, encryptionKeyId = "messagingKey")
 @JeapMessageProducerContract(value = TiBusinessPartnerUpdatedEvent.TypeRef.class, encryptionKeyId = "messagingKey")
+@JeapMessageProducerContract(value = TiBusinessPartnerHardDeletedEvent.TypeRef.class, encryptionKeyId = "messagingKey")
 @JeapMessageProducerContract(
     value = TiProtectedVerificationSubmissionAcceptedEvent.TypeRef.class,
     encryptionKeyId = "messagingKey"
@@ -41,6 +42,7 @@ import org.springframework.context.annotation.Configuration;
         TiBusinessPartnerIdentityActivatedEvent.TypeRef.class,
         TiBusinessPartnerIdentityDeactivatedEvent.TypeRef.class,
         TiSendEmailCommand.TypeRef.class,
+        TiHardDeleteBusinessPartnerCommand.TypeRef.class,
     }
 )
 @Configuration

@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.status.domain;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,8 @@ public interface StatusListEntryRepository extends JpaRepository<StatusListEntry
     );
 
     Page<StatusListEntry> findAllByBusinessEntityId(UUID businessEntityId, Pageable pageable);
+
+    List<StatusListEntry> findAllByBusinessEntityId(UUID businessEntityId);
 
     long countByBusinessEntityId(UUID businessEntityId);
 }

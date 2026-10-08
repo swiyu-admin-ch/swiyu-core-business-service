@@ -96,4 +96,10 @@ public class VcSchemaSubmissionService {
     private VcSchemaSubmissionDto getVcSchemaSubmissionDto(VcSchemaSubmission vcSchemaSubmission) {
         return VcSchemaMapper.toVcSchemaSubmissionDto(vcSchemaSubmission);
     }
+
+    @Transactional
+    public void hardDeleteByPartnerId(UUID partnerId) {
+        log.info("Hard deleting all VcSchemaSubmissions of business partner '{}'", partnerId);
+        vcSchemaSubmissionRepository.deleteByPartnerId(partnerId);
+    }
 }

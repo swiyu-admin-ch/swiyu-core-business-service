@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface VcSchemaSubmissionRepository extends JpaRepository<VcSchemaSubmission, UUID> {
     Page<VcSchemaSubmission> findAllByPartnerId(UUID id, Pageable pageable);
+
+    void deleteByPartnerId(UUID partnerId);
 }

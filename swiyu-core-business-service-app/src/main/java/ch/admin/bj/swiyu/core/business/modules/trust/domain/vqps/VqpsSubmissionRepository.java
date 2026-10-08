@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface VqpsSubmissionRepository extends JpaRepository<VqpsSubmission, UUID> {
     Page<VqpsSubmission> findAllByPartnerId(UUID partnerId, Pageable pageable);
+
+    void deleteByPartnerId(UUID partnerId);
 }

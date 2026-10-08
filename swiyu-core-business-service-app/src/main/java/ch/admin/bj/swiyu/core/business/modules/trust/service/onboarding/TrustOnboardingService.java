@@ -717,4 +717,10 @@ public class TrustOnboardingService {
         var editedRows = trustOnboardingSubmissionRepository.updateStatusToTimeout(maxAgeTimestamp);
         log.info("{} TrustOnboardingSubmissions did expire.", editedRows);
     }
+
+    @Transactional
+    public void hardDeleteByPartnerId(UUID partnerId) {
+        log.info("Hard deleting all TrustOnboardingSubmissions of business partner '{}'", partnerId);
+        trustOnboardingSubmissionRepository.deleteByPartnerId(partnerId);
+    }
 }

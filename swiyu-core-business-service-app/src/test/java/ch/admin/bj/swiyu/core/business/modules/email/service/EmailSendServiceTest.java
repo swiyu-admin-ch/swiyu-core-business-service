@@ -89,24 +89,24 @@ class EmailSendServiceTest {
     }
 
     @Test
-    void sendsAnHtmlBodyAsMultipartWithBothAlternatives() throws Exception {
+    void sendsAnHtmlBodyAsMultipartWithBothAlternatives() {
         var received = sendAndReceive(email(HTML_BODY));
 
         var contentTypes = contentTypesOf(received);
-        assertThat(contentTypes).anyMatch(type -> type.startsWith("multipart/related"));
-        assertThat(contentTypes).anyMatch(type -> type.startsWith("multipart/alternative"));
-        assertThat(contentTypes).anyMatch(type -> type.startsWith("text/plain"));
-        assertThat(contentTypes).anyMatch(type -> type.startsWith("text/html"));
+        assertThat(contentTypes)
+            .anyMatch(type -> type.startsWith("multipart/related"))
+            .anyMatch(type -> type.startsWith("multipart/alternative"))
+            .anyMatch(type -> type.startsWith("text/plain"))
+            .anyMatch(type -> type.startsWith("text/html"));
     }
 
     @Test
-    void derivesThePlainTextAlternativeFromTheHtml() throws Exception {
+    void derivesThePlainTextAlternativeFromTheHtml() {
         var received = sendAndReceive(email(HTML_BODY));
 
         var plain = partOfType(received, "text/plain");
-        assertThat(plain).isEqualTo("Guten Tag\n\nFreundliche Grüsse");
         // The logo is a link around an image and contributes nothing a text reader could use.
-        assertThat(plain).doesNotContain("cid:", "swiyu.ch");
+        assertThat(plain).isEqualTo("Guten Tag\n\nFreundliche Grüsse").doesNotContain("cid:", "swiyu.ch");
     }
 
     @Test
@@ -119,7 +119,7 @@ class EmailSendServiceTest {
     }
 
     @Test
-    void attachesNoImageForAContentIdThatNamesNoBundledFile() throws Exception {
+    void attachesNoImageForAContentIdThatNamesNoBundledFile() {
         var received = sendAndReceive(email(HTML_BODY.replace("cid:swiyu-logo-de", "cid:not-a-logo")));
 
         // An email without its logo beats no email at all, so an unknown reference is logged and

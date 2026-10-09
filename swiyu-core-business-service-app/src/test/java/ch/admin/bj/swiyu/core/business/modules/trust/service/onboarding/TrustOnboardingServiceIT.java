@@ -28,7 +28,6 @@ import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessDataIntegrityVi
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
-import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerTrustStatusDto;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
@@ -56,8 +55,6 @@ import org.assertj.core.api.Assertions;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -781,27 +778,6 @@ class TrustOnboardingServiceIT {
         // THEN
         var refreshed = repos.trustOnboardingSubmission.findById(submission.getId()).orElseThrow();
         assertNull(refreshed.getDeclarationOfIntent());
-    }
-
-    @SuppressWarnings("java:S1874") // remove with EID-6624
-    @ParameterizedTest
-    @MethodSource(
-        "ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTestData#provideUpdateTrustStatus_aggregation_validation"
-    )
-    void aggregateTrustVerificationStatus_aggregation_validation(
-        BusinessPartnerTrustStatusDto targetStatus,
-        List<TrustOnboardingSubmissionStatus> sources
-    ) {
-        // setup existing trust onboardings as precondition
-        for (var source : sources) {
-            var tos = trustOnboardingSubmission(UUID.randomUUID(), BusinessEntityTestData.DEFAULT_ENTITY, source);
-            repos.trustOnboardingSubmission.save(tos);
-        }
-
-        // trustVerificationStatus is now computed on-the-fly in getBusinessPartner —
-        // no explicit aggregation call needed.
-        var updatedBusinessPartner = businessPartnerService.getBusinessPartner(BusinessEntityTestData.DEFAULT_ENTITY);
-        assertEquals(targetStatus, updatedBusinessPartner.trustVerificationStatus());
     }
 
     @Test

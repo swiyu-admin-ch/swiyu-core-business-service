@@ -3,9 +3,12 @@ package ch.admin.bj.swiyu.core.business.modules.management.service;
 import static ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType.GOVERNMENTAL_INSTITUTION;
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerType;
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerTypeDto;
-import static ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper.*;
+import static ch.admin.bj.swiyu.core.business.modules.management.api.IdentityVerificationProgressStatusDto.*;
+import static ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper.toAddress;
+import static ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper.toContact;
 import static org.springframework.util.StringUtils.hasText;
 
+import ch.admin.bj.swiyu.core.business.common.TrustBusinessPartnerExpiryReminderTiming;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
 import ch.admin.bj.swiyu.core.business.common.api.ListItemDto;
 import ch.admin.bj.swiyu.core.business.common.api.utils.PageableUtils;
@@ -219,9 +222,7 @@ public class BusinessPartnerService {
                 )
                 .hasContent();
             if (!hasActiveDid) {
-                return IdentityVerificationProgressDto.of(
-                    IdentityVerificationProgressStatusDto.VERIFICATION_NOT_STARTED
-                );
+                return IdentityVerificationProgressDto.of(VERIFICATION_NOT_STARTED);
             }
         }
 
@@ -229,134 +230,133 @@ public class BusinessPartnerService {
     }
 
     /**
-     * Computes the {@link IdentityVerificationProgressDto} for a business partner purely from
-     * its {@link BusinessPartnerIdentity} (TMS-owned) and the history of its
-     * {@link TrustOnboardingSubmission}s. This value is never persisted.
-     *
-     * <h3>State derivation rules</h3>
-     * <pre>
-     * ── No BPI (partner never successfully onboarded) ─────────────────────────
-     *   No active submission             → VERIFICATION_NOT_STARTED
-     *   Latest active sub UNSUBMITTED    → VERIFICATION_STARTED
-     *   Latest active sub SUBMITTED      → VERIFICATION_IN_PROGRESS
-     *   Latest active sub INFO_REQUESTED → VERIFICATION_INFORMATION_REQUESTED_REQUIRED
-     *   Latest active sub RESUBMITTED    → VERIFICATION_IN_PROGRESS (behaves like SUBMITTED)
-     *   Latest active sub UNSUBMITTED after resubmit (resubmitRequiredUntil set)
-     *                                    → VERIFICATION_INFORMATION_REQUESTED_STARTED
-     *
-     * ── BPI ACTIVE (partner is currently trusted, no new submission) ──────────
-     *   No active submission             → VERIFICATION_SUCCEEDED
-     *
-     * ── BPI exists (ACTIVE or DEACTIVATED) + new submission in flight ─────────
-     *   The existence of any BPI (regardless of ACTIVE/DEACTIVATED) signals a
-     *   "previously successfully onboarded" partner. Any new submission started
-     *   after that produces RE_* states:
-     *   Latest active sub UNSUBMITTED    → RE_VERIFICATION_STARTED
-     *   Latest active sub SUBMITTED      → RE_VERIFICATION_IN_PROGRESS
-     *   Latest active sub INFO_REQUESTED → VERIFICATION_INFORMATION_REQUESTED_REQUIRED
-     *                                      (no RE_ prefix for this one — matches old model)
-     *   Latest active sub RESUBMITTED    → RE_VERIFICATION_IN_PROGRESS (behaves like SUBMITTED)
-     *
-     * ── BPI DEACTIVATED + no active submission ───────────────────────────────
-     *   No active submission             → RE_VERIFICATION_REQUIRED
-     * </pre>
-     *
-     * <h3>Note on VERIFICATION_NOT_STARTED vs VERIFICATION_STARTED</h3>
-     * This method returns VERIFICATION_NOT_STARTED whenever no active submission exists and
-     * the partner has no BPI. {@link #getVerificationProgress} additionally checks for the
-     * presence of an active DID before returning VERIFICATION_STARTED, because the portal
-     * cannot initiate verification without a DID document.
-     *
-     * <h3>RE_* state trigger — "previously succeeded" signal</h3>
-     * A partner is considered "previously successfully onboarded" when either:
-     * (a) a {@link BusinessPartnerIdentity} exists (set by a TMS BPI event), OR
-     * (b) a {@link TrustOnboardingSubmission} with status {@code SUCCEEDED} exists in history.
-     * Condition (b) covers the migration window before TMS sends BPI sync events (EID-6612).
-     * Once all partners have a BPI seeded, (a) alone is sufficient.
-     * When "previously succeeded", any in-flight submission produces RE_* states.
-     *
-     * <h3>SUCCEEDED submission + no active submission</h3>
-     * When the latest terminal state is SUCCEEDED and there is no BPI yet
-     * (migration window), the result is VERIFICATION_SUCCEEDED.
-     * UNSUBMITTED_TIMEOUT after a SUCCEEDED reverts to VERIFIED (same as old model).
+     * Compute the current trust state of Business Partner based on his BusinessPartnerIdentity, and it's different submissions.
+     * This state does not consider the presence of Did for the business partner.
+     * @param partner
+     * @param submissions
+     * @return identityVerificationProgress
      */
+    // See BusinessPartnerServiceComputeVerificationProgressTest.class for details cases
     IdentityVerificationProgressDto computeVerificationProgress(
-        BusinessEntity entity,
+        BusinessEntity partner,
         List<TrustOnboardingSubmission> submissions
     ) {
-        var bpi = entity.getBusinessPartnerIdentity();
+        var bpi = partner.getBusinessPartnerIdentity();
+        var hasBpi = bpi != null;
 
         // Sort all submissions chronologically (oldest first)
-        var sorted = submissions
+        var sortedSubmissions = submissions
             .stream()
             .sorted(Comparator.comparing(TrustOnboardingSubmission::getInitiatedAt))
             .toList();
 
-        // Walk all submissions in order, exactly as the old aggregateTrustVerificationStatus did.
-        // This produces the correct hasPreviouslySucceeded flag AND the correct final state from
-        // terminal submissions. We then overlay the active-submission state at the end.
-        var hasPreviouslySucceeded = bpi != null;
-        TrustOnboardingSubmission latestActiveSubmission = null;
-        for (var sub : sorted) {
-            switch (sub.getStatus()) {
+        // Walk all submissions in order, tracking the latest ongoing submission and the most
+        // recent closed submission outcome (SUCCEEDED / REJECTED / expired). Most Recent closed submission states clear any
+        // prior active submission; the most recent closed submission outcome decides when none is ongoing.
+        var hasPreviouslySucceeded = hasBpi;
+        var lastClosedSubmissionSucceeded = false;
+        var lastClosedSubmissionRejected = false;
+        TrustOnboardingSubmission latestActive = null;
+        for (var submission : sortedSubmissions) {
+            switch (submission.getStatus()) {
                 case SUCCEEDED -> {
                     hasPreviouslySucceeded = true;
-                    latestActiveSubmission = null; // terminal overrides any prior active
+                    lastClosedSubmissionSucceeded = true;
+                    lastClosedSubmissionRejected = false;
+                    latestActive = null;
                 }
                 case REJECTED -> {
                     hasPreviouslySucceeded = false;
-                    latestActiveSubmission = null;
+                    lastClosedSubmissionSucceeded = false;
+                    lastClosedSubmissionRejected = true;
+                    latestActive = null;
                 }
-                case UNSUBMITTED_TIMEOUT -> latestActiveSubmission = null;
-                case UNSUBMITTED, SUBMITTED, INFORMATION_REQUESTED, RESUBMITTED -> latestActiveSubmission = sub;
+                case UNSUBMITTED_TIMEOUT -> {
+                    lastClosedSubmissionSucceeded = false;
+                    latestActive = null;
+                }
+                case UNSUBMITTED, SUBMITTED, INFORMATION_REQUESTED, RESUBMITTED -> {
+                    latestActive = submission;
+                    lastClosedSubmissionRejected = false;
+                }
             }
         }
-        var latestActive = java.util.Optional.ofNullable(latestActiveSubmission);
 
-        // BPI ACTIVE + no in-flight submission → fully verified
-        if (bpi != null && bpi.getStatus() == BusinessPartnerIdentityStatus.ACTIVE && latestActive.isEmpty()) {
-            return IdentityVerificationProgressDto.of(IdentityVerificationProgressStatusDto.VERIFICATION_SUCCEEDED);
+        // An ongoing submission decides the state on its own.
+        if (latestActive != null) {
+            return computeProgressStateWhenOngoingSubmission(latestActive, hasBpi);
         }
 
-        // No BPI but previously succeeded (from submissions) + no active submission
-        // → treat as verified (migration window: BPI event not yet received from TMS)
-        if (bpi == null && hasPreviouslySucceeded && latestActive.isEmpty()) {
-            return IdentityVerificationProgressDto.of(IdentityVerificationProgressStatusDto.VERIFICATION_SUCCEEDED);
+        // No ongoing submission → the most recent terminal outcome decides.
+        if (lastClosedSubmissionRejected) {
+            return IdentityVerificationProgressDto.of(hasBpi ? RE_VERIFICATION_REJECTED : VERIFICATION_REJECTED);
         }
 
-        // BPI DEACTIVATED + no active submission → re-verification required
-        if (bpi != null && bpi.getStatus() == BusinessPartnerIdentityStatus.DEACTIVATED && latestActive.isEmpty()) {
-            return IdentityVerificationProgressDto.of(IdentityVerificationProgressStatusDto.RE_VERIFICATION_REQUIRED);
+        if (hasBpi) {
+            return computeProgressStateWhenHasBpi(bpi, lastClosedSubmissionSucceeded);
         }
 
-        // Previously succeeded + active in-flight submission → RE_* states
-        if (hasPreviouslySucceeded && latestActive.isPresent()) {
-            var status = switch (latestActive.get().getStatus()) {
-                case UNSUBMITTED -> latestActive.get().getResubmitRequiredUntil() != null
-                    ? IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED_STARTED
-                    : IdentityVerificationProgressStatusDto.RE_VERIFICATION_STARTED;
-                case SUBMITTED -> IdentityVerificationProgressStatusDto.RE_VERIFICATION_IN_PROGRESS;
-                case INFORMATION_REQUESTED -> IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED_REQUIRED;
-                case RESUBMITTED -> IdentityVerificationProgressStatusDto.RE_VERIFICATION_IN_PROGRESS;
-                default -> IdentityVerificationProgressStatusDto.VERIFICATION_SUCCEEDED; // unreachable
-            };
-            return new IdentityVerificationProgressDto(status, computeMaxDate(status, latestActive.get()));
-        }
+        // No BPI: only a prior SUCCEEDED submission (migration window, TMS BPI event not yet
+        // received) counts as verified.
+        return IdentityVerificationProgressDto.of(
+            hasPreviouslySucceeded ? VERIFICATION_SUCCEEDED : VERIFICATION_NOT_STARTED
+        );
+    }
 
-        // No previous success — first-time verification path
-        if (latestActive.isEmpty()) {
-            return IdentityVerificationProgressDto.of(IdentityVerificationProgressStatusDto.VERIFICATION_NOT_STARTED);
+    private @NonNull IdentityVerificationProgressDto computeProgressStateWhenHasBpi(
+        BusinessPartnerIdentity bpi,
+        boolean lastTerminalSucceeded
+    ) {
+        if (bpi.getStatus() == BusinessPartnerIdentityStatus.ACTIVE) {
+            if (isExpiringSoon(bpi)) {
+                return IdentityVerificationProgressDto.of(RE_VERIFICATION_REQUIRED);
+            }
+            if (lastTerminalSucceeded) {
+                return new IdentityVerificationProgressDto(RE_VERIFICATION_SUCCEEDED, bpi.getValidUntil());
+            }
+            return IdentityVerificationProgressDto.of(VERIFICATION_SUCCEEDED);
         }
-        var status = switch (latestActive.get().getStatus()) {
-            case UNSUBMITTED -> latestActive.get().getResubmitRequiredUntil() != null
-                ? IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED_STARTED
-                : IdentityVerificationProgressStatusDto.VERIFICATION_STARTED;
-            case SUBMITTED -> IdentityVerificationProgressStatusDto.VERIFICATION_IN_PROGRESS;
-            case INFORMATION_REQUESTED -> IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED_REQUIRED;
-            case RESUBMITTED -> IdentityVerificationProgressStatusDto.VERIFICATION_IN_PROGRESS;
-            default -> IdentityVerificationProgressStatusDto.VERIFICATION_NOT_STARTED; // unreachable
+        // BPI DEACTIVATED: identity is gone, verification starts over.
+        return IdentityVerificationProgressDto.of(VERIFICATION_NOT_STARTED);
+    }
+
+    private @NonNull IdentityVerificationProgressDto computeProgressStateWhenOngoingSubmission(
+        TrustOnboardingSubmission latestActive,
+        boolean hasBpi
+    ) {
+        var status = switch (latestActive.getStatus()) {
+            case UNSUBMITTED -> computeUnsubmittedSubmissionStatus(latestActive, hasBpi);
+            case SUBMITTED, RESUBMITTED -> computeSubmittedSubmissionStatus(hasBpi);
+            case INFORMATION_REQUESTED -> VERIFICATION_INFORMATION_REQUESTED_REQUIRED;
+            default -> throw new IllegalStateException("Unexpected active submission status");
         };
-        return new IdentityVerificationProgressDto(status, computeMaxDate(status, latestActive.get()));
+        return new IdentityVerificationProgressDto(status, computeMaxDate(latestActive));
+    }
+
+    private static @NonNull IdentityVerificationProgressStatusDto computeSubmittedSubmissionStatus(boolean hasBpi) {
+        return hasBpi
+            ? IdentityVerificationProgressStatusDto.RE_VERIFICATION_IN_PROGRESS
+            : IdentityVerificationProgressStatusDto.VERIFICATION_IN_PROGRESS;
+    }
+
+    private static @NonNull IdentityVerificationProgressStatusDto computeUnsubmittedSubmissionStatus(
+        TrustOnboardingSubmission submission,
+        boolean hasBpi
+    ) {
+        if (
+            submission.getSubmittedAt() != null
+        ) return IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED_STARTED;
+        return hasBpi
+            ? IdentityVerificationProgressStatusDto.RE_VERIFICATION_STARTED
+            : IdentityVerificationProgressStatusDto.VERIFICATION_STARTED;
+    }
+
+    private boolean isExpiringSoon(BusinessPartnerIdentity bpi) {
+        var validUntil = bpi.getValidUntil();
+        return (
+            validUntil != null &&
+            validUntil.isBefore(Instant.now().plus(TrustBusinessPartnerExpiryReminderTiming.RE_VERIFICATION_WINDOW))
+        );
     }
 
     /**
@@ -371,7 +371,7 @@ public class BusinessPartnerService {
      * VERIFICATION_INFORMATION_REQUESTED → INFORMATION_REQUESTED
      * VERIFICATION_REJECTED            → NOT_VERIFIED  (placeholder, EID-6620)
      * VERIFICATION_SUCCEEDED           → VERIFIED
-     * RE_VERIFICATION_REQUIRED         → NOT_VERIFIED
+     * RE_VERIFICATION_REQUIRED         → VERIFIED
      * RE_VERIFICATION_STARTED          → RE_VERIFICATION_STARTED
      * RE_VERIFICATION_IN_PROGRESS      → RE_VERIFICATION_IN_PROGRESS
      * RE_VERIFICATION_REJECTED         → NOT_VERIFIED  (placeholder, EID-6620)
@@ -387,7 +387,7 @@ public class BusinessPartnerService {
             case VERIFICATION_INFORMATION_REQUESTED_STARTED -> BusinessPartnerTrustStatusDto.VERIFICATION_IN_PROGRESS;
             case VERIFICATION_REJECTED -> BusinessPartnerTrustStatusDto.NOT_VERIFIED;
             case VERIFICATION_SUCCEEDED -> BusinessPartnerTrustStatusDto.VERIFIED;
-            case RE_VERIFICATION_REQUIRED -> BusinessPartnerTrustStatusDto.NOT_VERIFIED;
+            case RE_VERIFICATION_REQUIRED -> BusinessPartnerTrustStatusDto.VERIFIED;
             case RE_VERIFICATION_STARTED -> BusinessPartnerTrustStatusDto.RE_VERIFICATION_STARTED;
             case RE_VERIFICATION_IN_PROGRESS -> BusinessPartnerTrustStatusDto.RE_VERIFICATION_IN_PROGRESS;
             case RE_VERIFICATION_REJECTED -> BusinessPartnerTrustStatusDto.NOT_VERIFIED;
@@ -396,28 +396,28 @@ public class BusinessPartnerService {
     }
 
     /**
-     * Computes the deadline for the given status based on the active submission's {@code initiatedAt}
-     * plus the configured {@code max-age-in-unsubmitted} duration.
+     * Computes the deadline for the currently ongoing submission based on its own status.
      *
-     * <p>Applies to {@link IdentityVerificationProgressStatusDto#VERIFICATION_STARTED} and
-     * {@link IdentityVerificationProgressStatusDto#RE_VERIFICATION_STARTED} (based on
-     * {@code initiatedAt + max-age-in-unsubmitted}), and to
-     * {@link IdentityVerificationProgressStatusDto#VERIFICATION_INFORMATION_REQUESTED_REQUIRED} /
-     * {@link IdentityVerificationProgressStatusDto#VERIFICATION_INFORMATION_REQUESTED_STARTED}
-     * which use the submission's {@code resubmitRequiredUntil} deadline (falling back to the
-     * unsubmitted-age approximation if it is not set).
+     * <p>Applies to:
+     * <ul>
+     *   <li>{@code UNSUBMITTED} — the {@link IdentityVerificationProgressStatusDto#VERIFICATION_STARTED}
+     *       / {@link IdentityVerificationProgressStatusDto#RE_VERIFICATION_STARTED} /
+     *       {@link IdentityVerificationProgressStatusDto#VERIFICATION_INFORMATION_REQUESTED_STARTED}
+     *       deadline, based on {@code initiatedAt + max-age-in-unsubmitted}.</li>
+     *   <li>{@code RESUBMITTED} and {@code INFORMATION_REQUESTED} — the submission's
+     *       {@code resubmitRequiredUntil} deadline (falling back to the unsubmitted-age
+     *       approximation if it is not set).</li>
+     *   <li>{@code SUBMITTED} — no deadline.</li>
+     * </ul>
      *
      * @return the computed deadline, or {@code null} if no deadline applies for the given status
      */
-    private Instant computeMaxDate(
-        IdentityVerificationProgressStatusDto status,
-        TrustOnboardingSubmission activeSubmission
-    ) {
-        return switch (status) {
-            case VERIFICATION_STARTED, RE_VERIFICATION_STARTED -> activeSubmission
+    private Instant computeMaxDate(TrustOnboardingSubmission activeSubmission) {
+        return switch (activeSubmission.getStatus()) {
+            case UNSUBMITTED -> activeSubmission
                 .getInitiatedAt()
                 .plus(trustOnboardingSubmissionLimitProperties.maxAgeInUnsubmitted());
-            case VERIFICATION_INFORMATION_REQUESTED_REQUIRED, VERIFICATION_INFORMATION_REQUESTED_STARTED -> {
+            case RESUBMITTED, INFORMATION_REQUESTED -> {
                 var resubmitRequiredUntil = activeSubmission.getResubmitRequiredUntil();
                 yield resubmitRequiredUntil != null
                     ? resubmitRequiredUntil

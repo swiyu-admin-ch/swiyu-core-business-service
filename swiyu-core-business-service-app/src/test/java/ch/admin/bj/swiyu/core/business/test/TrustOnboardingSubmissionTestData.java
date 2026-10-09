@@ -15,7 +15,6 @@ import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
-import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerTrustStatusDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
 import java.time.Instant;
@@ -23,8 +22,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.provider.Arguments;
 import org.springframework.test.util.ReflectionTestUtils;
 
 public class TrustOnboardingSubmissionTestData {
@@ -308,87 +305,6 @@ public class TrustOnboardingSubmissionTestData {
             lastName,
             "+41 79 000 00 00",
             "%s.%s@example.com".formatted(firstName, lastName)
-        );
-    }
-
-    public static Stream<Arguments> provideUpdateTrustStatus_aggregation_validation() {
-        return Stream.of(
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.NOT_VERIFIED,
-                List.of(TrustOnboardingSubmissionStatus.UNSUBMITTED_TIMEOUT)
-            ),
-            Arguments.of(BusinessPartnerTrustStatusDto.NOT_VERIFIED, List.of(TrustOnboardingSubmissionStatus.REJECTED)),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.NOT_VERIFIED,
-                List.of(TrustOnboardingSubmissionStatus.SUCCEEDED, TrustOnboardingSubmissionStatus.REJECTED)
-            ),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.VERIFICATION_STARTED,
-                List.of(TrustOnboardingSubmissionStatus.UNSUBMITTED)
-            ),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.VERIFICATION_STARTED,
-                List.of(TrustOnboardingSubmissionStatus.REJECTED, TrustOnboardingSubmissionStatus.UNSUBMITTED)
-            ),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.VERIFICATION_IN_PROGRESS,
-                List.of(TrustOnboardingSubmissionStatus.SUBMITTED)
-            ),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.VERIFICATION_IN_PROGRESS,
-                List.of(TrustOnboardingSubmissionStatus.REJECTED, TrustOnboardingSubmissionStatus.SUBMITTED)
-            ),
-            Arguments.of(BusinessPartnerTrustStatusDto.VERIFIED, List.of(TrustOnboardingSubmissionStatus.SUCCEEDED)),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.VERIFIED,
-                List.of(TrustOnboardingSubmissionStatus.REJECTED, TrustOnboardingSubmissionStatus.SUCCEEDED)
-            ),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.VERIFIED,
-                List.of(TrustOnboardingSubmissionStatus.UNSUBMITTED, TrustOnboardingSubmissionStatus.SUCCEEDED)
-            ),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.VERIFIED,
-                List.of(TrustOnboardingSubmissionStatus.UNSUBMITTED_TIMEOUT, TrustOnboardingSubmissionStatus.SUCCEEDED)
-            ),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.VERIFIED,
-                List.of(TrustOnboardingSubmissionStatus.SUCCEEDED, TrustOnboardingSubmissionStatus.UNSUBMITTED_TIMEOUT)
-            ),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.RE_VERIFICATION_STARTED,
-                List.of(TrustOnboardingSubmissionStatus.SUCCEEDED, TrustOnboardingSubmissionStatus.UNSUBMITTED)
-            ),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.RE_VERIFICATION_STARTED,
-                List.of(TrustOnboardingSubmissionStatus.SUCCEEDED, TrustOnboardingSubmissionStatus.UNSUBMITTED)
-            ),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.RE_VERIFICATION_IN_PROGRESS,
-                List.of(TrustOnboardingSubmissionStatus.SUCCEEDED, TrustOnboardingSubmissionStatus.SUBMITTED)
-            ),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.RE_VERIFICATION_IN_PROGRESS,
-                List.of(TrustOnboardingSubmissionStatus.SUCCEEDED, SUBMITTED)
-            ),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.INFORMATION_REQUESTED,
-                List.of(
-                    TrustOnboardingSubmissionStatus.UNSUBMITTED_TIMEOUT,
-                    TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED
-                )
-            ),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.INFORMATION_REQUESTED,
-                List.of(
-                    TrustOnboardingSubmissionStatus.SUCCEEDED,
-                    TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED
-                )
-            ),
-            Arguments.of(
-                BusinessPartnerTrustStatusDto.INFORMATION_REQUESTED,
-                List.of(TrustOnboardingSubmissionStatus.REJECTED, TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED)
-            )
         );
     }
 

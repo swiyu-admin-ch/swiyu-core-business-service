@@ -1,12 +1,12 @@
 package ch.admin.bj.swiyu.core.business.modules.email.service;
 
+import ch.admin.bj.swiyu.core.business.common.TrustBusinessPartnerExpiryReminderTiming;
 import ch.admin.bj.swiyu.core.business.common.config.FunctionalityProperties;
 import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.TrustOnboardingService;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
@@ -33,13 +33,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class EmailNotificationService {
 
-    /**
-     * Days before expiry at which a reminder goes out, per the feature. The first one gets its own,
-     * differently worded email type, whose reviewed text spells the 180 days out instead of
-     * interpolating them - the two must be changed together.
-     */
-    private static final List<Integer> REMINDER_DAYS_BEFORE_EXPIRATION = List.of(180, 150, 120, 90, 30);
-
     /** Days a submission may wait for review before the partner is told about the delay. */
     private static final int REVIEW_DELAY_DAYS = 6;
 
@@ -65,7 +58,9 @@ public class EmailNotificationService {
         }
 
         publishDelayedReviewReminders(pageSize);
-        REMINDER_DAYS_BEFORE_EXPIRATION.forEach(days -> publishRenewalReminders(days, window, pageSize));
+        TrustBusinessPartnerExpiryReminderTiming.REMINDER_DAYS_BEFORE_EXPIRATION.forEach(days ->
+            publishRenewalReminders(days, window, pageSize)
+        );
     }
 
     private void publishDelayedReviewReminders(int pageSize) {

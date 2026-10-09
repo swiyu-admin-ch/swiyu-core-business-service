@@ -23,7 +23,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * BPI ACTIVE or DEACTIVATED, latest sub INFORMATION_REQUESTED/RESUBMITTED
  *                                          → VERIFICATION_INFORMATION_REQUESTED_REQUIRED
  *
- * BPI DEACTIVATED, no active submission    → RE_VERIFICATION_REQUIRED
+ * BPI ACTIVATED and validUntil less than 90 days from now    → RE_VERIFICATION_REQUIRED
  *
  * VERIFICATION_REJECTED / RE_VERIFICATION_REJECTED / RE_VERIFICATION_SUCCEEDED
  *   are reserved for future PROFILE_CHANGE / RENEWAL flows (EID-6620).
@@ -35,28 +35,43 @@ import io.swagger.v3.oas.annotations.media.Schema;
  */
 @Schema(name = "IdentityVerificationProgressStatus", enumAsRef = true)
 public enum IdentityVerificationProgressStatusDto {
-    /** No BPI and no active submission — partner has never started verification. */
+    /// No BPI and no active submission — partner has never started verification.
     VERIFICATION_NOT_STARTED,
-    /** No BPI, first submission exists but has not been submitted yet (UNSUBMITTED). */
+
+    /// No BPI, latest submission exists but has not been submitted yet (UNSUBMITTED).
     VERIFICATION_STARTED,
-    /** No BPI, first submission has been submitted and is under review (SUBMITTED). */
+
+    /// No BPI, latest submission has been submitted and is under review (SUBMITTED/RESUBMITTED).
     VERIFICATION_IN_PROGRESS,
-    /** TMS requested more information and the partner has not started adjusting yet (INFORMATION_REQUESTED/RESUBMITTED). */
+
+    /// TMS requested more information and the partner has not started adjusting yet (INFORMATION_REQUESTED).
     VERIFICATION_INFORMATION_REQUESTED_REQUIRED,
-    /** TMS requested more information and the partner has started adjusting (submission back in UNSUBMITTED). */
+
+    /// TMS requested more information and the partner has started adjusting (submission back in UNSUBMITTED but submittedAt is set).
     VERIFICATION_INFORMATION_REQUESTED_STARTED,
-    /** Reserved for future PROFILE_CHANGE / RENEWAL rejection (EID-6620). */
+
+    /// Allow the user to know why his submission is rejected
+    /// - no BPI (never be trusted) and last submission is rejected
+    /// - BPI is deactivated and last submission is rejected and of type PROFILE_CHANGE_MANDATORY
     VERIFICATION_REJECTED,
-    /** BPI is ACTIVE and no new submission is in flight — partner is fully verified. */
+
+    /// BPI is ACTIVE and last submission SUCCEEDED.
     VERIFICATION_SUCCEEDED,
-    /** BPI exists but DEACTIVATED, and no new submission has been started yet. */
+
+    /// BPI activated, and valid until is below 90 days (config)
     RE_VERIFICATION_REQUIRED,
-    /** BPI exists, new re-verification submission started but not yet submitted (UNSUBMITTED). */
+
+    /// BPI exists (activated or deactivated) and last submission of type PROFILE_CHANGE_MANDATORY, PROFILE_CHANGE_VOLUNTARY or RENEWAL has status UNSUBMITTED.
     RE_VERIFICATION_STARTED,
-    /** BPI exists, new re-verification submission submitted and under review (SUBMITTED). */
+
+    /// BPI exists (activated or deactivated) and last submission of type PROFILE_CHANGE_MANDATORY, PROFILE_CHANGE_VOLUNTARY or RENEWAL has status SUBMITTED.
     RE_VERIFICATION_IN_PROGRESS,
-    /** Reserved for future PROFILE_CHANGE / RENEWAL rejection (EID-6620). */
+
+    /// Allow the user to know why he is rejected
+    /// - BPI is activated and last submission of type PROFILE_CHANGE_VOLUNTARY rejected. Once acknowledged -> VERIFICATION_SUCCEEDED
+    /// - BPI is deactivated and last submission of type PROFILE_CHANGE_MANDATORY. Once acknowledged -> VERIFICATION_NOT_STARTED
     RE_VERIFICATION_REJECTED,
-    /** Reserved for future PROFILE_CHANGE / RENEWAL completion (EID-6620). */
+
+    /// BPI is activated and last submission is SUCCEEDED and of type RENEWAL, PROFILE_CHANGE_VOLUNTARY or PROFILE_CHANGE_MANDATORY
     RE_VERIFICATION_SUCCEEDED,
 }

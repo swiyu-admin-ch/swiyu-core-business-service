@@ -770,6 +770,247 @@ public class DemoData {
                 ),
                 null
             )
+        ),
+        /**
+         * Status:<br/>
+         * identifier registry: <font color="green">onboarded</font><br/>
+         * trust registry: <font color="orange">ongoing</font><br/>
+         * <!-- Should be one of: -->
+         * <!-- <font color="green">onboarded</font> -->
+         * <!-- <font color="orange">ongoing</font> -->
+         * <!-- <font color="red">NOT onboarded</font> -->
+         * <p>
+         * Scenario:<br/>
+         * A BP which is already verified (SUCCEEDED registration) but whose identity is
+         * expiring soon (validUntil &lt; 90 days). Computed verification progress is
+         * RE_VERIFICATION_REQUIRED.
+         */
+        BP_RE_VERIFICATION_REQUIRED(
+            DemoBusinessPartner.of(
+                DemoBusinessPartner.DemoBusinessPartnerType.BUSINESS,
+                "11111111-2222-4333-8444-555566667001",
+                "expiring.verification@demo.local",
+                fromLanguages(
+                    "Expiring Verification AG",
+                    "Ablaufende Verifizierung AG (DE)",
+                    "Vérification Expirante SA (FR)",
+                    "Verifica in Scadenza S.r.l. (IT)",
+                    "Expiring Verification AG (EN)",
+                    "Ablaufende Verifizierung AG (RM)"
+                ),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 21", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoContact(
+                    "Erika",
+                    "Muster",
+                    "expiring.verification@demo.local",
+                    "+41548884450",
+                    DemoBusinessPartner.DemoContact.Language.DE
+                ),
+                DemoBusinessPartner.DemoSigningRule.SINGLE_SIGNATURE,
+                List.of(
+                    new DemoBusinessPartner.DemoSignatory(
+                        "Erika",
+                        "Muster",
+                        "+41776665550",
+                        "expiring.verification@demo.local"
+                    )
+                ),
+                null,
+                "+41791234567",
+                null,
+                List.of(
+                    new DemoBusinessPartner.DemoIdentifier(
+                        UUID.fromString("11111111-2222-4333-8444-555566667301"),
+                        "did:webvh:QmRv1ReVerificationRequired000000000000000000000000000000000:localhost%3A8190:api:v1:did:11111111-2222-4333-8444-555566667301",
+                        "Re-verification required DID",
+                        null,
+                        true
+                    )
+                ),
+                List.of(
+                    new DemoBusinessPartner.DemoTrustOnboarding(
+                        UUID.fromString("11111111-2222-4333-8444-555566667101"),
+                        DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionStatus.SUCCEEDED,
+                        List.of(
+                            new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
+                                "Declaration of intent.pdf",
+                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                "something"
+                            )
+                        ),
+                        new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask(
+                            UUID.fromString("11111111-2222-4333-8444-555566667201"),
+                            DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask.DemoTrustTaskStatus.ACCEPTED,
+                            Instant.now().minus(5, ChronoUnit.DAYS),
+                            Instant.now().minus(35, ChronoUnit.DAYS)
+                        )
+                    )
+                ),
+                new DemoBusinessPartner.DemoBusinessPartnerIdentity(
+                    DemoBusinessPartner.DemoBusinessPartnerIdentity.DemoBusinessPartnerIdentityStatus.ACTIVE,
+                    Instant.now().plus(30, ChronoUnit.DAYS),
+                    List.of(),
+                    List.of()
+                )
+            )
+        ),
+        /**
+         * Status:<br/>
+         * identifier registry: <font color="green">onboarded</font><br/>
+         * trust registry: <font color="orange">ongoing</font><br/>
+         * <!-- Should be one of: -->
+         * <!-- <font color="green">onboarded</font> -->
+         * <!-- <font color="orange">ongoing</font> -->
+         * <!-- <font color="red">NOT onboarded</font> -->
+         * <p>
+         * Scenario:<br/>
+         * A verified BP whose PROFILE_CHANGE_VOLUNTARY re-verification submission was
+         * rejected. Computed verification progress is RE_VERIFICATION_REJECTED.
+         */
+        BP_RE_VERIFICATION_REJECTED(
+            DemoBusinessPartner.of(
+                DemoBusinessPartner.DemoBusinessPartnerType.BUSINESS,
+                "11111111-2222-4333-8444-555566667002",
+                "rejected.reverification@demo.local",
+                fromLanguages(
+                    "Rejected Re-Verification AG",
+                    "Abgelehnte Re-Verifizierung AG (DE)",
+                    "Re-Vérification Refusée SA (FR)",
+                    "Ri-Verifica Rifiutata S.r.l. (IT)",
+                    "Rejected Re-Verification AG (EN)",
+                    "Abgelehnte Re-Verifizierung AG (RM)"
+                ),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 23", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoContact(
+                    "Peter",
+                    "Keller",
+                    "rejected.reverification@demo.local",
+                    "+41548884451",
+                    DemoBusinessPartner.DemoContact.Language.DE
+                ),
+                DemoBusinessPartner.DemoSigningRule.SINGLE_SIGNATURE,
+                List.of(
+                    new DemoBusinessPartner.DemoSignatory(
+                        "Peter",
+                        "Keller",
+                        "+41776665551",
+                        "rejected.reverification@demo.local"
+                    )
+                ),
+                null,
+                "+41791234567",
+                null,
+                List.of(
+                    new DemoBusinessPartner.DemoIdentifier(
+                        UUID.fromString("11111111-2222-4333-8444-555566667302"),
+                        "did:webvh:QmRv2ReVerificationRejected000000000000000000000000000000000:localhost%3A8190:api:v1:did:11111111-2222-4333-8444-555566667302",
+                        "Re-verification rejected DID",
+                        null,
+                        true
+                    )
+                ),
+                List.of(
+                    new DemoBusinessPartner.DemoTrustOnboarding(
+                        UUID.fromString("11111111-2222-4333-8444-555566667102"),
+                        DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionStatus.REJECTED,
+                        DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionType.PROFILE_CHANGE_VOLUNTARY,
+                        List.of(
+                            new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
+                                "Declaration of intent.pdf",
+                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                "something"
+                            )
+                        ),
+                        new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask(
+                            UUID.fromString("11111111-2222-4333-8444-555566667202"),
+                            DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask.DemoTrustTaskStatus.REJECTED,
+                            Instant.now().plus(1000, ChronoUnit.DAYS),
+                            Instant.now().minus(1, ChronoUnit.DAYS)
+                        )
+                    )
+                ),
+                DemoBusinessPartner.DemoBusinessPartnerIdentity.of(
+                    DemoBusinessPartner.DemoBusinessPartnerIdentity.DemoBusinessPartnerIdentityStatus.ACTIVE,
+                    List.of(),
+                    List.of()
+                )
+            )
+        ),
+        /**
+         * Status:<br/>
+         * identifier registry: <font color="green">onboarded</font><br/>
+         * trust registry: <font color="green">onboarded</font><br/>
+         * <!-- Should be one of: -->
+         * <!-- <font color="green">onboarded</font> -->
+         * <!-- <font color="orange">ongoing</font> -->
+         * <!-- <font color="red">NOT onboarded</font> -->
+         * <p>
+         * Scenario:<br/>
+         * A verified BP whose RENEWAL re-verification submission succeeded. Computed
+         * verification progress is RE_VERIFICATION_SUCCEEDED.
+         */
+        BP_RE_VERIFICATION_SUCCEEDED(
+            DemoBusinessPartner.of(
+                DemoBusinessPartner.DemoBusinessPartnerType.BUSINESS,
+                "11111111-2222-4333-8444-555566667003",
+                "succeeded.reverification@demo.local",
+                fromLanguages(
+                    "Succeeded Re-Verification AG",
+                    "Erfolgreiche Re-Verifizierung AG (DE)",
+                    "Re-Vérification Réussie SA (FR)",
+                    "Ri-Verifica Riuscita S.r.l. (IT)",
+                    "Succeeded Re-Verification AG (EN)",
+                    "Erfolgreiche Re-Verifizierung AG (RM)"
+                ),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 25", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoContact(
+                    "Sandra",
+                    "Schmid",
+                    "succeeded.reverification@demo.local",
+                    "+41548884452",
+                    DemoBusinessPartner.DemoContact.Language.DE
+                ),
+                DemoBusinessPartner.DemoSigningRule.SINGLE_SIGNATURE,
+                List.of(
+                    new DemoBusinessPartner.DemoSignatory(
+                        "Sandra",
+                        "Schmid",
+                        "+41776665552",
+                        "succeeded.reverification@demo.local"
+                    )
+                ),
+                null,
+                "+41791234567",
+                null,
+                List.of(
+                    new DemoBusinessPartner.DemoIdentifier(
+                        UUID.fromString("11111111-2222-4333-8444-555566667303"),
+                        "did:webvh:QmRv3ReVerificationSucceeded00000000000000000000000000000000:localhost%3A8190:api:v1:did:11111111-2222-4333-8444-555566667303",
+                        "Re-verification succeeded DID",
+                        null,
+                        true
+                    )
+                ),
+                List.of(
+                    new DemoBusinessPartner.DemoTrustOnboarding(
+                        UUID.fromString("11111111-2222-4333-8444-555566667103"),
+                        DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionStatus.SUCCEEDED,
+                        DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionType.RENEWAL,
+                        List.of(),
+                        new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask(
+                            UUID.fromString("11111111-2222-4333-8444-555566667203"),
+                            DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask.DemoTrustTaskStatus.ACCEPTED,
+                            Instant.now().minus(5, ChronoUnit.DAYS),
+                            Instant.now().minus(35, ChronoUnit.DAYS)
+                        )
+                    )
+                ),
+                DemoBusinessPartner.DemoBusinessPartnerIdentity.of(
+                    DemoBusinessPartner.DemoBusinessPartnerIdentity.DemoBusinessPartnerIdentityStatus.ACTIVE,
+                    List.of(),
+                    List.of()
+                )
+            )
         );
 
         public final DemoBusinessPartner bp;

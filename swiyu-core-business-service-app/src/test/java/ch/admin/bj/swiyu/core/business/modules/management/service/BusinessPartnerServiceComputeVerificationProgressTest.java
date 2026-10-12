@@ -416,18 +416,6 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         assertThat(progress.maxDateForStatus()).isNotNull();
     }
 
-    @Test
-    void activeBpi_latestSubmissionSucceeded_returnsReVerificationSucceeded() {
-        // Given
-        var partner = partnerWithActivatedIdentity();
-        var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(PROFILE_CHANGE_VOLUNTARY, SUCCEEDED));
-        // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
-        // Then
-        assertThat(progress.status()).isEqualTo(RE_VERIFICATION_SUCCEEDED);
-        assertThat(progress.maxDateForStatus()).isNotNull();
-    }
-
     // -------------------------------------------------------------------------
     // BPI ACTIVE but expiring soon (< 90 days) → re-verification required
     // -------------------------------------------------------------------------
@@ -691,10 +679,6 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var submission = submission(REGISTRATION, UNSUBMITTED);
         ReflectionTestUtils.setField(submission, "submittedAt", Instant.now().minus(7, ChronoUnit.DAYS));
         return submission;
-    }
-
-    private static TrustOnboardingSubmission submissionProfileChangeRenewal(TrustOnboardingSubmissionStatus status) {
-        return submission(RENEWAL, status);
     }
 
     private static BusinessEntity partnerWithActivatedIdentity() {

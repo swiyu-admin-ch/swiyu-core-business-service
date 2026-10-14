@@ -1044,7 +1044,9 @@ public class DemoData {
             List<@NotNull DemoSignatory> signatory,
             String uid,
             String contactPhone,
+            // identifiers 1/2: shortcut, just add a did and the rest will be generated
             List<@NotNull String> exampleIdentifiers,
+            // identifiers 2/2: detailed properties to define an identifier
             List<@NotNull DemoIdentifier> otherIdentifiers,
             @NotNull List<@NotNull DemoTrustOnboarding> trustOnboardings,
             DemoBusinessPartnerIdentity bpi
@@ -1085,6 +1087,7 @@ public class DemoData {
             DemoBusinessPartnerIdentity bpi,
             @NotNull List<@NotNull DemoProtectedVerificationSubmission> protectedVerificationSubmissions
         ) {
+            var identifiers = resolveIdentifiers(id, exampleIdentifiers, otherIdentifiers, bpi).toList();
             return new DemoBusinessPartner(
                 type,
                 id,
@@ -1097,39 +1100,48 @@ public class DemoData {
                 signatory,
                 uid,
                 contactPhone,
-                Stream.concat(
-                    Stream.concat(
-                        // Every BP gets a did:example assigned
-                        Stream.of(
-                            new DemoIdentifier(
-                                UUID.fromString(id),
-                                "did:example:" + id + "-" + id,
-                                "Example DID",
-                                null,
-                                bpi != null && (otherIdentifiers == null || otherIdentifiers.isEmpty())
-                            )
-                        ),
-                        // Example DIDs
-                        Optional.ofNullable(exampleIdentifiers)
-                            .orElseGet(Collections::emptyList)
-                            .stream()
-                            .map(didSpaceId ->
-                                new DemoIdentifier(
-                                    UUID.fromString(didSpaceId),
-                                    "did:example:" + didSpaceId + "-" + id,
-                                    "Example DID",
-                                    null,
-                                    false
-                                )
-                            )
-                    ),
-                    // Some BPs have extra / realistic DIDs
-                    Optional.ofNullable(otherIdentifiers).orElseGet(Collections::emptyList).stream()
-                ).toList(),
+                identifiers,
                 trustOnboardings,
                 bpi,
                 protectedVerificationSubmissions
             );
+        }
+
+        /**
+         * Generates the final list of identifiers that shall be inserted for a business partner.
+         */
+        private static Stream<DemoBusinessPartner.DemoIdentifier> resolveIdentifiers(
+            String id,
+            List<String> exampleIdentifiers,
+            List<DemoBusinessPartner.DemoIdentifier> otherIdentifiers,
+            DemoBusinessPartner.DemoBusinessPartnerIdentity bpi
+        ) {
+            // Every BP gets a did:example assigned
+            var identifiers1 = Stream.of(
+                new DemoBusinessPartner.DemoIdentifier(
+                    UUID.fromString(id),
+                    "did:example:" + id + "-" + id,
+                    "Example DID",
+                    null, // Import Service will generate an invalid didlog
+                    bpi != null && (otherIdentifiers == null || otherIdentifiers.isEmpty())
+                )
+            );
+            // Some might have mentioned explicit example identifiers, for those we create an additional did slot
+            var identifiers2 = Optional.ofNullable(exampleIdentifiers)
+                .orElseGet(Collections::emptyList)
+                .stream()
+                .map(didSpaceId ->
+                    new DemoBusinessPartner.DemoIdentifier(
+                        UUID.fromString(didSpaceId),
+                        "did:example:" + didSpaceId + "-" + id,
+                        "Example DID",
+                        null, // Import Service will generate an invalid didlog
+                        false
+                    )
+                );
+            // Some BPs have extra / realistic DIDs
+            var identifiers3 = Optional.ofNullable(otherIdentifiers).orElseGet(Collections::emptyList).stream();
+            return Stream.concat(Stream.concat(identifiers1, identifiers2), identifiers3);
         }
 
         public enum DemoBusinessPartnerType {

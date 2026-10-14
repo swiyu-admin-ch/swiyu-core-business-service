@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.core.business.modules.dataimport.service;
 
 import static ch.admin.bj.swiyu.core.business.modules.dataimport.service.DemoDataMapper.toBusinessPartnerIdentityStatus;
+import static org.springframework.util.StringUtils.hasText;
 
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
@@ -107,13 +108,17 @@ public class DemoDataImportService {
                     identifierEntry.setDescription(identifier.description());
                     identifierEntryRepository.save(identifierEntry);
 
-                    // add did log
                     if (identifier.data() != null) {
+                        // Did Option 1/2: a real did log was provided -> use real logic with validation
                         identifierEntryService.updateIdentifierEntry(
                             demoCase.bp.id(),
                             identifier.id(),
                             identifier.data()
                         );
+                    } else if (hasText(identifier.did())) {
+                        // Did Option 2/2: did was provided but not the log -> take shortcut, we can't validate the log
+                        identifierEntry.updateDidAndActivate(identifier.did());
+                        identifierEntryRepository.save(identifierEntry);
                     }
                 })
         );

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.4.4
+
+### Changed
+
+- fix missing dids in demodata
+
 ## 4.4.3
 
 ### Fixed
@@ -62,7 +68,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- OptimisticLockException when approving a TrustOnboardingSubmission: BusinessPartnerIdentity is now its own entity (table business_partner_identity), so TMS identity events no longer update the business partner row.
+- OptimisticLockException when approving a TrustOnboardingSubmission: BusinessPartnerIdentity is now its own entity
+  (table business_partner_identity), so TMS identity events no longer update the business partner row.
 
 ## 4.2.3
 
@@ -75,7 +82,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- fix CVE SNYK-JAVA-COMFASTERXMLJACKSONCORE-20059683, SNYK-JAVA-COMFASTERXMLJACKSONCORE-20059179, SNYK-JAVA-TOOLSJACKSONCORE-20059180, SNYK-JAVA-TOOLSJACKSONCORE-20059682
+- fix CVE SNYK-JAVA-COMFASTERXMLJACKSONCORE-20059683, SNYK-JAVA-COMFASTERXMLJACKSONCORE-20059179,
+  SNYK-JAVA-TOOLSJACKSONCORE-20059180, SNYK-JAVA-TOOLSJACKSONCORE-20059682
 
 ## 4.2.1
 
@@ -87,7 +95,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Contract cleanup for localized organization names: remove deprecated BusinessPartner name fields, request-level correspondingLanguage and MultiLanguageText entityName
+- Contract cleanup for localized organization names: remove deprecated BusinessPartner name fields, request-level
+  correspondingLanguage and MultiLanguageText entityName
 
 ## 4.1.3
 
@@ -111,7 +120,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Create and update PROFILE_CHANGE (mandatory/voluntary) and RENEWAL trust-onboarding submissions from verified partner data
+- Create and update PROFILE_CHANGE (mandatory/voluntary) and RENEWAL trust-onboarding submissions from verified partner
+  data
 
 ## 4.0.7
 
@@ -147,7 +157,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Update dependencies: archunit, spotless, sonar, greenmail, jackson-databind-nullable, openapi-generator, didresolver, openfeign-querydsl, kotlin, pdfbox, bcprov, jackson, commons-codec, mockserver, and docker-compose images
+- Update dependencies: archunit, spotless, sonar, greenmail, jackson-databind-nullable, openapi-generator, didresolver,
+  openfeign-querydsl, kotlin, pdfbox, bcprov, jackson, commons-codec, mockserver, and docker-compose images
 
 ## 4.0.1
 

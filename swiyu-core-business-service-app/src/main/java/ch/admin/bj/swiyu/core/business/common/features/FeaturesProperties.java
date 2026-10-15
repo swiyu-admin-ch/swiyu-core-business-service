@@ -22,6 +22,9 @@ public final class FeaturesProperties {
     @NotNull
     private Boolean eidartfe1204TrustAddDids;
 
+    @NotNull
+    private Boolean eidartfe1297Payment;
+
     @PostConstruct
     public void logFeatureFlags() {
         log.info(
@@ -29,11 +32,13 @@ public final class FeaturesProperties {
             Following features are configured:
               EIDARTFE_754_VC_SCHEMA:{},
               EIDARTFE_1220_PROOF_OF_POSSESSION:{},
-              EIDARTFE_1204_TRUST_ADD_DIDS:{}
+              EIDARTFE_1204_TRUST_ADD_DIDS:{},
+              EIDARTFE_1297_PAYMENT:{}
             """,
             eidartfe754VcSchema,
             eidartfe1220ProofOfPossession,
-            eidartfe1204TrustAddDids
+            eidartfe1204TrustAddDids,
+            eidartfe1297Payment
         );
     }
 }

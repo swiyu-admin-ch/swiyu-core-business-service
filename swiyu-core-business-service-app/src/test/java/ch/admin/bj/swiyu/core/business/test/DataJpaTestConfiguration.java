@@ -8,6 +8,9 @@ import ch.admin.bj.swiyu.core.business.common.persistence.CorePersistenceConfig;
 import ch.admin.bj.swiyu.core.business.modules.identifier.config.IdentifierLimitProperties;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.MockPamsClient;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
+import ch.admin.bj.swiyu.core.business.modules.payment.config.PaymentProperties;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.MockSaferpayClient;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayClient;
 import ch.admin.bj.swiyu.core.business.modules.status.config.StatusListsLimitProperties;
 import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionLimitProperties;
 import java.util.Optional;
@@ -34,6 +37,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
         IdentifierLimitProperties.class,
         StatusListsLimitProperties.class,
         TrustOnboardingSubmissionLimitProperties.class,
+        PaymentProperties.class,
     }
 )
 public class DataJpaTestConfiguration {
@@ -46,6 +50,11 @@ public class DataJpaTestConfiguration {
     @Bean
     public PamsClient pamsClient() {
         return new MockPamsClient();
+    }
+
+    @Bean
+    public SaferpayClient saferpayClient() {
+        return new MockSaferpayClient();
     }
 
     @Bean // required bean when using jeaps AuditTransactionalOutboxAutoConfiguration in jpa tests

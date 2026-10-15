@@ -25,6 +25,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
            | invalid_pagination                          | Indicates that the pagination parameters are invalid.                                 |
            | max_size_exceeded                           | Indicates that the maximum size was exceeded.                                         |
            | object_count_limit_reached                  | Indicates that the object count limit was reached.                                    |
+           | payment_disabled                            | Indicates that the payment feature is currently disabled.                             |
+           | payment_return_url_not_allowed              | Indicates that the given return URL is not in the configured allowed origins.         |
            | status_list_validation_failed               | Indicates that the status list validation failed.                                     |
            | trust_onboarding_document_validation_failed | Indicates that the trust onboarding document validation failed.                       |
            | vc_schema_submission_not_found              | Indicates that the VC schema submission was not found.                                |
@@ -47,6 +49,9 @@ public enum ApiErrorCodeDto {
     INVALID_PAGINATION("invalid_pagination"),
     MAX_SIZE_EXCEEDED("max_size_exceeded"),
     OBJECT_COUNT_LIMIT_REACHED("object_count_limit_reached"),
+    PAYMENT_ALREADY_PENDING("payment_already_pending"),
+    PAYMENT_DISABLED("payment_disabled"),
+    PAYMENT_RETURN_URL_NOT_ALLOWED("payment_return_url_not_allowed"),
     STATUS_LIST_VALIDATION_FAILED("status_list_validation_failed"),
     TRUST_ONBOARDING_DOCUMENT_VALIDATION_FAILED("trust_onboarding_document_validation_failed"),
     VC_SCHEMA_SUBMISSION_NOT_FOUND("vc_schema_submission_not_found"),

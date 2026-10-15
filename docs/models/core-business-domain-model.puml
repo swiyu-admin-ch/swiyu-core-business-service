@@ -38,25 +38,12 @@ package "Management" #E8F5E9 {
         -- embedded --
         + address : Address
         + contact : Contact
+        + businessPartnerIdentity : BusinessPartnerIdentity
         + auditMetadata : AuditMetadata
     }
 
-    entity BusinessPartnerIdentity <<entity>> {
-        + businessPartnerId : UUID <<PK, FK = BusinessEntity.id>>
-        + validUntil : Instant
-        + status : BusinessPartnerIdentityStatus
-        + lastActivated : Instant
-        + uid : String
-        + tmsVersion : Long
-        + version : Long
-        -- jsonb --
-        + trustedIdentifier : List<String>
-        + entityName : Map<String,String>
-    }
-
     BusinessEntity --> BusinessPartnerType : type
-    BusinessPartnerIdentity --> BusinessPartnerIdentityStatus : status
-    BusinessEntity ||--o| BusinessPartnerIdentity : "id = businessPartnerId (read-only)"
+    BusinessEntity --> BusinessPartnerIdentityStatus : businessPartnerIdentity.status
 }
 
 ' ========================
@@ -325,6 +312,48 @@ package "Trust" #E0F7FA {
 }
 
 ' ========================
+' APP MODULE - PAYMENT
+' ========================
+
+package "Payment" #FFF9C4 {
+
+    enum PaymentStatus {
+        PENDING
+        FAILED
+        CANCELLED
+        SUCCEEDED
+    }
+
+    enum ProductType {
+        BASE_REGISTRATION
+    }
+
+    entity Payment <<entity>> {
+        + id : UUID <<PK>>
+        + businessPartnerId : UUID <<FK>>
+        + referenceId : String
+        + version : Long
+        + status : PaymentStatus
+        + product : ProductType
+        + returnUrl : String
+        + saferpayToken : String
+        + saferpayExpiration : Instant
+        + saferpayRedirectUrl : String
+        + saferpayTransactionId : String
+        + inventoryGrantedAt : Instant
+        + payedAt : Instant
+        + holdername : String
+        + paymentMethod : String
+        -- embedded --
+        + amount : Amount
+        + auditMetadata : AuditMetadata
+    }
+
+    Payment --> PaymentStatus : status
+    Payment --> ProductType : product
+}
+
+' ========================
 ' CROSS-MODULE RELATIONSHIPS
 ' ========================
 
@@ -337,6 +366,7 @@ BusinessEntity ||--o{ VqpsSubmission : "partnerId"
 BusinessEntity ||--o{ ProtectedVerificationSubmission : "partnerId"
 BusinessEntity ||--o{ PartnerDocument : "partnerId"
 TrustOnboardingSubmission ||--o{ PartnerDocument : "trustOnboardingSubmissionId"
+BusinessEntity ||--o{ Payment : "businessPartnerId"
 
 ' ========================
 ' VALUE OBJECTS (secondary)
@@ -390,6 +420,21 @@ package "Common Value Objects" #EEEEFF {
         + jti : UUID
         + jwt : String
         + expiresAt : Instant
+    }
+
+    class Amount <<embeddable>> {
+        + value : Long
+        + currency : String
+    }
+
+    class BusinessPartnerIdentity <<embeddable>> {
+        + validUntil : Instant
+        + trustedIdentifier : List<String>
+        + status : BusinessPartnerIdentityStatus
+        + lastActivated : Instant
+        + uid : String
+        + entityName : Map<String,String>
+        + tmsVersion : Long
     }
 }
 

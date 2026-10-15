@@ -186,6 +186,22 @@ pams:
       -----END PRIVATE KEY-----
     url: "https://pams-api.example.com"
     user-agent: "Test"
+
+saferpay:
+  mock: true
+
+payment:
+  allowed-return-origins:
+    - https://portal.example.local
+  saferpay:
+    terminal-id: "maven-tests-terminal"
+    customer-id: "maven-tests-customer"
+    base-url: "https://test.saferpay.com/api"
+  product-catalog:
+    - type: BASE_REGISTRATION
+      description: "swiyu Base Registry"
+      price: 15000
+
 http:
   max-redirects: 5
 
@@ -212,4 +228,5 @@ logging:
 features:
   EIDARTFE_754_VC_SCHEMA: true
   EIDARTFE_1220_PROOF_OF_POSSESSION: true
+  EIDARTFE_1297_PAYMENT: true
 

@@ -21,6 +21,7 @@ component "Documents" as documents #FCE4EC
 component "Trust" as trust #E0F7FA
 component "DataImport" as dataimport #F5F5F5
 component "Offboarding" as offboarding #EDE7F6
+component "Payment" as payment #FFF9C4
 
 ' ========================
 ' DEPENDENCIES
@@ -50,5 +51,7 @@ offboarding --> status
 offboarding --> identifier
 offboarding --> documents
 offboarding --> trust
+
+payment --> management
 
 @enduml

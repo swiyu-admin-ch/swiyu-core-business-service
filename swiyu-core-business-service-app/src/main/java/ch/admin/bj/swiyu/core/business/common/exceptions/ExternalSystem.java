@@ -6,4 +6,5 @@ public enum ExternalSystem {
     PAMS,
     ANTIVIRUS_SERVICE,
     STORAGE,
+    SAFERPAY,
 }

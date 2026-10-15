@@ -279,6 +279,11 @@ public class ArchitectureTest {
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.offboarding.service.."),
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.(**).service..")
             )
+            // payment -> management (validate the business partner exists before initiating a payment)
+            .ignoreDependency(
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.payment.service.."),
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service..")
+            )
             // demodata -> allow all
             .ignoreDependency(resideInAPackage("..core.business.modules.dataimport.."), alwaysTrue());
     }

@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocuments
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntryRepository;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityRepository;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentRepository;
 import ch.admin.bj.swiyu.core.business.modules.status.domain.StatusListEntryRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustAdditionalDidsSubmissionRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionRepository;
@@ -36,6 +37,7 @@ public class TestRepositories {
     public final PartnerDocumentsRepository partnerDocuments;
     public final StatusListEntryRepository statusListEntry;
     public final ProtectedVerificationSubmissionRepository protectedVerificationSubmission;
+    public final PaymentRepository payment;
 
     /**
      * Truncates all tables.
@@ -57,6 +59,7 @@ public class TestRepositories {
         vqpsSubmission.deleteAllInBatch();
         statusListEntry.deleteAllInBatch();
         protectedVerificationSubmission.deleteAllInBatch();
+        payment.deleteAllInBatch();
         if (activeTransaction) {
             // so all tests start with an open transaction
             startNewTransaction();

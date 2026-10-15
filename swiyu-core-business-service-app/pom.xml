@@ -4,7 +4,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-core-business-service</artifactId>
-        <version>4.4.4-SNAPSHOT</version>
+        <version>4.5.2-SNAPSHOT</version>
     </parent>
     <artifactId>swiyu-core-business-service-app</artifactId>
     <packaging>jar</packaging>

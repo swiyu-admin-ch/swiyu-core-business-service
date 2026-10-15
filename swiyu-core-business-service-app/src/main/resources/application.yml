@@ -82,6 +82,28 @@ pams:
     private-key: ${MANAGEMENT_PAMS_API_PRIVATE_KEY:}
   auto-applied-profile-group-id: "${MANAGEMENT_PAMS_AUTO_APPLIED_PROFILE_GROUP_ID:PublicBetaEcosystem}"
 
+# allowed-return-origins and saferpay.terminal-id/customer-id/base-url may stay empty while the feature
+# EIDARTFE_1297_PAYMENT is disabled. When it is enabled the application refuses to start without them.
+payment:
+  allowed-return-origins: ${PAYMENT_ALLOWED_RETURN_ORIGINS:}
+  saferpay:
+    terminal-id: ${PAYMENT_SAFERPAY_TERMINAL_ID:}
+    customer-id: ${PAYMENT_SAFERPAY_CUSTOMER_ID:}
+    # DEV/REF/ABN: https://test.saferpay.com/api, PROD: https://www.saferpay.com/api
+    # Empty default on purpose (never a real url): PROD must not silently point at the Saferpay TEST
+    # environment. The value is required as soon as the payment feature is enabled.
+    base-url: ${PAYMENT_SAFERPAY_BASE_URL:}
+    # Payment Page configuration (branding) as shown in the Saferpay Backoffice, e.g. cbs-payment-test /
+    # cbs-payment-prod. Optional: when empty, Saferpay uses the configuration marked as default.
+    config-set: ${PAYMENT_SAFERPAY_CONFIG_SET:}
+  product-catalog:
+    - type: BASE_REGISTRATION
+      description: "swiyu Base Registry"
+      price: ${PAYMENT_PRICE_BASE_REGISTRATION:15000}
+
+saferpay:
+  mock: ${SAFERPAY_MOCK:false}
+
 spring:
   application:
     name: swiyu-core-business-service
@@ -147,6 +169,16 @@ spring:
         # Jackson 3 changed WRITE_ENUMS_USING_TO_STRING default to true, which breaks e.g. HttpStatus
         # (whose toString() is "410 GONE" instead of the enum name "GONE") - restore the pre-Jackson-3 behavior
         write-enums-using-to-string: false
+  ssl:
+    bundle:
+      pem:
+        # mTLS client certificate for the Saferpay JSON API. The PEM contents are stored in vault under the
+        # keys SAFERPAY_CLIENT_CERT and SAFERPAY_CLIENT_KEY (full PEM blocks). A location such as
+        # "file:/path/to/saferpay.crt" works as well, e.g. for local testing.
+        saferpay:
+          keystore:
+            certificate: ${SAFERPAY_CLIENT_CERT:}
+            private-key: ${SAFERPAY_CLIENT_KEY:}
 
 jeap:
   vault:
@@ -252,3 +284,4 @@ features:
   EIDARTFE_754_VC_SCHEMA: ${FEATURES_EIDARTFE_754_VC_SCHEMA:false}
   EIDARTFE_1220_PROOF_OF_POSSESSION: ${FEATURES_EIDARTFE_1220_PROOF_OF_POSSESSION:false}
   EIDARTFE_1204_TRUST_ADD_DIDS: ${FEATURES_EIDARTFE_1204_TRUST_ADD_DIDS:false}
+  EIDARTFE_1297_PAYMENT: ${FEATURES_EIDARTFE_1297_PAYMENT:false}

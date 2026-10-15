@@ -36,6 +36,18 @@ pams:
     issued-by: "unused-dummy-value" # required value, but not need when using mock
     private-key: "unused-dummy-value" # required value, but not need when using mock
 
+saferpay:
+  mock: true
+
+payment:
+  allowed-return-origins:
+    - http://localhost:8200
+    - https://portal.trust-infra.swiyu.admin.ch
+  saferpay:
+    terminal-id: "unused-dummy-value" # required value, but not needed when using mock
+    customer-id: "unused-dummy-value" # required value, but not needed when using mock
+    base-url: "https://test.saferpay.com/api"
+
 jeap:
   logging:
     platform: none # just some value other than "rhos"
@@ -168,3 +180,4 @@ features:
   EIDARTFE_754_VC_SCHEMA: true
   EIDARTFE_1204_TRUST_ADD_DIDS: true
   EIDARTFE_1220_PROOF_OF_POSSESSION: true
+  EIDARTFE_1297_PAYMENT: true

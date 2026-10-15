@@ -50,6 +50,7 @@ These colors are used consistently across all diagrams (both class and component
 | Documents            | `#FCE4EC` (pink)       |
 | Trust                | `#E0F7FA` (cyan)       |
 | DataImport           | `#F5F5F5` (light grey) |
+| Payment              | `#FFF9C4` (yellow)     |
 | Registry Status      | `#EFEBE9` (brown)      |
 | Registry Identifier  | `#F9FBE7` (lime)       |
 | Common Value Objects | `#EEEEFF` (blue)       |

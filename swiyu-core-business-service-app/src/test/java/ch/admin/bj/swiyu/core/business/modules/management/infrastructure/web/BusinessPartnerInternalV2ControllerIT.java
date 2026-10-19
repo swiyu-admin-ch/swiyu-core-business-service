@@ -174,7 +174,7 @@ class BusinessPartnerInternalV2ControllerIT {
                                 "Valid Name",
                                 BusinessPartnerTypeDto.BUSINESS,
                                 null,
-                                new AddressDto("Some Street", "Zurich", "8000", "Switzerland", "Zurich"),
+                                new AddressDto("Some Street", "Zurich", "8000", "Switzerland"),
                                 ContactDto.builder()
                                     .firstName("John")
                                     .lastName("Doe")
@@ -213,7 +213,7 @@ class BusinessPartnerInternalV2ControllerIT {
                                 "Valid Name",
                                 BusinessPartnerTypeDto.BUSINESS,
                                 "INVALID-UID",
-                                new AddressDto("Some Street", "Zurich", "8000", "Switzerland", "Zurich"),
+                                new AddressDto("Some Street", "Zurich", "8000", "Switzerland"),
                                 ContactDto.builder()
                                     .firstName("John")
                                     .lastName("Doe")
@@ -243,7 +243,7 @@ class BusinessPartnerInternalV2ControllerIT {
                                 "Valid Name",
                                 BusinessPartnerTypeDto.BUSINESS,
                                 null,
-                                new AddressDto("Some Street", "Zurich", "99999", "Switzerland", "Zurich"),
+                                new AddressDto("Some Street", "Zurich", "99999", "Switzerland"),
                                 ContactDto.builder()
                                     .firstName("John")
                                     .lastName("Doe")
@@ -273,7 +273,7 @@ class BusinessPartnerInternalV2ControllerIT {
                                 "",
                                 BusinessPartnerTypeDto.BUSINESS,
                                 null,
-                                new AddressDto(null, "", "bad-zip", null, null),
+                                new AddressDto(null, "", "bad-zip", null),
                                 ContactDto.builder()
                                     .firstName("")
                                     .lastName("")
@@ -463,7 +463,7 @@ class BusinessPartnerInternalV2ControllerIT {
             name,
             type,
             null,
-            new AddressDto("Some street", "Zurich", "8000", "Switzerland", "Zurich"),
+            new AddressDto("Some street", "Zurich", "8000", "Switzerland"),
             ContactDto.builder()
                 .firstName("John")
                 .lastName("Doe")

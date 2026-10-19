@@ -30,7 +30,7 @@ class TrustOnboardingMapperTest {
         // Given
         var partnerId = UUID.randomUUID();
         var submissionId = UUID.randomUUID();
-        var address = new Address("Musterstrasse", "Bern", "3000", "CH", null);
+        var address = new Address("Musterstrasse", "Bern", "3000", "CH");
         var contact = new Contact("John", "Doe", "john@test.com", "+41 12 345 67 89", Language.DE);
         var signatory = new Signatory("John", "Doe", "+41 12 345 67 89", "john@test.com");
         var proofOfPossession = new ProofOfPossession("did:example:123", "nonce123");

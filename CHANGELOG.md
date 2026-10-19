@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.5.6
+
+### Removed
+
+- The deprecated `region` field of the embeddable address, together with its demo data and mapper remnants
+
+## 4.5.5
+
+### Changed
+
+- demo data fixes
+- when upserting a TrustOnboardingSubmission it is now validated that the type did not change
+
+## 4.5.4
+
+### Fixed
+
+- Raise the PostgreSQL JDBC driver to 42.7.14 for CVE-2026-107314 (fails open on cleartext-password requests)
+- Raise snappy-java to 1.1.10.12 for CVE-2026-108106 and CVE-2026-93452, and drop the two obsolete snappy ignores
+- Raise guava to 33.7.2-jre for CVE-2026-102554
+- Ignore the jaxb-core XXE finding (CVE-2026-92877) until 16.01.2027 — no fixed release exists yet
+
 ## 4.5.3
 
 ### Fixed

@@ -5,7 +5,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-core-business-service</artifactId>
-    <version>4.5.3-SNAPSHOT</version>
+    <version>4.5.6-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
@@ -43,6 +43,10 @@
              them still pin 11.0.25. Remove this override once a parent brings a Spring Boot that pins
              11.0.26 or later. -->
         <tomcat.version>11.0.26</tomcat.version>
+
+        <!-- CVE-2026-107314 (SNYK-JAVA-ORGPOSTGRESQL-20571163): 42.7.13 fails open on cleartext-password
+             requests. No parent bump helps, Spring Boot 4.1.1 is the newest and pins 42.7.13. -->
+        <postgresql.version>42.7.14</postgresql.version>
         <!-- CVE-OVERRIDE end -->
     </properties>
 
@@ -75,12 +79,19 @@
                 <version>${project.version}</version>
             </dependency>
             <!-- CVE-OVERRIDE start -->
+            <!-- CVE-2026-108106 and CVE-2026-93452 via kafka-clients, both fixed in 1.1.10.9; pinned to the
+                 newest 1.1.10.x. Remove once kafka-clients pins 1.1.10.9 or later. -->
             <dependency>
-<!--            Out-of-bounds Write [High Severity][https://security.snyk.io/vuln/SNYK-JAVA-ORGXERIALSNAPPY-19778376] in org.xerial.snappy:snappy-java@1.1.10.7-->
-<!--            introduced by ch.admin.bit.jeap:jeap-messaging-infrastructure-kafka-test@18.14.0 > org.springframework.kafka:spring-kafka-test@4.1.1 > org.apache.kafka:kafka-clients@4.2.1 > org.xerial.snappy:snappy-java@1.1.10.7-->
                 <groupId>org.xerial.snappy</groupId>
                 <artifactId>snappy-java</artifactId>
-                <version>1.1.10.8</version>
+                <version>1.1.10.12</version>
+            </dependency>
+            <!-- CVE-2026-102554, fixed in 33.7.2-jre. Reached via Pact (test) and kafka-schema-registry-client
+                 (compile), and our main sources use @VisibleForTesting - hence no scope here. -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>33.7.2-jre</version>
             </dependency>
             <!-- CVE-OVERRIDE end -->
 

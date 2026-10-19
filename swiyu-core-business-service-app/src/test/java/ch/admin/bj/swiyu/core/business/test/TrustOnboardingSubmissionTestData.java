@@ -13,7 +13,6 @@ import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
 import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
-import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
@@ -23,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.test.util.ReflectionTestUtils;
+import tools.jackson.databind.node.JsonNodeFactory;
 
 public class TrustOnboardingSubmissionTestData {
 
@@ -129,16 +129,6 @@ public class TrustOnboardingSubmissionTestData {
         return trustOnboardingSubmission(UUID.randomUUID(), DEFAULT_ENTITY);
     }
 
-    public static TrustOnboardingSubmission trustOnboardingSubmissionRenewal() {
-        return trustOnboardingSubmission(
-            UUID.randomUUID(),
-            DEFAULT_ENTITY,
-            UNSUBMITTED,
-            Instant.now(),
-            TrustOnboardingSubmissionType.RENEWAL
-        );
-    }
-
     public static TrustOnboardingSubmission trustOnboardingSubmission(UUID id, UUID partnerId) {
         return trustOnboardingSubmission(id, partnerId, TrustOnboardingSubmissionStatus.UNSUBMITTED, Instant.now());
     }
@@ -238,6 +228,10 @@ public class TrustOnboardingSubmissionTestData {
         return submission;
     }
 
+    public static DeclarationOfIntent declarationOfIntent(UUID partnerDocumentId) {
+        return new DeclarationOfIntent(partnerDocumentId, JsonNodeFactory.instance.objectNode());
+    }
+
     private static List<ProofOfPossession> proofOfPossessionValid(List<String> dids) {
         return dids
             .stream()
@@ -250,33 +244,6 @@ public class TrustOnboardingSubmissionTestData {
             .stream()
             .map(did -> new ProofOfPossession(did, UUID.randomUUID().toString()))
             .toList();
-    }
-
-    public static TrustOnboardingSubmission submission(
-        BusinessPartnerType partnerType,
-        SigningRule signingRule,
-        List<Signatory> signatories,
-        Boolean isRegisteredInCommercialRegister
-    ) {
-        var base = trustOnboardingSubmission(UUID.randomUUID(), DEFAULT_ENTITY);
-        return new TrustOnboardingSubmission(
-            base.getId(),
-            base.getPartnerId(),
-            base.getEntityName(),
-            base.getEntityAddress(),
-            base.getEntityEmail(),
-            contactWithAddress(),
-            base.getUid(),
-            isRegisteredInCommercialRegister,
-            base.getProofOfPossessions(),
-            partnerType,
-            signingRule,
-            signatories
-        );
-    }
-
-    public static TrustOnboardingSubmission businessSubmission(SigningRule signingRule, List<Signatory> signatories) {
-        return submission(BusinessPartnerType.BUSINESS, signingRule, signatories, true);
     }
 
     public static TrustOnboardingSubmission submissionWithProofOfPossessions(
@@ -297,24 +264,5 @@ public class TrustOnboardingSubmissionTestData {
             base.getSigningRule(),
             base.getSignatories()
         );
-    }
-
-    public static Signatory signatory(String firstName, String lastName) {
-        return new Signatory(
-            firstName,
-            lastName,
-            "+41 79 000 00 00",
-            "%s.%s@example.com".formatted(firstName, lastName)
-        );
-    }
-
-    public static Contact contactWithAddress() {
-        return Contact.builder()
-            .firstName("John")
-            .lastName("Doe")
-            .email("john.doe@example.com")
-            .phone("+41 79 123 45 67")
-            .correspondingLanguage(ch.admin.bj.swiyu.core.business.common.domain.Language.DE)
-            .build();
     }
 }

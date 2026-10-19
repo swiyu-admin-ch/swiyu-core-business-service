@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.core.business.common.email.PendingReviewSubmission;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,4 +51,22 @@ public interface TrustOnboardingSubmissionRepository
     void deleteByPartnerId(UUID partnerId);
 
     List<TrustOnboardingSubmission> findAllByPartnerIdOrderByInitiatedAtAsc(@NotNull UUID partnerId);
+
+    /**
+     * Returns the most recent SUCCEEDED submission for the given partner, if any.
+     *
+     * <p>Ordered by {@code initiatedAt} descending (with {@code id} as a deterministic tie-breaker) and
+     * limited to a single row, so the database does the work instead of loading every submission.
+     */
+    @Query(
+        """
+        SELECT e
+        FROM TrustOnboardingSubmission e
+        WHERE e.partnerId = :partnerId
+          AND e.status = 'SUCCEEDED'
+        ORDER BY e.initiatedAt DESC
+        LIMIT 1
+        """
+    )
+    Optional<TrustOnboardingSubmission> findLatestSucceededByPartnerId(@Param("partnerId") @NotNull UUID partnerId);
 }

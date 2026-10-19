@@ -85,7 +85,6 @@ class TrustOnboardingServiceTest {
         assertThat(response.address().city()).isEqualTo(dbEntry.getEntityAddress().getCity());
         assertThat(response.address().postalCode()).isEqualTo(dbEntry.getEntityAddress().getPostalCode());
         assertThat(response.address().country()).isEqualTo(dbEntry.getEntityAddress().getCountry());
-        assertThat(response.address().region()).isEqualTo(dbEntry.getEntityAddress().getRegion());
         assertThat(response.contactPerson()).isNotNull();
         assertThat(response.contactPerson().firstName()).isEqualTo(dbEntry.getContactPerson().getFirstName());
         assertThat(response.contactPerson().lastName()).isEqualTo(dbEntry.getContactPerson().getLastName());

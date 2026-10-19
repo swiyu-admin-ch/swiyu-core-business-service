@@ -140,7 +140,7 @@ public class BusinessEntityTestData {
     }
 
     private static Address address() {
-        return new Address("Musterstrasse 1", "Bern", "3000", "Switzerland", "BE");
+        return new Address("Musterstrasse 1", "Bern", "3000", "Switzerland");
     }
 
     public static Map<String, String> entityNameLocalizedMap() {
@@ -218,7 +218,7 @@ public class BusinessEntityTestData {
     }
 
     public static AddressDto someAddressDto(String prefix) {
-        return new AddressDto(prefix + "Street", prefix + "City", "3000", prefix + "Country", prefix + "Region");
+        return new AddressDto(prefix + "Street", prefix + "City", "3000", prefix + "Country");
     }
 
     public static AddressDto someAddressDto() {

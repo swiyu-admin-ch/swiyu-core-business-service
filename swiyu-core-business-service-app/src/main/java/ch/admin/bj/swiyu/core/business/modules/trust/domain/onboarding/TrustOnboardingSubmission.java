@@ -1,5 +1,7 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding;
 
+import static ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionType.*;
+
 import ch.admin.bj.swiyu.core.business.common.domain.*;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
@@ -11,6 +13,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -69,7 +72,6 @@ public class TrustOnboardingSubmission {
     @AttributeOverride(name = "postalCode", column = @Column(name = "entity_postal_code"))
     @AttributeOverride(name = "city", column = @Column(name = "entity_city"))
     @AttributeOverride(name = "country", column = @Column(name = "entity_country"))
-    @AttributeOverride(name = "region", column = @Column(name = "entity_region"))
     @Valid
     private Address entityAddress;
 
@@ -159,7 +161,7 @@ public class TrustOnboardingSubmission {
         List<Signatory> signatories
     ) {
         this(
-            TrustOnboardingSubmissionType.REGISTRATION,
+            REGISTRATION,
             id,
             partnerId,
             entityName,
@@ -175,6 +177,9 @@ public class TrustOnboardingSubmission {
         );
     }
 
+    /**
+     * Generic Constructor for all types.
+     */
     public TrustOnboardingSubmission( // NOSONAR
         TrustOnboardingSubmissionType type,
         UUID id,
@@ -259,7 +264,7 @@ public class TrustOnboardingSubmission {
         }
     }
 
-    public void update( // NOSONAR
+    public void updateForTypeRegistration( // NOSONAR
         Map<String, String> entityName,
         Address entityAddress,
         String entityEmail,
@@ -271,6 +276,7 @@ public class TrustOnboardingSubmission {
         List<Signatory> signatories,
         boolean isRegisteredInCommercialRegister
     ) {
+        validateCanUpdate(REGISTRATION);
         this.entityName = entityName;
         this.entityAddress = entityAddress;
         this.entityEmail = entityEmail;
@@ -283,6 +289,52 @@ public class TrustOnboardingSubmission {
         this.isRegisteredInCommercialRegister = isRegisteredInCommercialRegister;
     }
 
+    /**
+     * Similar to updateForTypeRegistration but on profile change it is not allowed to change the uid.
+     */
+    public void updateForTypeProfileChange( // NOSONAR
+        Map<String, String> entityName,
+        Address entityAddress,
+        String entityEmail,
+        Contact contactPerson,
+        List<ProofOfPossession> proofOfPossession,
+        BusinessPartnerType requestedPartnerType,
+        SigningRule signingRule,
+        List<Signatory> signatories,
+        boolean isRegisteredInCommercialRegister
+    ) {
+        validateCanUpdate(PROFILE_CHANGE_VOLUNTARY, PROFILE_CHANGE_MANDATORY);
+        this.entityName = entityName;
+        this.entityAddress = entityAddress;
+        this.entityEmail = entityEmail;
+        this.contactPerson = contactPerson;
+        this.proofOfPossessions = proofOfPossession;
+        this.requestedPartnerType = requestedPartnerType;
+        this.signingRule = signingRule;
+        this.signatories = signatories;
+        this.isRegisteredInCommercialRegister = isRegisteredInCommercialRegister;
+    }
+
+    /**
+     * When submitting a renewal only few fields are allowed to be updated.
+     */
+    public void updateForTypeRenewal(
+        Address entityAddress,
+        String entityEmail,
+        Contact contactPerson,
+        List<ProofOfPossession> proofOfPossession
+    ) {
+        validateCanUpdate(RENEWAL);
+        this.entityAddress = entityAddress;
+        this.entityEmail = entityEmail;
+        this.contactPerson = contactPerson;
+        this.proofOfPossessions = proofOfPossession;
+    }
+
+    public void submitProofOfPossessions(List<ProofOfPossession> proofOfPossessions) {
+        this.proofOfPossessions = proofOfPossessions;
+    }
+
     @VisibleForTesting
     public void setInitiatedAt(Instant initiatedAt) {
         this.initiatedAt = initiatedAt;
@@ -291,5 +343,34 @@ public class TrustOnboardingSubmission {
     @VisibleForTesting
     public void markAsExpired() {
         this.status = TrustOnboardingSubmissionStatus.UNSUBMITTED_TIMEOUT;
+    }
+
+    public boolean isRenewal() {
+        return RENEWAL.equals(this.type);
+    }
+
+    /**
+     * Validates that the submission is in status UNSUBMITTED and is of one of the given types.
+     */
+    private void validateCanUpdate(TrustOnboardingSubmissionType... allowedCurrentTypes) {
+        if (status != TrustOnboardingSubmissionStatus.UNSUBMITTED) {
+            throw new IllegalStateException(
+                "Cannot update TrustOnboardingSubmission. The current status is " +
+                    this.status +
+                    ". Allowed status is " +
+                    TrustOnboardingSubmissionStatus.UNSUBMITTED
+            );
+        }
+        for (TrustOnboardingSubmissionType allowed : allowedCurrentTypes) {
+            if (this.type == allowed) {
+                return;
+            }
+        }
+        throw new IllegalStateException( // must be a bug in implementation
+            "Cannot update TrustOnboardingSubmission. The current type is " +
+                this.type +
+                ". Allowed types are " +
+                Arrays.toString(allowedCurrentTypes)
+        );
     }
 }

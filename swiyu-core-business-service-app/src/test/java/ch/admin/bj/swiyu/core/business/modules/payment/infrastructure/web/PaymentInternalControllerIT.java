@@ -61,6 +61,7 @@ class PaymentInternalControllerIT {
 
     @BeforeEach
     void setUp() {
+        repos.truncateTables();
         insertTestBusinessPartners(repos.businessPartner);
         repos.payment.deleteAll();
         when(featuresProperties.getEidartfe1297Payment()).thenReturn(true);

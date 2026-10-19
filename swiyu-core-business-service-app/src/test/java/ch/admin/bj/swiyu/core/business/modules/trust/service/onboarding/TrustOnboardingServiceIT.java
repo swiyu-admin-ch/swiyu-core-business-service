@@ -1,8 +1,10 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding;
 
 import static ch.admin.bj.swiyu.core.business.modules.documents.api.PartnerDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT;
+import static ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_MANDATORY;
 import static ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.ProofOfPossessionKeyUtils.*;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.businessPartnerIdentity;
+import static ch.admin.bj.swiyu.core.business.test.PartnerDocumentTestData.multipartFile;
 import static ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTestData.*;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +54,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
-import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
@@ -167,7 +168,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void createTrustOnboardingSubmissionWhenUnsubmittedSubmissionExists_fails() {
+    void createTrustOnboardingSubmission_WhenUnsubmittedSubmissionExists_fails() {
         var initial = repos.trustOnboardingSubmission.saveAndFlush(trustOnboardingSubmission());
 
         var request = trustOnboardingSubmissionRequestDto();
@@ -182,7 +183,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void createTrustOnboardingSubmissionWhenInformationRequestedSubmissionExists_fails() {
+    void createTrustOnboardingSubmission_WhenInformationRequestedSubmissionExists_fails() {
         var initial = repos.trustOnboardingSubmission.saveAndFlush(trustOnboardingSubmission());
         initial.markAsInformationRequested("partnerNote");
 
@@ -195,7 +196,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void createTrustOnboardingSubmissionWhenSubmittedSubmissionExists_fails() {
+    void createTrustOnboardingSubmission_WhenSubmittedSubmissionExists_fails() {
         var initial = repos.trustOnboardingSubmission.saveAndFlush(trustOnboardingSubmission());
         initial.markAsSubmitted();
 
@@ -252,7 +253,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void updateTrustOnboarding_replacesWithSameDidWhenUnsubmitted() {
+    void updateTrustOnboardingSubmission_replacesWithSameDidWhenUnsubmitted() {
         // GIVEN
         var request = trustOnboardingSubmissionRequestDto();
         var resultDto = service.createTrustOnboardingSubmission(request);
@@ -282,7 +283,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void updateTrustOnboarding_resetWhenRequestingInformation()
+    void updateTrustOnboardingSubmission_resetWhenRequestingInformation()
         throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, JOSEException {
         // GIVEN submitted
         var request = trustOnboardingSubmissionRequestDto();
@@ -323,7 +324,7 @@ class TrustOnboardingServiceIT {
             forDoi.getPartnerId(),
             forDoi.getId(),
             TRUST_ONBOARDING_DECLARATION_OF_INTENT,
-            mockMultipartFile()
+            multipartFile()
         );
         forDoi.updateDeclarationOfIntent(new DeclarationOfIntent(doiDocument.id(), null));
         var savedWithDoi = repos.trustOnboardingSubmission.saveAndFlush(forDoi);
@@ -356,7 +357,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void updateTrustOnboarding_replacesWithAdditionalDidWhenUnsubmitted() {
+    void updateTrustOnboardingSubmission_replacesWithAdditionalDidWhenUnsubmitted() {
         // GIVEN
         var request = trustOnboardingSubmissionRequestDto();
         var resultDto = service.createTrustOnboardingSubmission(request);
@@ -393,7 +394,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void updateTrustOnboardingPop_submitWithValidPops()
+    void submitProofOfPossessions_WithValidPops()
         throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, JOSEException {
         // GIVEN
         var request = trustOnboardingSubmissionRequestDto();
@@ -435,7 +436,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void updateTrustOnboardingPop_submitWithPartialValidNonceThrows()
+    void submitProofOfPossessions_WithPartialValidNonceThrows()
         throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, JOSEException {
         // GIVEN
         var request = trustOnboardingSubmissionRequestDto();
@@ -502,9 +503,9 @@ class TrustOnboardingServiceIT {
     @Test
     void submit_fails_when_declarationOfIntent_is_missing() {
         var s = TrustOnboardingSubmissionTestData.trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             Map.of("default", "de", "de-CH", "de", "fr-CH", "fr", "it-CH", "it", "en-CH", "en", "rm-CH", "rm"),
-            new Address("street", "city", "postal", "country", "region"),
+            new Address("street", "city", "postal", "country"),
             "valid@example.org",
             new Contact("first", "last", "first.last@example.com", "+41 79 123 45 67", Language.DE),
             "uid",
@@ -529,9 +530,9 @@ class TrustOnboardingServiceIT {
     void submit_succeeds_when_valid() {
         var s = TrustOnboardingSubmissionTestData.trustOnboardingSubmissionEmpty();
         // populate required fields
-        s.update(
+        s.updateForTypeRegistration(
             Map.of("default", "de", "de-CH", "de", "fr-CH", "fr", "it-CH", "it", "en-CH", "en", "rm-CH", "rm"),
-            new Address("street", "city", "postal", "country", "region"),
+            new Address("street", "city", "postal", "country"),
             "valid@example.org",
             new Contact("first", "last", "first.last@example.com", "+41 79 123 45 67", Language.DE),
             "uid",
@@ -547,7 +548,7 @@ class TrustOnboardingServiceIT {
             s.getPartnerId(),
             s.getId(),
             TRUST_ONBOARDING_DECLARATION_OF_INTENT,
-            mockMultipartFile()
+            multipartFile()
         );
         s.updateDeclarationOfIntent(new DeclarationOfIntent(doiDocument.id(), null));
         s = repos.trustOnboardingSubmission.save(s);
@@ -657,13 +658,13 @@ class TrustOnboardingServiceIT {
 
         var submission = TrustOnboardingSubmissionTestData.trustOnboardingSubmission(UUID.randomUUID(), partnerId);
         var newNameLocalizedMap = Map.of("default", "New Name default", "de-CH", "New Name DE", "fr-CH", "New Name FR");
-        var newAddress = new Address("New Street", "New City", "1234", "CH", "Region");
+        var newAddress = new Address("New Street", "New City", "1234", "CH");
         var newEmail = "new@example.com";
         var newUid = "CHE-123.456.789";
         var newPhone = "+41 79 123 45 67";
         var newType = BusinessPartnerType.BUSINESS;
 
-        submission.update(
+        submission.updateForTypeRegistration(
             newNameLocalizedMap,
             newAddress,
             newEmail,
@@ -702,7 +703,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void uploadDocument_sanitizesStorageKeyAndDisplayName() {
+    void uploadTrustOnboardingSubmissionDocument_sanitizesStorageKeyAndDisplayName() {
         // GIVEN
         when(scanApi.scanGet(any())).thenReturn(
             List.of(
@@ -748,7 +749,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void deleteDocument_clearsDeclarationOfIntent_whenDeletedDocumentIsTheDoi() {
+    void deleteTrustOnboardingSubmissionDocument_clearsDeclarationOfIntent_whenDeletedDocumentIsTheDoi() {
         // GIVEN
         when(scanApi.scanGet(any())).thenReturn(
             List.of(
@@ -964,60 +965,24 @@ class TrustOnboardingServiceIT {
         assertNotNull(refreshed.getDeclarationOfIntent());
     }
 
-    private @NonNull TrustOnboardingSubmission initSubmissionWithDeclarationOfIntent() {
-        var submission = repos.trustOnboardingSubmission.save(trustOnboardingSubmission());
-        var document = partnerDocumentService.createTrustOnboardingSubmissionDocument(
-            submission.getPartnerId(),
-            submission.getId(),
-            TRUST_ONBOARDING_DECLARATION_OF_INTENT,
-            mockMultipartFile()
-        );
-        submission.updateDeclarationOfIntent(new DeclarationOfIntent(document.id(), null));
-        repos.trustOnboardingSubmission.save(submission);
-        return submission;
-    }
-
-    private static @NonNull MockMultipartFile mockMultipartFile() {
-        return new MockMultipartFile(
-            "file",
-            "doi.pdf",
-            "application/pdf",
-            "test-content".getBytes(StandardCharsets.UTF_8)
-        );
-    }
-
     @Test
-    void createRenewalSubmissionBuildsFromVerifiedPartnerData() {
-        // Given a partner with ACTIVE business partner identity and trustedIdentifier
+    void createTrustOnboardingSubmission_RENEWAL_buildsFromVerifiedPartnerData() {
+        // GIVEN a trusted partner (ACTIVE BPI + trustedIdentifier) with a German-speaking contact
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
-        var partner = repos.businessPartner.findById(partnerId).orElseThrow();
-        repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId()));
-        // Also update the contact on the BusinessEntity for correspondence language
-        partner.applyPartialUpdateFromPortal(
-            null,
-            null,
-            new Contact("Hans", "Müller", "hans.mueller@example.com", "+41 79 123 45 67", Language.DE),
-            null
-        );
-        repos.businessPartner.saveAndFlush(partner);
+        activateTrustedPartner(partnerId);
+        setPartnerContact(partnerId, germanContact());
 
-        // And a previous successful REGISTRATION submission
-        var previousSubmission = trustOnboardingSubmission();
-        previousSubmission.markAsSucceeded();
-        repos.trustOnboardingSubmission.saveAndFlush(previousSubmission);
+        // AND a previous successful REGISTRATION submission that carries a signed Declaration of Intent
+        var previousSubmission = savePreviousSuccessfulSubmissionWithDoi(trustOnboardingSubmission());
 
-        // When creating a RENEWAL submission
-        var request = TrustOnboardingSubmissionRequestDto.builder()
-            .partnerId(partnerId)
-            .submissionType(TrustOnboardingSubmissionTypeDto.RENEWAL)
-            .build();
-        var resultDto = service.createTrustOnboardingSubmission(request);
+        // WHEN creating a RENEWAL submission
+        var resultDto = service.createTrustOnboardingSubmission(renewalRequest(partnerId));
 
-        // Then the submission is created with type RENEWAL
+        // THEN the submission is created with type RENEWAL
         assertNotNull(resultDto);
         assertEquals(TrustOnboardingSubmissionTypeDto.RENEWAL, resultDto.type());
 
-        // And all data is derived from partner (not from request)
+        // AND all data is derived from partner (not from request)
         var persisted = repos.trustOnboardingSubmission.findById(resultDto.id()).orElseThrow();
         assertNotEquals(previousSubmission.getId(), persisted.getId());
         assertEquals(TrustOnboardingSubmissionType.RENEWAL, persisted.getType());
@@ -1025,25 +990,25 @@ class TrustOnboardingServiceIT {
         assertEquals("CHE-123.456.789", persisted.getUid());
         assertEquals(Map.of("default", "Test Partner AG"), persisted.getEntityName());
 
-        // And ProofOfPossession are created from trustedIdentifier with status VALID
+        // AND ProofOfPossession are created from trustedIdentifier with status NOT_SUPPLIED
         assertNotNull(persisted.getProofOfPossessions());
         assertEquals(2, persisted.getProofOfPossessions().size());
         assertTrue(
             persisted
                 .getProofOfPossessions()
                 .stream()
-                .allMatch(pop -> pop.getStatus() == ProofOfPossessionStatus.VALID)
+                .allMatch(pop -> pop.getStatus() == ProofOfPossessionStatus.NOT_SUPPLIED)
         );
         assertEquals("did:example:partner1", persisted.getProofOfPossessions().get(0).getDid());
         assertEquals("did:example:partner2", persisted.getProofOfPossessions().get(1).getDid());
 
-        // And correspondingLanguage is from contactPerson on BusinessEntity
+        // AND correspondingLanguage is from contactPerson on BusinessEntity
         assertEquals(Language.DE, persisted.getContactPerson().getCorrespondingLanguage());
     }
 
     @Test
-    void createProfileChangeMandatorySubmission_succeedsWithinThreshold() {
-        // Given a partner with ACTIVE BPI and validUntil within 3 years (RENEWAL_THRESHOLD)
+    void createTrustOnboardingSubmission_PROFILE_CHANGE_MANDATORY_succeedsWithinThreshold() {
+        // GIVEN a partner with ACTIVE BPI and validUntil within 3 years (RENEWAL_THRESHOLD)
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
         repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId()));
@@ -1065,23 +1030,24 @@ class TrustOnboardingServiceIT {
         var bpiBeforeCall = partnerBeforeCall.getBusinessPartnerIdentity();
         assertNotNull(bpiBeforeCall, "BPI should not be null before service call");
 
-        // When creating a PROFILE_CHANGE_MANDATORY submission
-        var request = TrustOnboardingSubmissionRequestDto.builder()
-            .partnerId(partnerId)
-            .submissionType(TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_MANDATORY)
-            .build();
-        var resultDto = service.createTrustOnboardingSubmission(request);
+        // WHEN creating a PROFILE_CHANGE_MANDATORY submission
+        var resultDto = service.createTrustOnboardingSubmission(
+            TrustOnboardingSubmissionRequestDto.builder()
+                .partnerId(partnerId)
+                .submissionType(PROFILE_CHANGE_MANDATORY)
+                .build()
+        );
 
-        // Then the submission is created with type PROFILE_CHANGE_MANDATORY
+        // THEN the submission is created with type PROFILE_CHANGE_MANDATORY
         assertNotNull(resultDto);
         assertNotEquals(previousSubmission.getId(), resultDto.id());
-        assertEquals(TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_MANDATORY, resultDto.type());
+        assertEquals(PROFILE_CHANGE_MANDATORY, resultDto.type());
 
         var persisted = repos.trustOnboardingSubmission.findById(resultDto.id()).orElseThrow();
         assertEquals(TrustOnboardingSubmissionType.PROFILE_CHANGE_MANDATORY, persisted.getType());
         assertEquals("CHE-123.456.789", persisted.getUid());
         assertEquals(Map.of("default", "Test Partner AG"), persisted.getEntityName());
-        assertEquals(2, persisted.getProofOfPossessions().size());
+        assertThat(persisted.getProofOfPossessions()).isEmpty();
     }
 
     @Test
@@ -1102,7 +1068,7 @@ class TrustOnboardingServiceIT {
         // When creating a PROFILE_CHANGE_MANDATORY submission
         var request = TrustOnboardingSubmissionRequestDto.builder()
             .partnerId(partnerId)
-            .submissionType(TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_MANDATORY)
+            .submissionType(PROFILE_CHANGE_MANDATORY)
             .build();
 
         // Then it should fail with BusinessDataIntegrityViolationException
@@ -1112,7 +1078,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void createProfileChangeVoluntarySubmission_succeedsOutsideThreshold() {
+    void createTrustOnboardingSubmission_PROFILE_CHANGE_VOLUNTARY_succeedsOutsideThreshold() {
         // Given a partner with ACTIVE BPI and validUntil OUTSIDE 3 years
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
@@ -1143,7 +1109,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void createProfileChangeVoluntarySubmission_failsWithinThreshold() {
+    void createTrustOnboardingSubmission_PROFILE_CHANGE_VOLUNTARY_failsWithinThreshold() {
         // Given a partner with ACTIVE BPI and validUntil WITHIN 3 years
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
@@ -1168,7 +1134,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void createProfileChangeOrRenewalSubmission_failsWhenNoActiveBpi() {
+    void createTrustOnboardingSubmission_RENEWAL__failsWhenNoActiveBpi() {
         // Given a partner WITHOUT ACTIVE BPI
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         // No BPI set - partner is not trusted
@@ -1191,7 +1157,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void createProfileChangeOrRenewalSubmission_failsWhenNoPreviousSubmission() {
+    void createTrustOnboardingSubmission_RENEWAL_failsWhenNoPreviousSubmission() {
         // Given a partner with ACTIVE BPI
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
@@ -1206,31 +1172,27 @@ class TrustOnboardingServiceIT {
             .submissionType(TrustOnboardingSubmissionTypeDto.RENEWAL)
             .build();
 
-        // Then it should fail with ResourceNotFoundException (no existing submission)
-        assertThrows(ResourceNotFoundException.class, () -> service.createTrustOnboardingSubmission(request));
+        // Then it should fail with BusinessDataIntegrityViolationException (no existing submission)
+        assertThrows(BusinessDataIntegrityViolationException.class, () ->
+            service.createTrustOnboardingSubmission(request)
+        );
     }
 
     @Test
-    void createProfileChangeOrRenewalSubmission_failsWhenNoTrustedIdentifier() {
-        // Given a partner with ACTIVE BPI but NO trustedIdentifier
+    void createTrustOnboardingSubmission_RENEWAL_failsWhenNoTrustedIdentifier() {
+        // GIVEN a partner with ACTIVE BPI but NO trustedIdentifier
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
         repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId(), emptyList()));
         repos.businessPartner.saveAndFlush(partner);
 
-        // And a previous successful REGISTRATION submission
-        var previousSubmission = trustOnboardingSubmission();
-        previousSubmission.markAsSucceeded();
-        repos.trustOnboardingSubmission.saveAndFlush(previousSubmission);
+        // AND a previous successful REGISTRATION submission that carries a signed Declaration of Intent
+        var previousSubmission = savePreviousSuccessfulSubmissionWithDoi(trustOnboardingSubmission());
 
-        // When creating a RENEWAL submission
-        var request = TrustOnboardingSubmissionRequestDto.builder()
-            .partnerId(partnerId)
-            .submissionType(TrustOnboardingSubmissionTypeDto.RENEWAL)
-            .build();
+        // WHEN creating a RENEWAL submission
+        var resultDto = service.createTrustOnboardingSubmission(renewalRequest(partnerId));
 
-        // Then it should succeed but with empty ProofOfPossession list
-        var resultDto = service.createTrustOnboardingSubmission(request);
+        // THEN it succeeds but with an empty ProofOfPossession list
         assertNotNull(resultDto);
         var persisted = repos.trustOnboardingSubmission.findById(resultDto.id()).orElseThrow();
         assertNotEquals(previousSubmission.getId(), persisted.getId());
@@ -1238,45 +1200,24 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void createProfileChangeOrRenewalSubmission_preservesPoPNoncesFromLatestSubmission() {
-        // Given a partner with ACTIVE BPI
+    void createTrustOnboardingSubmission_RENEWAL_doesNotPreservePoPNoncesFromLatestSubmission() {
+        // GIVEN a trusted partner (ACTIVE BPI)
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
-        var partner = repos.businessPartner.findById(partnerId).orElseThrow();
-        repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId()));
-        repos.businessPartner.saveAndFlush(partner);
+        activateTrustedPartner(partnerId);
 
-        // And a previous submission with PoP nonces
-        var previousSubmission = trustOnboardingSubmission();
-        previousSubmission.markAsSucceeded();
+        // AND a previous successful submission (with signed DOI) whose PoPs carry specific nonces
         var pops = List.of(
             new ProofOfPossession("did:example:partner1", "existing-nonce-123").toValid(),
             new ProofOfPossession("did:example:partner2", "other-nonce").toValid()
         );
-        previousSubmission = new TrustOnboardingSubmission(
-            previousSubmission.getId(),
-            previousSubmission.getPartnerId(),
-            previousSubmission.getEntityName(),
-            previousSubmission.getEntityAddress(),
-            previousSubmission.getEntityEmail(),
-            previousSubmission.getContactPerson(),
-            previousSubmission.getUid(),
-            Boolean.FALSE,
-            pops,
-            previousSubmission.getRequestedPartnerType(),
-            previousSubmission.getSigningRule(),
-            previousSubmission.getSignatories()
+        var previousSubmission = savePreviousSuccessfulSubmissionWithDoi(
+            submissionWithProofOfPossessions(trustOnboardingSubmission(), pops)
         );
-        previousSubmission.markAsSucceeded();
-        repos.trustOnboardingSubmission.saveAndFlush(previousSubmission);
 
-        // When creating a RENEWAL submission
-        var request = TrustOnboardingSubmissionRequestDto.builder()
-            .partnerId(partnerId)
-            .submissionType(TrustOnboardingSubmissionTypeDto.RENEWAL)
-            .build();
-        var resultDto = service.createTrustOnboardingSubmission(request);
+        // WHEN creating a RENEWAL submission
+        var resultDto = service.createTrustOnboardingSubmission(renewalRequest(partnerId));
 
-        // Then the PoP nonces are preserved for matching DIDs
+        // THEN the PoP nonces are preserved for matching DIDs
         var persisted = repos.trustOnboardingSubmission.findById(resultDto.id()).orElseThrow();
         assertEquals(2, persisted.getProofOfPossessions().size());
         assertNotEquals(previousSubmission.getId(), persisted.getId());
@@ -1292,21 +1233,26 @@ class TrustOnboardingServiceIT {
             .filter(p -> "did:example:partner2".equals(p.getDid()))
             .findFirst()
             .orElseThrow();
-        assertEquals("existing-nonce-123", pop1.getNonce());
-        assertEquals("other-nonce", pop2.getNonce());
+        assertNotNull(pop1.getNonce());
+        assertNotNull(pop2.getNonce());
+        assertNotEquals("existing-nonce-123", pop1.getNonce());
+        assertNotEquals("other-nonce", pop2.getNonce());
     }
 
     @Test
-    void createProfileChangeOrRenewalSubmission_generatesNewNonceForNewDid() {
-        // Given a partner with ACTIVE BPI with a NEW DID not in previous submission
+    void createTrustOnboardingSubmission_RENEWAL_generatesNewNonceForNewDid() {
+        // GIVEN a trusted partner (ACTIVE BPI) and a previous successful submission (with signed DOI)
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
-        var partner = repos.businessPartner.findById(partnerId).orElseThrow();
-        repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId()));
-        repos.businessPartner.saveAndFlush(partner);
+        activateTrustedPartner(partnerId);
+        var previousSubmission = savePreviousSuccessfulSubmissionWithDoi(
+            submissionWithProofOfPossessions(
+                trustOnboardingSubmission(),
+                List.of(new ProofOfPossession("did:example:partner1", "existing-nonce-123").toValid())
+            )
+        );
 
-        // Verify BPI is loaded correctly
-        var reloadedPartner = repos.businessPartner.findById(partnerId).orElseThrow();
-        var bpi = reloadedPartner.getBusinessPartnerIdentity();
+        // AND the BPI exposes 2 trusted DIDs, one of which is new compared to the previous submission
+        var bpi = repos.businessPartner.findById(partnerId).orElseThrow().getBusinessPartnerIdentity();
         assertNotNull(bpi, "BPI should not be null");
         assertEquals(BusinessPartnerIdentityStatus.ACTIVE, bpi.getStatus());
         assertNotNull(bpi.getTrustedIdentifier(), "TrustedIdentifier should not be null");
@@ -1314,35 +1260,11 @@ class TrustOnboardingServiceIT {
         assertTrue(bpi.getTrustedIdentifier().contains("did:example:partner1"));
         assertTrue(bpi.getTrustedIdentifier().contains("did:example:partner2"));
 
-        // And a previous submission with only one DID (matching the first DID from test data)
-        var previousSubmission = trustOnboardingSubmission();
-        var pops = List.of(new ProofOfPossession("did:example:partner1", "existing-nonce-123").toValid());
-        previousSubmission = new TrustOnboardingSubmission(
-            previousSubmission.getId(),
-            previousSubmission.getPartnerId(),
-            previousSubmission.getEntityName(),
-            previousSubmission.getEntityAddress(),
-            previousSubmission.getEntityEmail(),
-            previousSubmission.getContactPerson(),
-            previousSubmission.getUid(),
-            Boolean.FALSE,
-            pops,
-            previousSubmission.getRequestedPartnerType(),
-            previousSubmission.getSigningRule(),
-            previousSubmission.getSignatories()
-        );
-        previousSubmission.markAsSucceeded(); // Must set status on the new object
-        repos.trustOnboardingSubmission.saveAndFlush(previousSubmission);
+        // WHEN creating a RENEWAL submission
+        var renewalSubmission = service.createTrustOnboardingSubmission(renewalRequest(partnerId));
 
-        // When creating a RENEWAL submission
-        var request = TrustOnboardingSubmissionRequestDto.builder()
-            .partnerId(partnerId)
-            .submissionType(TrustOnboardingSubmissionTypeDto.RENEWAL)
-            .build();
-        var resultDto = service.createTrustOnboardingSubmission(request);
-
-        // Then the new DID gets a new generated nonce
-        var persisted = repos.trustOnboardingSubmission.findById(resultDto.id()).orElseThrow();
+        // THEN the new DID gets a new generated nonce
+        var persisted = repos.trustOnboardingSubmission.findById(renewalSubmission.id()).orElseThrow();
         assertNotEquals(previousSubmission.getId(), persisted.getId());
         assertEquals(2, persisted.getProofOfPossessions().size());
         var pop1 = persisted
@@ -1357,67 +1279,122 @@ class TrustOnboardingServiceIT {
             .filter(p -> "did:example:partner2".equals(p.getDid()))
             .findFirst()
             .orElseThrow();
-        assertEquals("existing-nonce-123", pop1.getNonce());
+        assertNotNull(pop1.getNonce());
         assertNotNull(pop2.getNonce());
+        assertNotEquals("existing-nonce-123", pop1.getNonce());
         assertNotEquals("existing-nonce-123", pop2.getNonce());
     }
 
     @Test
-    void renewalUpdateDoesNotChangeSigningRuleOrSignatories() {
-        var partnerId = UUID.randomUUID();
-        var sub = trustOnboardingSubmission(UUID.randomUUID(), partnerId, TrustOnboardingSubmissionType.RENEWAL);
-        sub.update(
-            Map.of("default", "ACME AG"),
-            null,
-            "old@example.com",
-            null,
-            null,
-            List.of(),
-            BusinessPartnerType.BUSINESS,
-            SigningRule.SINGLE_SIGNATURE,
-            List.of(new Signatory("John", "Doe", "+41791234567", "j@x.com")),
-            true
+    void updateTrustOnboardingSubmission_RENEWAL_failOnNotAllowedUpdate() {
+        // GIVEN
+        var initialSubmission = trustOnboardingSubmission(
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            TrustOnboardingSubmissionType.RENEWAL
         );
-        repos.trustOnboardingSubmission.saveAndFlush(sub);
+        var entityName = Map.of("default", "ACME AG");
+        List<ProofOfPossession> proofOfPossessions = List.of();
+        var signatories = List.of(new Signatory("John", "Doe", "+41791234567", "j@x.com"));
 
-        var dto = TrustOnboardingSubmissionRequestDto.builder()
-            .partnerId(partnerId)
-            .signingRule(SigningRuleDto.JOINT_SIGNATURE_TWO)
-            .signatories(List.of(new SignatoryDto("Jane", "Roe", "+41791234568", "jr@x.com")))
-            .build();
-
-        var updated = service.updateTrustOnboardingSubmission(sub.getId(), dto);
-
-        assertThat(updated.signingRule()).isEqualTo(SigningRuleDto.SINGLE_SIGNATURE);
-        assertThat(updated.signatories()).extracting(SignatoryDto::firstName).contains("John");
+        // WHEN / THEN
+        assertThrows(IllegalStateException.class, () ->
+            initialSubmission.updateForTypeRegistration(
+                entityName,
+                null,
+                "old@example.com",
+                null,
+                null,
+                proofOfPossessions,
+                BusinessPartnerType.BUSINESS,
+                SigningRule.SINGLE_SIGNATURE,
+                signatories,
+                true
+            )
+        );
     }
 
     @Test
-    void succeededSendsTypeAppropriateEmail() {
+    void markAsSucceeded_succeededSendsTypeAppropriateEmail() {
         var businessEntity = businessPartnerService.createBusinessPartnerV2(
             BusinessEntityTestData.createPartnerDto(),
             lookupPamsAdminUserUid()
         );
         var partnerId = businessEntity.id();
         var sub = trustOnboardingSubmission(UUID.randomUUID(), partnerId, TrustOnboardingSubmissionType.RENEWAL);
-        sub.update(
-            Map.of("default", "ACME AG"),
+        sub.updateForTypeRenewal(
             null,
             "old@example.com",
             Contact.builder().email("contact@example.com").phone("+41791234567").build(),
-            "CHE-123.456.789",
-            List.of(),
-            BusinessPartnerType.BUSINESS,
-            SigningRule.SINGLE_SIGNATURE,
-            List.of(new Signatory("John", "Doe", "+41791234567", "j@x.com")),
-            true
+            List.of()
         );
         sub.markAsSubmitted();
         repos.trustOnboardingSubmission.saveAndFlush(sub);
 
+        // WHEN
         service.markAsSucceeded(sub.getId());
 
         verify(emailCommandPublisher).trustRenewalSucceeded(partnerId);
         verifyNoMoreInteractions(emailCommandPublisher);
+    }
+
+    /**
+     * Makes the given partner trusted by persisting an ACTIVE BusinessPartnerIdentity (with the default
+     * trustedIdentifier DIDs) — the precondition for RENEWAL and PROFILE_CHANGE submissions.
+     */
+    private void activateTrustedPartner(UUID partnerId) {
+        var partner = repos.businessPartner.findById(partnerId).orElseThrow();
+        repos.businessPartnerIdentity.saveAndFlush(businessPartnerIdentity(partner.getId()));
+        repos.businessPartner.saveAndFlush(partner);
+    }
+
+    private void setPartnerContact(UUID partnerId, Contact contact) {
+        var partner = repos.businessPartner.findById(partnerId).orElseThrow();
+        partner.applyPartialUpdateFromPortal(null, null, contact, null);
+        repos.businessPartner.saveAndFlush(partner);
+    }
+
+    private static Contact germanContact() {
+        return new Contact("Hans", "Müller", "hans.mueller@example.com", "+41 79 123 45 67", Language.DE);
+    }
+
+    private static TrustOnboardingSubmissionRequestDto renewalRequest(UUID partnerId) {
+        return TrustOnboardingSubmissionRequestDto.builder()
+            .partnerId(partnerId)
+            .submissionType(TrustOnboardingSubmissionTypeDto.RENEWAL)
+            .build();
+    }
+
+    /**
+     * Persists a previous, successfully registered submission that carries a signed Declaration of Intent.
+     * This is the precondition for creating a RENEWAL submission (see TrustOnboardingService: a renewal copies
+     * the DOI from the latest submission).
+     */
+    private TrustOnboardingSubmission savePreviousSuccessfulSubmissionWithDoi(
+        TrustOnboardingSubmission previousSubmission
+    ) {
+        previousSubmission.markAsSucceeded();
+        var saved = repos.trustOnboardingSubmission.saveAndFlush(previousSubmission);
+        var doiDocument = partnerDocumentService.createTrustOnboardingSubmissionDocument(
+            saved.getPartnerId(),
+            saved.getId(),
+            TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+            multipartFile()
+        );
+        saved.updateDeclarationOfIntent(declarationOfIntent(doiDocument.id()));
+        return repos.trustOnboardingSubmission.saveAndFlush(saved);
+    }
+
+    private TrustOnboardingSubmission initSubmissionWithDeclarationOfIntent() {
+        var submission = repos.trustOnboardingSubmission.save(trustOnboardingSubmission());
+        var document = partnerDocumentService.createTrustOnboardingSubmissionDocument(
+            submission.getPartnerId(),
+            submission.getId(),
+            TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+            multipartFile()
+        );
+        submission.updateDeclarationOfIntent(new DeclarationOfIntent(document.id(), null));
+        repos.trustOnboardingSubmission.save(submission);
+        return submission;
     }
 }

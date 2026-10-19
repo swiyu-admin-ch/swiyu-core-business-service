@@ -84,9 +84,6 @@ public class TrustOnboardingMapper {
     public static TrustOnboardingSubmissionType toTrustOnboardingSubmissionType(
         TrustOnboardingSubmissionTypeDto source
     ) {
-        if (source == null) {
-            return TrustOnboardingSubmissionType.REGISTRATION;
-        }
         return switch (source) {
             case REGISTRATION -> TrustOnboardingSubmissionType.REGISTRATION;
             case PROFILE_CHANGE_MANDATORY -> TrustOnboardingSubmissionType.PROFILE_CHANGE_MANDATORY;

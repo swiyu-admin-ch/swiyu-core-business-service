@@ -25,7 +25,7 @@ class BusinessEntityPartialUpdateTest {
             name,
             "old@example.com",
             BusinessPartnerType.BUSINESS,
-            new Address("Old Street", "Old City", "8000", "CH", "Region"),
+            new Address("Old Street", "Old City", "8000", "CH"),
             "CHE-111.111.111",
             "+41 79 111 11 11"
         );
@@ -52,14 +52,13 @@ class BusinessEntityPartialUpdateTest {
     @Test
     void onlyAddress_keepsNameUidAndContact() {
         var entity = entity("Old Name");
-        var newAddress = new Address("New Street", "New City", "1234", "CH", "New Region");
+        var newAddress = new Address("New Street", "New City", "1234", "CH");
 
         entity.applyPartialUpdateFromPortal(null, null, null, newAddress);
 
         assertThat(LocalizedMapUtil.getDefaultValue(entity.getEntityName())).isEqualTo("Old Name");
         assertThat(entity.getUid()).isEqualTo("CHE-111.111.111");
         assertThat(entity.getAddress().getStreet()).isEqualTo("New Street");
-        assertThat(entity.getAddress().getRegion()).isEqualTo("New Region");
         assertThat(entity.getContact().getEmail()).isEqualTo("old@example.com");
     }
 

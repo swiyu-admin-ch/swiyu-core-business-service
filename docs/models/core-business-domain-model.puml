@@ -16,9 +16,8 @@ package "Management" #E8F5E9 {
 
     enum BusinessPartnerType {
         BUSINESS
-        PRIVATE_PERSON
+        INDIVIDUAL
         GOVERNMENTAL_INSTITUTION
-        UNKNOWN
     }
 
     enum BusinessPartnerIdentityStatus {
@@ -32,9 +31,12 @@ package "Management" #E8F5E9 {
         + version : Long
         + payedForDidSlots : int
         + payedForTrustVerification : boolean
+        + hardDeleteAllowed : boolean
         + uid : String
         -- jsonb --
         + entityName : Map<String,String>
+        -- read-only --
+        + defaultEntityName : String
         -- embedded --
         + address : Address
         + contact : Contact
@@ -130,6 +132,14 @@ package "Trust" #E0F7FA {
         INFORMATION_REQUESTED
         REJECTED
         SUCCEEDED
+        RESUBMITTED
+    }
+
+    enum TrustOnboardingSubmissionType {
+        REGISTRATION
+        PROFILE_CHANGE_MANDATORY
+        PROFILE_CHANGE_VOLUNTARY
+        RENEWAL
     }
 
     enum TrustOnboardingRejectReason {
@@ -216,11 +226,13 @@ package "Trust" #E0F7FA {
         + version : Long
         + initiatedAt : Instant
         + submittedAt : Instant
+        + resubmitRequiredUntil : Instant
         + entityEmail : String
         + uid : String
         + isRegisteredInCommercialRegister : Boolean
         + correspondingLanguage : Language
         + status : TrustOnboardingSubmissionStatus
+        + type : TrustOnboardingSubmissionType
         + rejectReason : TrustOnboardingRejectReason
         + declineReason : TrustOnboardingDeclineReason
         + partnerNote : String
@@ -297,6 +309,7 @@ package "Trust" #E0F7FA {
     }
 
     TrustOnboardingSubmission --> TrustOnboardingSubmissionStatus : status
+    TrustOnboardingSubmission --> TrustOnboardingSubmissionType : type
     ProtectedVerificationSubmission --> ProtectedVerificationCategory : category
     ProtectedVerificationSubmission --> ProtectedVerificationSubmissionStatus : status
     TrustOnboardingSubmission --> TrustOnboardingRejectReason : rejectReason
@@ -386,7 +399,6 @@ package "Common Value Objects" #EEEEFF {
         + city : String
         + postalCode : String
         + country : String
-        + region : String
     }
 
     class Contact <<embeddable>> {
@@ -435,6 +447,7 @@ package "Common Value Objects" #EEEEFF {
         + uid : String
         + entityName : Map<String,String>
         + tmsVersion : Long
+        + version : Long
     }
 }
 

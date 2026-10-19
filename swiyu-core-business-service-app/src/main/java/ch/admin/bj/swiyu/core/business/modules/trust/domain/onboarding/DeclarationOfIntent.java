@@ -15,6 +15,7 @@ import tools.jackson.databind.JsonNode;
 @NoArgsConstructor(access = AccessLevel.PUBLIC) // JPA
 public class DeclarationOfIntent {
 
+    /** ID of the PartnerDocument */
     @NotNull
     private UUID fullySignedDocumentId;
 

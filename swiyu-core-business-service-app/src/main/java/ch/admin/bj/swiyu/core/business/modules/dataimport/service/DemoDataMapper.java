@@ -5,6 +5,7 @@ import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
 import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.DemoData;
+import ch.admin.bj.swiyu.core.business.modules.documents.api.PartnerDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.Signatory;
@@ -54,7 +55,7 @@ public class DemoDataMapper {
     static Address toAddress(DemoData.DemoBusinessPartner.DemoAddress address) {
         return address == null
             ? null
-            : new Address(address.street(), address.city(), address.postalCode(), address.country(), address.region());
+            : new Address(address.street(), address.city(), address.postalCode(), address.country());
     }
 
     static Contact toContact(DemoData.DemoBusinessPartner.DemoContact contact) {
@@ -138,6 +139,15 @@ public class DemoDataMapper {
     ) {
         return switch (category) {
             case PERSONAL_ADMINISTRATIVE_NUMBER -> ProtectedVerificationCategory.PERSONAL_ADMINISTRATIVE_NUMBER;
+        };
+    }
+
+    public static PartnerDocumentTypeDto toPartnerDocumentTypeDto(
+        DemoData.DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto type
+    ) {
+        return switch (type) {
+            case TRUST_ONBOARDING_OTHER -> PartnerDocumentTypeDto.TRUST_ONBOARDING_OTHER;
+            case TRUST_ONBOARDING_DECLARATION_OF_INTENT -> PartnerDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT;
         };
     }
 }

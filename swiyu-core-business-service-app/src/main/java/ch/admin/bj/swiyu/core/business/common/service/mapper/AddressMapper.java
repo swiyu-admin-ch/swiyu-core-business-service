@@ -13,19 +13,13 @@ public class AddressMapper {
         if (address == null) {
             return null;
         }
-        return new AddressDto(
-            address.getStreet(),
-            address.getCity(),
-            address.getPostalCode(),
-            address.getCountry(),
-            address.getRegion()
-        );
+        return new AddressDto(address.getStreet(), address.getCity(), address.getPostalCode(), address.getCountry());
     }
 
     public static Address toAddressEntity(AddressDto dto) {
         if (dto == null) {
             return null;
         }
-        return new Address(dto.street(), dto.city(), dto.postalCode(), dto.country(), dto.region());
+        return new Address(dto.street(), dto.city(), dto.postalCode(), dto.country());
     }
 }

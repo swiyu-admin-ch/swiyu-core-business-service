@@ -1,6 +1,8 @@
 package ch.admin.bj.swiyu.core.business.modules.dataimport.domain;
 
 import static ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil.fromLanguages;
+import static ch.admin.bj.swiyu.core.business.modules.dataimport.domain.DemoData.DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT;
+import static ch.admin.bj.swiyu.core.business.modules.dataimport.domain.DemoData.DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_OTHER;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -56,7 +58,7 @@ public class DemoData {
                     "Trusted Gov Partner (EN)",
                     "Trusted Gov Partner (RM)"
                 ),
-                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 13", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 13", "Demohausen", "1111", "CH"),
                 new DemoBusinessPartner.DemoContact(
                     "erika",
                     "müller",
@@ -92,7 +94,12 @@ public class DemoData {
                         List.of(
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Declaration of intent.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                "something"
+                            ),
+                            new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
+                                "vertrag-x.pdf",
+                                TRUST_ONBOARDING_OTHER,
                                 "something"
                             )
                         ),
@@ -195,7 +202,7 @@ public class DemoData {
                     "Fresh Verified Partner AG (EN)",
                     "Fresh Verified Partner AG (RM)"
                 ),
-                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 13", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 13", "Demohausen", "1111", "CH"),
                 new DemoBusinessPartner.DemoContact(
                     "erika",
                     "müller",
@@ -223,7 +230,12 @@ public class DemoData {
                         List.of(
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Declaration of intent.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                "something"
+                            ),
+                            new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
+                                "vertrag-x.pdf",
+                                TRUST_ONBOARDING_OTHER,
                                 "something"
                             )
                         ),
@@ -267,7 +279,7 @@ public class DemoData {
                     "E2e GmbH (EN)",
                     "E2e GmbH (RM)"
                 ),
-                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 13", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 13", "Demohausen", "1111", "CH"),
                 new DemoBusinessPartner.DemoContact(
                     "Erika",
                     "Muster",
@@ -321,7 +333,7 @@ public class DemoData {
                     "Trusty Consulting GmbH (EN)",
                     "Trusty Consulting GmbH (RM)"
                 ),
-                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 13", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 13", "Demohausen", "1111", "CH"),
                 new DemoBusinessPartner.DemoContact(
                     "erika",
                     "müller",
@@ -351,47 +363,47 @@ public class DemoData {
                         List.of(
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Declaration of intent.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                TRUST_ONBOARDING_DECLARATION_OF_INTENT,
                                 "something"
                             ),
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Handelsregister.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_OTHER,
+                                TRUST_ONBOARDING_OTHER,
                                 "something with UID"
                             ),
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Vertrag_Kaufvertrag_Musterfirma_AG_2025.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_OTHER,
+                                TRUST_ONBOARDING_OTHER,
                                 "something with UID"
                             ),
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Dienstleistungsvertrag_ProjektX_KundeABC_07-11-2025.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_OTHER,
+                                TRUST_ONBOARDING_OTHER,
                                 "something with UID"
                             ),
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Rahmenvertrag_LieferantXYZ_Version2.0.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_OTHER,
+                                TRUST_ONBOARDING_OTHER,
                                 "something with UID"
                             ),
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Mietvertrag_Bürofläche_Zürich_Unterschrieben.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_OTHER,
+                                TRUST_ONBOARDING_OTHER,
                                 "something with UID"
                             ),
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Kooperationsvertrag_Partnerfirma_Gültig_ab_01-01-2026.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_OTHER,
+                                TRUST_ONBOARDING_OTHER,
                                 "something with UID"
                             ),
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Arbeitsvertrag_Max_Muster_Unterschrift_2025.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_OTHER,
+                                TRUST_ONBOARDING_OTHER,
                                 "something with UID"
                             ),
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Geheimhaltungsvereinbarung_NDA_KundeGHI_ProjektY.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_OTHER,
+                                TRUST_ONBOARDING_OTHER,
                                 "something with UID"
                             )
                         ),
@@ -409,7 +421,7 @@ public class DemoData {
                         List.of(
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Declaration of intent.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                TRUST_ONBOARDING_DECLARATION_OF_INTENT,
                                 "something else"
                             )
                         ),
@@ -447,7 +459,7 @@ public class DemoData {
                 "39f92e48-619e-4e92-8958-468ae138d8a3",
                 "p.keller@schleppende-logistik.local",
                 fromLanguages("Demo Kanton", "Demo Kanton", "Demo Canton", "Demo Cantone", "Demo Canton", "Demochaun"),
-                new DemoBusinessPartner.DemoAddress("Erfolgsstrasse 1", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoAddress("Erfolgsstrasse 1", "Demohausen", "1111", "CH"),
                 new DemoBusinessPartner.DemoContact(
                     "Sandra",
                     "Schmid",
@@ -487,7 +499,12 @@ public class DemoData {
                         List.of(
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Declaration of intent.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                "something"
+                            ),
+                            new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
+                                "vertrag-x.pdf",
+                                TRUST_ONBOARDING_OTHER,
                                 "something"
                             )
                         ),
@@ -527,7 +544,7 @@ public class DemoData {
                     "Demo Company",
                     "Demo Unternehmen"
                 ),
-                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 19", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 19", "Demohausen", "1111", "CH"),
                 new DemoBusinessPartner.DemoContact(
                     "Erika",
                     "Muster",
@@ -570,7 +587,7 @@ public class DemoData {
                     "Sluggish Logistics AG",
                     "S.L. AG"
                 ),
-                new DemoBusinessPartner.DemoAddress("Lagerstrasse 27", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoAddress("Lagerstrasse 27", "Demohausen", "1111", "CH"),
                 new DemoBusinessPartner.DemoContact(
                     "Peter",
                     "Keller",
@@ -598,8 +615,13 @@ public class DemoData {
                         List.of(
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Declaration of intent.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                TRUST_ONBOARDING_DECLARATION_OF_INTENT,
                                 "something overdue"
+                            ),
+                            new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
+                                "vertrag-x.pdf",
+                                TRUST_ONBOARDING_OTHER,
+                                "something"
                             )
                         ),
                         new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask(
@@ -639,13 +661,7 @@ public class DemoData {
                     "Malicious Movers GmbH",
                     "M. M. GmbH"
                 ),
-                new DemoBusinessPartner.DemoAddress(
-                    "Glitterallee 42",
-                    "Demohausen",
-                    "1111",
-                    "Steueroase",
-                    "Democanton"
-                ),
+                new DemoBusinessPartner.DemoAddress("Glitterallee 42", "Demohausen", "1111", "Steueroase"),
                 new DemoBusinessPartner.DemoContact(
                     "John",
                     "Doe",
@@ -666,7 +682,12 @@ public class DemoData {
                         List.of(
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Declaration of intent.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                "something"
+                            ),
+                            new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
+                                "vertrag-x.pdf",
+                                TRUST_ONBOARDING_OTHER,
                                 "something"
                             )
                         ),
@@ -685,7 +706,7 @@ public class DemoData {
                         List.of(
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Declaration of intent.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                TRUST_ONBOARDING_DECLARATION_OF_INTENT,
                                 "something"
                             )
                         ),
@@ -722,13 +743,7 @@ public class DemoData {
                     "More Info Demo GmbH (EN)",
                     "More Info Demo GmbH (RM)"
                 ),
-                new DemoBusinessPartner.DemoAddress(
-                    "Informationsstrasse 7",
-                    "Demohausen",
-                    "1111",
-                    "Schweiz",
-                    "Democanton"
-                ),
+                new DemoBusinessPartner.DemoAddress("Informationsstrasse 7", "Demohausen", "1111", "Schweiz"),
                 new DemoBusinessPartner.DemoContact(
                     "Doris",
                     "Default",
@@ -756,7 +771,7 @@ public class DemoData {
                         List.of(
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Declaration of intent.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                TRUST_ONBOARDING_DECLARATION_OF_INTENT,
                                 "something"
                             )
                         ),
@@ -798,7 +813,7 @@ public class DemoData {
                     "Expiring Verification AG (EN)",
                     "Ablaufende Verifizierung AG (RM)"
                 ),
-                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 21", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 21", "Demohausen", "1111", "CH"),
                 new DemoBusinessPartner.DemoContact(
                     "Erika",
                     "Muster",
@@ -834,7 +849,12 @@ public class DemoData {
                         List.of(
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Declaration of intent.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                "something"
+                            ),
+                            new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
+                                "vertrag-x.pdf",
+                                TRUST_ONBOARDING_OTHER,
                                 "something"
                             )
                         ),
@@ -880,7 +900,7 @@ public class DemoData {
                     "Rejected Re-Verification AG (EN)",
                     "Abgelehnte Re-Verifizierung AG (RM)"
                 ),
-                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 23", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 23", "Demohausen", "1111", "CH"),
                 new DemoBusinessPartner.DemoContact(
                     "Peter",
                     "Keller",
@@ -917,7 +937,12 @@ public class DemoData {
                         List.of(
                             new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
                                 "Declaration of intent.pdf",
-                                DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument.DemoTrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                "something"
+                            ),
+                            new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
+                                "vertrag-x.pdf",
+                                TRUST_ONBOARDING_OTHER,
                                 "something"
                             )
                         ),
@@ -962,7 +987,7 @@ public class DemoData {
                     "Succeeded Re-Verification AG (EN)",
                     "Erfolgreiche Re-Verifizierung AG (RM)"
                 ),
-                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 25", "Demohausen", "1111", "CH", "Democanton"),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 25", "Demohausen", "1111", "CH"),
                 new DemoBusinessPartner.DemoContact(
                     "Sandra",
                     "Schmid",
@@ -996,7 +1021,18 @@ public class DemoData {
                         UUID.fromString("11111111-2222-4333-8444-555566667103"),
                         DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionStatus.SUCCEEDED,
                         DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionType.RENEWAL,
-                        List.of(),
+                        List.of(
+                            new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
+                                "Declaration of intent.pdf",
+                                TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                "something"
+                            ),
+                            new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
+                                "vertrag-x.pdf",
+                                TRUST_ONBOARDING_OTHER,
+                                "something"
+                            )
+                        ),
                         new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask(
                             UUID.fromString("11111111-2222-4333-8444-555566667203"),
                             DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask.DemoTrustTaskStatus.ACCEPTED,
@@ -1172,7 +1208,7 @@ public class DemoData {
             }
         }
 
-        public record DemoAddress(String street, String city, String postalCode, String country, String region) {}
+        public record DemoAddress(String street, String city, String postalCode, String country) {}
 
         public record DemoSignatory(String firstName, String lastName, String phone, String email) {}
 

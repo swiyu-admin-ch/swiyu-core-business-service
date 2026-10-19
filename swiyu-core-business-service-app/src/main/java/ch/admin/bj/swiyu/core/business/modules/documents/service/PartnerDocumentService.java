@@ -3,6 +3,7 @@ package ch.admin.bj.swiyu.core.business.modules.documents.service;
 import static ch.admin.bj.swiyu.core.business.common.audit.AuditMapper.toAuditJson;
 import static ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocument.createTrustOnboardingSubissionPartnerDocument;
 import static ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentMapper.toPartnerDocumentDto;
+import static java.util.Collections.emptyList;
 
 import ch.admin.bj.swiyu.core.business.common.antivirus.AntivirusClient;
 import ch.admin.bj.swiyu.core.business.common.antivirus.AntivirusScanResult;
@@ -215,14 +216,14 @@ public class PartnerDocumentService {
     }
 
     @Transactional
-    public void copyTrustOnboardingSubmissionDocuments(
+    public List<PartnerDocumentDto> copyTrustOnboardingSubmissionDocuments(
         @NotNull UUID sourceSubmissionId,
         @NotNull UUID targetSubmissionId,
         @NotNull UUID partnerId
     ) {
         var sourceDocuments = partnerDocumentsRepository.findAllByTrustOnboardingSubmissionId(sourceSubmissionId);
         if (sourceDocuments.isEmpty()) {
-            return;
+            return emptyList();
         }
 
         for (var sourceDoc : sourceDocuments) {
@@ -267,6 +268,7 @@ public class PartnerDocumentService {
             );
             partnerDocumentsRepository.save(targetDoc);
         }
+        return sourceDocuments.stream().map(PartnerDocumentMapper::toPartnerDocumentDto).toList();
     }
 
     @Transactional

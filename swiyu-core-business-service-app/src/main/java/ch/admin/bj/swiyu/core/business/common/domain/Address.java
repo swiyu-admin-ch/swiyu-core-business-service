@@ -15,7 +15,6 @@ public class Address {
     private String city;
     private String postalCode;
     private String country;
-    private String region;
 
     public String getFullAddressOneLine() {
         var parts = new java.util.ArrayList<String>();

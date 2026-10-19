@@ -57,7 +57,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void succeeds_when_all_required_fields_present() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             "valid@example.org",
@@ -77,7 +77,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void succeeds_when_all_required_fields_present_gov() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             "valid@example.org",
@@ -97,7 +97,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void fails_when_requested_partner_type_gov_but_partner_not_gov() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             "valid@example.org",
@@ -117,7 +117,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     void fails_when_missing_field() {
         var s = trustOnboardingSubmissionEmpty();
         // entityEmail missing
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             null,
@@ -142,7 +142,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void fails_when_email_invalid_format() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             "not-an-email",
@@ -169,7 +169,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void fails_when_proof_of_possession_is_not_valid() {
         var s = createValidSubmission();
-        s.update(
+        s.updateForTypeRegistration(
             s.getEntityName(),
             s.getEntityAddress(),
             s.getEntityEmail(),
@@ -197,7 +197,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void fails_when_proof_of_possession_is_empty() {
         var s = createValidSubmission();
-        s.update(
+        s.updateForTypeRegistration(
             s.getEntityName(),
             s.getEntityAddress(),
             s.getEntityEmail(),
@@ -225,7 +225,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void succeeds_when_proof_of_possession_is_valid() {
         var s = createValidSubmission();
-        s.update(
+        s.updateForTypeRegistration(
             s.getEntityName(),
             s.getEntityAddress(),
             s.getEntityEmail(),
@@ -253,7 +253,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
         when(featuresProperties.getEidartfe1220ProofOfPossession()).thenReturn(false);
 
         var s = createValidSubmission();
-        s.update(
+        s.updateForTypeRegistration(
             s.getEntityName(),
             s.getEntityAddress(),
             s.getEntityEmail(),
@@ -274,7 +274,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void fails_when_signing_rule_missing() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             "valid@example.org",
@@ -299,7 +299,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void fails_when_signing_rule_signatory_count_mismatch() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             "valid@example.org",
@@ -324,7 +324,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void fails_when_signing_rule_not_null_for_individual() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             "valid@example.org",
@@ -349,7 +349,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void fails_when_signatories_not_empty_for_individual() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             "valid@example.org",
@@ -374,7 +374,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void succeeds_when_signing_rule_and_signatories_null_for_individual() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             "valid@example.org",
@@ -395,7 +395,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void fails_when_signatory_invalid() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             "valid@example.org",
@@ -420,7 +420,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void fails_when_signatory_phone_invalid_format() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             "valid@example.org",
@@ -445,7 +445,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void fails_when_signatory_email_invalid_format() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             "valid@example.org",
@@ -469,7 +469,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
 
     private TrustOnboardingSubmission createValidSubmission() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             "valid@example.org",
@@ -488,7 +488,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void fails_when_contact_phone_invalid_format() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityName(),
             new Address(),
             "valid@example.org",
@@ -513,7 +513,7 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
     @Test
     void fails_when_entity_name_default_language_value_is_blank() {
         var s = trustOnboardingSubmissionEmpty();
-        s.update(
+        s.updateForTypeRegistration(
             validEntityNameWithBlankDefault(),
             new Address(),
             "valid@example.org",

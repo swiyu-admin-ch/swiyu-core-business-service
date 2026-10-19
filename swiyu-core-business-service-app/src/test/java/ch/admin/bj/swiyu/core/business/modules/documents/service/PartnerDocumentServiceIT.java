@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.documents.service;
 
+import static ch.admin.bj.swiyu.core.business.test.PartnerDocumentTestData.multipartFile;
 import static ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTestData.trustOnboardingSubmission;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -90,14 +91,11 @@ class PartnerDocumentServiceIT {
     @Test
     void copyDocumentsLinksSourceFilesToTargetSubmission() {
         // Create a document on the source submission
-        var fileContent = "test document content".getBytes();
-        var multipartFile = new MockMultipartFile("doc.pdf", "doc.pdf", "application/pdf", fileContent);
-
         partnerDocumentService.createTrustOnboardingSubmissionDocument(
             partnerId,
             sourceSubmissionId,
             PartnerDocumentTypeDto.TRUST_ONBOARDING_OTHER,
-            multipartFile
+            multipartFile()
         );
 
         // Copy documents from source to target
@@ -115,7 +113,7 @@ class PartnerDocumentServiceIT {
 
         assertThat(targetDocs.getContent()).hasSize(1);
         assertThat(targetDocs.getContent().getFirst().type()).isEqualTo(PartnerDocumentTypeDto.TRUST_ONBOARDING_OTHER);
-        assertThat(targetDocs.getContent().getFirst().fileName()).isEqualTo("doc.pdf");
+        assertThat(targetDocs.getContent().getFirst().fileName()).isEqualTo("doi.pdf");
         assertThat(targetDocs.getContent().getFirst().trustOnboardingSubmissionId()).isEqualTo(targetSubmissionId);
         assertThat(targetDocs.getContent().getFirst().partnerId()).isEqualTo(partnerId);
 

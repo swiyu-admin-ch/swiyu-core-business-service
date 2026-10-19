@@ -57,14 +57,9 @@ ignore:
         reason: No fix available in ubi9 JRE base image yet
         expires: 2026-11-09T09:00:00.000Z
         created: 2026-07-01T12:25:16.970Z
-  SNYK-JAVA-ORGXERIALSNAPPY-19778376:
+  SNYK-JAVA-ORGGLASSFISHJAXB-20883142:
     - '*':
-        reason: No fix available yet
-        expires: 2026-11-09T09:00:00.000Z
-        created: 2026-07-01T12:25:16.970Z
-  SNYK-JAVA-ORGXERIALSNAPPY-19964087:
-    - '*':
-        reason: No fix available (snappy-java 1.1.10.8 is the latest release; vulnerable only in test scope via spring-kafka-test)
-        expires: 2027-09-22T09:00:00.000Z
-        created: 2026-09-22T15:13:34.000Z
+        reason: No fix published for CVE-2026-92877 (4.0.9 is the latest release); the service has no XML mapping files and no code that parses XML
+        expires: 2027-01-16T09:00:00.000Z
+        created: 2026-10-16T09:00:00.000Z
 patch:

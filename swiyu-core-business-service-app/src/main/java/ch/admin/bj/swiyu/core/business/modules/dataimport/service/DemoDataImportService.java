@@ -9,6 +9,7 @@ import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.DemoData;
 import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.MockMultipartFile;
+import ch.admin.bj.swiyu.core.business.modules.documents.api.PartnerDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocumentsRepository;
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntry;
@@ -38,6 +39,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.node.JsonNodeFactory;
 
 @SuppressWarnings({ "java:S1192", "java:S5803", "java:S1854" })
 @Service
@@ -144,13 +146,18 @@ public class DemoDataImportService {
                         DemoDataMapper.toTrustOnboardingSubmissionType(trustOnboarding.submissionType())
                     );
                     for (var demoDocument : trustOnboarding.documents()) {
-                        trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
-                            trustOnboarding.submissionId(),
-                            new TrustOnboardingSubmissionDocumentUploadRequestDto(
-                                DemoDataMapper.toTrustOnboardingSubmissionDocumentTypeDto(demoDocument.type()),
-                                new MockMultipartFile(demoDocument.fileName(), demoDocument.content())
-                            )
-                        );
+                        if (sub.getType() == TrustOnboardingSubmissionType.RENEWAL) {
+                            // not possible with build-in service method due to validation (RENEWAL do not allow upload)
+                            uploadPartnerDocument(demoDocument, sub);
+                        } else {
+                            trustOnboardingService.uploadTrustOnboardingSubmissionDocument(
+                                trustOnboarding.submissionId(),
+                                new TrustOnboardingSubmissionDocumentUploadRequestDto(
+                                    DemoDataMapper.toTrustOnboardingSubmissionDocumentTypeDto(demoDocument.type()),
+                                    new MockMultipartFile(demoDocument.fileName(), demoDocument.content())
+                                )
+                            );
+                        }
                     }
                     switch (trustOnboarding.status()) {
                         case UNSUBMITTED_TIMEOUT -> sub.markAsExpired();
@@ -298,5 +305,27 @@ public class DemoDataImportService {
                     )
                 )
             );
+    }
+
+    /**
+     * For certain scenarios it is not possible to use the build-in upload functionality due to validation.
+     */
+    private void uploadPartnerDocument(
+        DemoData.DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument demoDocument,
+        TrustOnboardingSubmission submission
+    ) {
+        var document = partnerDocumentService.createTrustOnboardingSubmissionDocument(
+            submission.getPartnerId(),
+            submission.getId(),
+            DemoDataMapper.toPartnerDocumentTypeDto(demoDocument.type()),
+            new MockMultipartFile(demoDocument.fileName(), demoDocument.content())
+        );
+
+        if (PartnerDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT.equals(document.type())) {
+            submission.updateDeclarationOfIntent(
+                new DeclarationOfIntent(document.id(), JsonNodeFactory.instance.objectNode())
+            );
+            trustOnboardingSubmissionRepository.save(submission);
+        }
     }
 }

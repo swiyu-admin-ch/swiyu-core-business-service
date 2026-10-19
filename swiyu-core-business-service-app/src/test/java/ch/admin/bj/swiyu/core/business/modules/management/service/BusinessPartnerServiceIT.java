@@ -217,7 +217,7 @@ class BusinessPartnerServiceIT {
         repos.commit();
 
         var newName = "New Name";
-        var newAddress = new Address("New Street", "New City", "1234", "CH", "Region");
+        var newAddress = new Address("New Street", "New City", "1234", "CH");
         var newEmail = "new@example.com";
         var newUid = "CHE-123.456.789";
         var newPhone = "+41 79 123 45 67";

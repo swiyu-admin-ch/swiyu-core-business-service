@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding;
 
+import static ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper.toAddressEntity;
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerType;
 import static ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentMapper.toTrustOnboardingSubmissionDocumentListItemDto;
 import static ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper.toAddress;
@@ -16,9 +17,9 @@ import ch.admin.bj.swiyu.core.business.common.domain.Language;
 import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.email.PendingReviewSubmission;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessDataIntegrityViolationException;
-import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
+import ch.admin.bj.swiyu.core.business.modules.documents.api.PartnerDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.documents.api.TrustOnboardingSubmissionDocumentListItemDto;
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
 import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerIdentityDto;
@@ -37,10 +38,8 @@ import java.io.ByteArrayOutputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockAssert;
@@ -60,7 +59,16 @@ import tools.jackson.databind.JsonNode;
 @AllArgsConstructor
 public class TrustOnboardingService {
 
-    private static final Duration RENEWAL_THRESHOLD = Duration.ofDays(365L * 3);
+    /**
+     * Time window before a partner's trust identity expiry during which profile changes are governed.
+     *
+     * <p>Set to 3 years. Within this window a {@code PROFILE_CHANGE_MANDATORY} submission is allowed
+     * (and a {@code PROFILE_CHANGE_VOLUNTARY} is rejected); outside this window the rule is inverted:
+     * voluntary changes are allowed and mandatory ones are rejected.
+     *
+     * @see #validateProfileChangeRespectsTrustExpiration(TrustOnboardingSubmissionTypeDto, BusinessPartnerIdentityDto)
+     */
+    private static final Duration PROFILE_CHANGE_THRESHOLD = Duration.ofDays(365L * 3);
 
     private final DomainEventPublisher domainEventPublisher;
     private final TrustOnboardingSubmissionRepository trustOnboardingSubmissionRepository;
@@ -93,11 +101,11 @@ public class TrustOnboardingService {
         UUID trustOnboardingSubmissionId,
         TrustOnboardingSubmissionDocumentUploadRequestDto request
     ) {
-        var trustOnboarding = trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(
+        var submission = trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(
             trustOnboardingSubmissionId
         );
 
-        var errors = trustOnboardingSubmissionDocumentValidator.validateDocument(trustOnboarding, request.file(), null);
+        var errors = trustOnboardingSubmissionDocumentValidator.validateDocument(submission, request.file(), null);
 
         if (errors.hasErrors()) {
             throw new ValidationException("TrustOnboardingSubmissionDocument has missing/invalid fields.", errors);
@@ -107,28 +115,24 @@ public class TrustOnboardingService {
         if (request.type() == TRUST_ONBOARDING_DECLARATION_OF_INTENT) {
             var result = declarationOfIntentValidator.validateDeclarationOfIntent(
                 request.file(),
-                trustOnboarding.getSigningRule()
+                submission.getSigningRule()
             );
             doiValidationFileReportAsJson = result.fileReport();
         }
 
         var document = partnerDocumentService.createTrustOnboardingSubmissionDocument(
-            trustOnboarding.getPartnerId(),
-            trustOnboarding.getId(),
-            TrustOnboardingMapper.toPartnerDocumentTypeDto(request.type()),
+            submission.getPartnerId(),
+            submission.getId(),
+            toPartnerDocumentTypeDto(request.type()),
             request.file()
         );
 
-        var submissionDocument = toTrustOnboardingSubmissionDocumentListItemDto(document, true);
-
         if (request.type() == TRUST_ONBOARDING_DECLARATION_OF_INTENT) {
-            trustOnboarding.updateDeclarationOfIntent(
-                new DeclarationOfIntent(document.id(), doiValidationFileReportAsJson)
-            );
-            trustOnboardingSubmissionRepository.saveAndFlush(trustOnboarding);
+            submission.updateDeclarationOfIntent(new DeclarationOfIntent(document.id(), doiValidationFileReportAsJson));
+            trustOnboardingSubmissionRepository.saveAndFlush(submission);
         }
 
-        return submissionDocument;
+        return toTrustOnboardingSubmissionDocumentListItemDto(document, true);
     }
 
     @Transactional(readOnly = true)
@@ -177,10 +181,10 @@ public class TrustOnboardingService {
     }
 
     @Transactional
-    public TrustOnboardingSubmissionDto createTrustOnboardingSubmission(TrustOnboardingSubmissionRequestDto dto) {
+    public TrustOnboardingSubmissionDto createTrustOnboardingSubmission(TrustOnboardingSubmissionRequestDto request) {
         // if partner already has an ongoing submission return it instead of creating a new one
         TrustOnboardingSubmission inProgressEntry = trustOnboardingSubmissionRepository.findByPartnerIdAndStatusIn(
-            dto.partnerId(),
+            request.partnerId(),
             List.of(
                 TrustOnboardingSubmissionStatus.SUBMITTED,
                 TrustOnboardingSubmissionStatus.UNSUBMITTED,
@@ -188,186 +192,25 @@ public class TrustOnboardingService {
                 TrustOnboardingSubmissionStatus.RESUBMITTED
             )
         );
+        var submissionType =
+            request.submissionType() != null ? request.submissionType() : TrustOnboardingSubmissionTypeDto.REGISTRATION;
+        validateIsExpectedSubmissionType(submissionType, inProgressEntry);
         if (inProgressEntry != null) {
+            // tech debt: the functionality should be split towards create and update, but therefore some EMC with portal UI is needed
+            log.info(
+                "Did not create TrustOnboardingSubmission for partner {} because there was already one in progress. Returning this one instead.",
+                request.partnerId()
+            );
             return toTrustOnboardingsSubmissionDto(inProgressEntry);
         }
 
-        var submissionType =
-            dto.submissionType() != null ? dto.submissionType() : TrustOnboardingSubmissionTypeDto.REGISTRATION;
-
-        // For PROFILE_CHANGE and RENEWAL, derive everything from verified partner data
-        if (
-            submissionType == TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_MANDATORY ||
-            submissionType == TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_VOLUNTARY ||
-            submissionType == TrustOnboardingSubmissionTypeDto.RENEWAL
-        ) {
-            return createProfileChangeOrRenewalSubmission(dto.partnerId(), submissionType);
+        TrustOnboardingSubmission submission;
+        if (submissionType.isProfileChangeOrRenewal()) {
+            submission = createProfileChangeOrRenewalSubmission(request, submissionType);
+        } else {
+            submission = createRegistrationSubmission(request);
         }
-
-        // REGISTRATION: use request data
-        String uid = null;
-        if (dto.registryIds() != null && dto.registryIds().containsKey("UID")) {
-            uid = dto.registryIds().get("UID");
-        }
-
-        TrustOnboardingSubmission trustOnboardingSubmission = trustOnboardingSubmissionRepository.save(
-            new TrustOnboardingSubmission(
-                UUID.randomUUID(),
-                dto.partnerId(),
-                dto.entityName(),
-                AddressMapper.toAddressEntity(dto.entityAddress()),
-                dto.entityEmail(),
-                toContactEntity(dto.contactPerson()),
-                uid,
-                true,
-                TrustOnboardingMapper.toProofOfPossession(dto.dids()),
-                toBusinessPartnerType(dto.requestedPartnerType()),
-                toSigningRule(dto.signingRule()),
-                toSignatories(dto.signatories())
-            )
-        );
-        return toTrustOnboardingsSubmissionDto(trustOnboardingSubmission);
-    }
-
-    /**
-     * Creates a PROFILE_CHANGE or RENEWAL submission derived entirely from the verified partner data.
-     * Disregards all request values except partnerId and submissionType.
-     *
-     * @param partnerId the partner ID
-     * @param submissionType must be PROFILE_CHANGE_MANDATORY, PROFILE_CHANGE_VOLUNTARY, or RENEWAL
-     * @return the created submission DTO
-     */
-    private TrustOnboardingSubmissionDto createProfileChangeOrRenewalSubmission(
-        UUID partnerId,
-        TrustOnboardingSubmissionTypeDto submissionType
-    ) {
-        var businessPartner = businessPartnerService.getBusinessPartner(partnerId);
-        var bpi = businessPartner.businessPartnerIdentity();
-
-        // Get the BusinessPartnerIdentity
-        if (bpi == null) {
-            throw new BusinessDataIntegrityViolationException("Partner has no BusinessPartnerIdentity.");
-        }
-
-        // Validate partner has ACTIVE BusinessPartnerIdentity (is trusted)
-        if (bpi.status() != BusinessPartnerIdentityStatusDto.ACTIVE) {
-            throw new BusinessDataIntegrityViolationException(
-                "Partner is not trusted (no ACTIVE BusinessPartnerIdentity)."
-            );
-        }
-
-        validateProfileChangeRule(submissionType, bpi);
-
-        // Fetch the latest submission to derive signingRule, signatories, and PoP nonces
-        var latest = trustOnboardingSubmissionRepository
-            .findAllByPartnerIdOrderByInitiatedAtAsc(partnerId)
-            .stream()
-            .reduce((a, b) -> b)
-            .orElseThrow(() -> new ResourceNotFoundException("No existing submission for partner."));
-
-        // Build ProofOfPossession from trustedIdentifier (List<String> of DIDs) with status VALID
-        // Preserve nonces from latest submission for DIDs that already existed
-        var pops = buildProofOfPossessions(bpi, latest);
-
-        // Correspondence language comes from contactPerson on BusinessEntity. It defaults to DE
-        // because the trust management service reads a missing language as EN_CH.
-        var contact = businessPartner.contact();
-        Contact contactPerson = null;
-        if (contact != null) {
-            var language = contact.correspondingLanguage();
-            contactPerson = Contact.builder()
-                .firstName(contact.firstName())
-                .lastName(contact.lastName())
-                .email(contact.email())
-                .phone(contact.phone())
-                .correspondingLanguage(language != null ? toLanguage(language) : Language.DE)
-                .build();
-        }
-
-        // Derive signingRule and signatories from latest submission
-        var signingRule = latest.getSigningRule();
-        var signatories = latest.getSignatories();
-
-        // Create the submission with type set in constructor via updateType before first save
-        var submission = new TrustOnboardingSubmission(
-            toTrustOnboardingSubmissionType(submissionType),
-            UUID.randomUUID(),
-            partnerId,
-            bpi.entityName(),
-            toAddress(businessPartner.address()),
-            contact != null ? contact.email() : null,
-            contactPerson,
-            bpi.uid(),
-            false, // isRegisteredInCommercialRegister not applicable for profile change/renewal
-            pops,
-            toBusinessPartnerType(businessPartner.type()),
-            signingRule,
-            signatories
-        );
-        var saved = trustOnboardingSubmissionRepository.saveAndFlush(submission);
-
-        // Copy documents from latest submission
-        partnerDocumentService.copyTrustOnboardingSubmissionDocuments(latest.getId(), saved.getId(), partnerId);
-
-        return toTrustOnboardingsSubmissionDto(saved);
-    }
-
-    private void validateProfileChangeRule(
-        TrustOnboardingSubmissionTypeDto submissionType,
-        BusinessPartnerIdentityDto bpi
-    ) {
-        if (
-            submissionType != TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_MANDATORY &&
-            submissionType != TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_VOLUNTARY
-        ) {
-            return;
-        }
-
-        var trustIdentityExpiry = bpi.validUntil();
-        if (trustIdentityExpiry == null) {
-            throw new BusinessDataIntegrityViolationException("Partner has no trust identity expiry date.");
-        }
-        var timeUntilExpiry = Duration.between(Instant.now(), trustIdentityExpiry);
-        var isWithinThreshold = timeUntilExpiry.compareTo(RENEWAL_THRESHOLD) <= 0;
-
-        if (submissionType == TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_MANDATORY && !isWithinThreshold) {
-            throw new BusinessDataIntegrityViolationException(
-                "Mandatory profile change only allowed within 3 years of trust identity expiry."
-            );
-        }
-        if (submissionType == TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_VOLUNTARY && isWithinThreshold) {
-            throw new BusinessDataIntegrityViolationException(
-                "Voluntary profile change only allowed outside 3 years of trust identity expiry."
-            );
-        }
-    }
-
-    /*
-     * Build ProofOfPossession from trustedIdentifier (List<String> of DIDs) with status VALID
-     * Preserve nonces from latest submission for DIDs that already existed
-     */
-    private List<ProofOfPossession> buildProofOfPossessions(
-        BusinessPartnerIdentityDto bpi,
-        TrustOnboardingSubmission latest
-    ) {
-        Map<String, String> existingNonces =
-            latest.getProofOfPossessions() == null
-                ? Map.of()
-                : latest
-                      .getProofOfPossessions()
-                      .stream()
-                      .collect(Collectors.toMap(ProofOfPossession::getDid, ProofOfPossession::getNonce, (a, b) -> a));
-        if (bpi.trustedIdentifier() == null) {
-            return List.of();
-        }
-        return bpi
-            .trustedIdentifier()
-            .stream()
-            .map(did -> {
-                String nonce = existingNonces.getOrDefault(did, UUID.randomUUID().toString());
-                return new ProofOfPossession(did, nonce).toValid();
-            })
-            .toList();
+        return toTrustOnboardingsSubmissionDto(submission);
     }
 
     @Transactional(readOnly = true)
@@ -387,83 +230,78 @@ public class TrustOnboardingService {
     @Transactional
     public TrustOnboardingSubmissionDto updateTrustOnboardingSubmission(
         UUID trustOnboardingSubmissionId,
-        TrustOnboardingSubmissionRequestDto dto
+        TrustOnboardingSubmissionRequestDto request
     ) {
-        var trustOnboardingSubmission = trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(
+        var submission = trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(
             trustOnboardingSubmissionId
         );
 
         // When the user starts making changes again after more information was requested,
         // the submission is moved back to UNSUBMITTED (see EID-6376).
         // RESUBMITTED is deliberately NOT included: it behaves like SUBMITTED (locked, no further changes).
-        var status = trustOnboardingSubmission.getStatus();
+        var status = submission.getStatus();
         if (status == TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED) {
-            trustOnboardingSubmission.markAsUnsubmitted();
+            submission.markAsUnsubmitted();
         }
 
         String uid = null;
-        if (dto.registryIds() != null && dto.registryIds().containsKey("UID")) {
-            uid = dto.registryIds().get("UID");
+        if (request.registryIds() != null && request.registryIds().containsKey("UID")) {
+            uid = request.registryIds().get("UID");
         }
-
-        // For RENEWAL and PROFILE_CHANGE submissions, restrict updatable fields
-        var type = trustOnboardingSubmission.getType();
-        var isRenewal = type == TrustOnboardingSubmissionType.RENEWAL;
-        var isProfileChange =
-            type == TrustOnboardingSubmissionType.PROFILE_CHANGE_MANDATORY ||
-            type == TrustOnboardingSubmissionType.PROFILE_CHANGE_VOLUNTARY;
-
-        // UID is always fixed for restricted types
-        if (isRenewal || isProfileChange) {
-            uid = trustOnboardingSubmission.getUid();
-        }
-
-        // For RENEWAL: entityName, signingRule, signatories, commercialRegister are also fixed
-        Map<String, String> entityName = isRenewal ? trustOnboardingSubmission.getEntityName() : dto.entityName();
-        SigningRule signingRule = isRenewal
-            ? trustOnboardingSubmission.getSigningRule()
-            : toSigningRule(dto.signingRule());
-        List<Signatory> signatories = isRenewal
-            ? trustOnboardingSubmission.getSignatories()
-            : toSignatories(dto.signatories());
-        Boolean commercialRegister = isRenewal
-            ? trustOnboardingSubmission.getIsRegisteredInCommercialRegister()
-            : Boolean.TRUE.equals(dto.isRegisteredInCommercialRegister());
 
         // Determine before update whether DOI-relevant fields are changing
-        boolean discardDoi = hasDoiRelevantChanges(trustOnboardingSubmission, dto, uid);
+        boolean discardDoi = hasDoiRelevantChanges(submission, request, uid);
 
-        var popList = trustOnboardingSubmission.getProofOfPossessions();
-        if (!proofOfPossessionValidator.isDidSelectionEqual(popList, dto.dids())) {
-            popList = TrustOnboardingMapper.toProofOfPossession(dto.dids());
+        var popList = submission.getProofOfPossessions();
+        if (!proofOfPossessionValidator.isDidSelectionEqual(popList, request.dids())) {
+            popList = TrustOnboardingMapper.toProofOfPossession(request.dids());
         }
 
-        trustOnboardingSubmission.update(
-            entityName,
-            AddressMapper.toAddressEntity(dto.entityAddress()),
-            dto.entityEmail(),
-            toContactEntity(dto.contactPerson()),
-            uid,
-            popList,
-            toBusinessPartnerType(dto.requestedPartnerType()),
-            signingRule,
-            signatories,
-            commercialRegister
-        );
+        switch (submission.getType()) {
+            case REGISTRATION -> submission.updateForTypeRegistration(
+                request.entityName(),
+                toAddressEntity(request.entityAddress()),
+                request.entityEmail(),
+                toContactEntity(request.contactPerson()),
+                uid,
+                popList,
+                toBusinessPartnerType(request.requestedPartnerType()),
+                toSigningRule(request.signingRule()),
+                toSignatories(request.signatories()),
+                Boolean.TRUE.equals(request.isRegisteredInCommercialRegister())
+            );
+            case PROFILE_CHANGE_MANDATORY, PROFILE_CHANGE_VOLUNTARY -> submission.updateForTypeProfileChange(
+                request.entityName(),
+                toAddressEntity(request.entityAddress()),
+                request.entityEmail(),
+                toContactEntity(request.contactPerson()),
+                popList,
+                toBusinessPartnerType(request.requestedPartnerType()),
+                toSigningRule(request.signingRule()),
+                toSignatories(request.signatories()),
+                Boolean.TRUE.equals(request.isRegisteredInCommercialRegister())
+            );
+            case RENEWAL -> submission.updateForTypeRenewal(
+                toAddressEntity(request.entityAddress()),
+                request.entityEmail(),
+                toContactEntity(request.contactPerson()),
+                popList
+            );
+        }
 
         // If DOI-relevant fields changed, the signed DOI is no longer valid and must be deleted.
         // Capture the ID before nulling the reference — we need it for the S3 delete after flush.
         UUID doiDocumentIdToDelete = null;
         if (discardDoi) {
-            var doi = trustOnboardingSubmission.getDeclarationOfIntent();
+            var doi = submission.getDeclarationOfIntent();
             if (doi != null) {
                 doiDocumentIdToDelete = doi.getFullySignedDocumentId();
-                trustOnboardingSubmission.updateDeclarationOfIntent(null);
+                submission.removeDeclarationOfIntent(doiDocumentIdToDelete);
             }
         }
 
         // Flush first: if this throws (e.g. OptimisticLockException), S3 is still untouched.
-        var result = trustOnboardingSubmissionRepository.saveAndFlush(trustOnboardingSubmission);
+        var result = trustOnboardingSubmissionRepository.saveAndFlush(submission);
 
         // Delete from S3+DB only after the flush succeeds.
         if (doiDocumentIdToDelete != null) {
@@ -473,58 +311,25 @@ public class TrustOnboardingService {
         return toTrustOnboardingsSubmissionDto(result);
     }
 
-    /**
-     * Returns true if any field that is reflected in the Declaration of Intent has changed.
-     * Affected fields: UID, organisation name, address, DIDs (proof of possessions), signing rule, signatories.
-     */
-    private boolean hasDoiRelevantChanges(
-        TrustOnboardingSubmission current,
-        TrustOnboardingSubmissionRequestDto dto,
-        String newUid
-    ) {
-        return (
-            !Objects.equals(current.getUid(), newUid) ||
-            !Objects.equals(current.getEntityName(), dto.entityName()) ||
-            !Objects.equals(AddressMapper.toAddressDto(current.getEntityAddress()), dto.entityAddress()) ||
-            !proofOfPossessionValidator.isDidSelectionEqual(current.getProofOfPossessions(), dto.dids()) ||
-            !Objects.equals(current.getSigningRule(), toSigningRule(dto.signingRule())) ||
-            !Objects.equals(current.getSignatories(), toSignatories(dto.signatories()))
-        );
-    }
-
     @Transactional
     public TrustOnboardingSubmissionDto submitProofOfPossessions(UUID partnerId, List<String> rawProofOfPossessions) {
-        var trustOnboardingSubmission =
-            trustOnboardingSubmissionDomainService.getUnsubmittedTrustOnboardingSubmissionByPartner(partnerId);
+        var submission = trustOnboardingSubmissionDomainService.getUnsubmittedTrustOnboardingSubmissionByPartner(
+            partnerId
+        );
 
         var errors = proofOfPossessionValidator.validateProofOfPossessionSubmissions(
             rawProofOfPossessions,
-            trustOnboardingSubmission.getProofOfPossessions()
+            submission.getProofOfPossessions()
         );
 
         if (errors.hasErrors()) {
             throw new ValidationException("Provided proof of possessions are not valid", errors);
         }
 
-        var validPops = trustOnboardingSubmission
-            .getProofOfPossessions()
-            .stream()
-            .map(ProofOfPossession::toValid)
-            .toList();
+        var validPops = submission.getProofOfPossessions().stream().map(ProofOfPossession::toValid).toList();
 
-        trustOnboardingSubmission.update(
-            trustOnboardingSubmission.getEntityName(),
-            trustOnboardingSubmission.getEntityAddress(),
-            trustOnboardingSubmission.getEntityEmail(),
-            trustOnboardingSubmission.getContactPerson(),
-            trustOnboardingSubmission.getUid(),
-            validPops,
-            trustOnboardingSubmission.getRequestedPartnerType(),
-            trustOnboardingSubmission.getSigningRule(),
-            trustOnboardingSubmission.getSignatories(),
-            trustOnboardingSubmission.getIsRegisteredInCommercialRegister()
-        );
-        return toTrustOnboardingsSubmissionDto(trustOnboardingSubmission);
+        submission.submitProofOfPossessions(validPops);
+        return toTrustOnboardingsSubmissionDto(submission);
     }
 
     @Transactional(readOnly = true)
@@ -630,6 +435,240 @@ public class TrustOnboardingService {
         updateBusinessPartnerWithSubmissionDetails(trustOnboardingSubmission);
 
         publishSubmissionOutcomeEmail(trustOnboardingSubmission, Outcome.SUCCEEDED);
+    }
+
+    private void validateIsExpectedSubmissionType(
+        TrustOnboardingSubmissionTypeDto expectedSubmissionType,
+        TrustOnboardingSubmission submission
+    ) {
+        if (submission == null) {
+            return;
+        }
+        if (!toTrustOnboardingSubmissionType(expectedSubmissionType).equals(submission.getType())) {
+            var msg =
+                "Can't create submission of type '%s', since there is already a submission in progress with type '%s'.".formatted(
+                    expectedSubmissionType,
+                    submission.getType()
+                );
+            log.debug(msg);
+            throw new IllegalArgumentException(msg);
+        }
+    }
+
+    private TrustOnboardingSubmission createRegistrationSubmission(TrustOnboardingSubmissionRequestDto request) {
+        TrustOnboardingSubmission submission;
+        String uid = null;
+        if (request.registryIds() != null && request.registryIds().containsKey("UID")) {
+            uid = request.registryIds().get("UID");
+        }
+        submission = trustOnboardingSubmissionRepository.save(
+            new TrustOnboardingSubmission(
+                UUID.randomUUID(),
+                request.partnerId(),
+                request.entityName(),
+                toAddressEntity(request.entityAddress()),
+                request.entityEmail(),
+                toContactEntity(request.contactPerson()),
+                uid,
+                true,
+                toProofOfPossession(request.dids()),
+                toBusinessPartnerType(request.requestedPartnerType()),
+                toSigningRule(request.signingRule()),
+                toSignatories(request.signatories())
+            )
+        );
+        return submission;
+    }
+
+    /**
+     * Creates a PROFILE_CHANGE or RENEWAL submission derived entirely from the verified partner data.
+     * Disregards all request values except partnerId and submissionType.
+     *
+     * @param request the request with partnerId and other params required to create a submission
+     * @param submissionType must be PROFILE_CHANGE_MANDATORY, PROFILE_CHANGE_VOLUNTARY, or RENEWAL
+     * @return the created submission DTO
+     */
+    private TrustOnboardingSubmission createProfileChangeOrRenewalSubmission(
+        TrustOnboardingSubmissionRequestDto request,
+        TrustOnboardingSubmissionTypeDto submissionType
+    ) {
+        var businessPartner = businessPartnerService.getBusinessPartner(request.partnerId());
+        var bpi = businessPartner.businessPartnerIdentity();
+
+        // Get the BusinessPartnerIdentity
+        if (bpi == null) {
+            throw new BusinessDataIntegrityViolationException("Partner has no BusinessPartnerIdentity.");
+        }
+
+        // Validate partner has ACTIVE BusinessPartnerIdentity (is trusted)
+        if (bpi.status() != BusinessPartnerIdentityStatusDto.ACTIVE) {
+            throw new BusinessDataIntegrityViolationException(
+                "Partner is not trusted (no ACTIVE BusinessPartnerIdentity)."
+            );
+        }
+
+        validateProfileChangeRespectsTrustExpiration(submissionType, bpi);
+
+        // Fetch the latest SUCCEEDED submission to derive signingRule, signatories
+        var latest = trustOnboardingSubmissionRepository
+            .findLatestSucceededByPartnerId(request.partnerId())
+            .orElseThrow(() ->
+                new BusinessDataIntegrityViolationException(
+                    "Failed to create a submission of type %s because no previous succeeded submission was found".formatted(
+                        submissionType
+                    )
+                )
+            );
+
+        var pops = toProofOfPossession(request.dids());
+        if (submissionType.isRenewal()) {
+            // when doing a renewal, one can not select the dids. all dids that are currently trusted must
+            // be revalidated by the user
+            pops = createProofOfPossessionsFromAlreadyTrustedDids(bpi);
+        }
+
+        // Correspondence language comes from contactPerson on BusinessEntity. It defaults to DE
+        // because the trust management service reads a missing language as EN_CH.
+        var contact = businessPartner.contact();
+        Contact contactPerson = null;
+        if (contact != null) {
+            var language = contact.correspondingLanguage();
+            contactPerson = Contact.builder()
+                .firstName(contact.firstName())
+                .lastName(contact.lastName())
+                .email(contact.email())
+                .phone(contact.phone())
+                .correspondingLanguage(language != null ? toLanguage(language) : Language.DE)
+                .build();
+        }
+
+        // Derive signingRule and signatories from latest submission
+        var signingRule = latest.getSigningRule();
+        var signatories = latest.getSignatories();
+
+        // Create the submission with type set in constructor via updateType before first save
+        var submission = new TrustOnboardingSubmission(
+            toTrustOnboardingSubmissionType(submissionType),
+            UUID.randomUUID(),
+            request.partnerId(),
+            bpi.entityName(),
+            toAddress(businessPartner.address()),
+            contact != null ? contact.email() : null,
+            contactPerson,
+            bpi.uid(),
+            false, // isRegisteredInCommercialRegister not applicable for profile change/renewal
+            pops,
+            toBusinessPartnerType(businessPartner.type()),
+            signingRule,
+            signatories
+        );
+        submission = trustOnboardingSubmissionRepository.saveAndFlush(submission);
+
+        if (submission.isRenewal()) {
+            copyDocumentsAndDoiStateFromLatestSubmission(submission, latest, request.partnerId());
+        }
+        return submission;
+    }
+
+    /**
+     * Copies the signed Declaration of Intent from the latest submission onto the given RENEWAL submission.
+     * In the renewal flow these documents will be submitted again.
+     *
+     * @throws BusinessDataIntegrityViolationException if the previous submission has no Declaration of Intent (it then could
+     *                               never have been submitted) or if the copied DOI document is missing.
+     */
+    private void copyDocumentsAndDoiStateFromLatestSubmission(
+        TrustOnboardingSubmission submission,
+        TrustOnboardingSubmission latest,
+        UUID partnerId
+    ) {
+        if (latest.getDeclarationOfIntent() == null) {
+            throw new BusinessDataIntegrityViolationException(
+                "Can not create TrustOnboardingSubmission of type Renewal, because the previous Submission has no Declaration of Intent"
+            );
+        }
+        var copiedDocuments = partnerDocumentService.copyTrustOnboardingSubmissionDocuments(
+            latest.getId(),
+            submission.getId(),
+            partnerId
+        );
+        var copiedDoiDocument = copiedDocuments
+            .stream()
+            .filter(doc -> doc.type() == PartnerDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT)
+            .findFirst()
+            .orElseThrow(() ->
+                new BusinessDataIntegrityViolationException(
+                    "Can not create TrustOnboardingSubmission of type Renewal, because the DOI document is missing in previous submission"
+                )
+            );
+        submission.updateDeclarationOfIntent(
+            new DeclarationOfIntent(copiedDoiDocument.id(), latest.getDeclarationOfIntent().getValidationReport())
+        );
+        trustOnboardingSubmissionRepository.save(submission);
+    }
+
+    private void validateProfileChangeRespectsTrustExpiration(
+        TrustOnboardingSubmissionTypeDto submissionType,
+        BusinessPartnerIdentityDto bpi
+    ) {
+        if (
+            submissionType != TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_MANDATORY &&
+            submissionType != TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_VOLUNTARY
+        ) {
+            return;
+        }
+
+        var trustIdentityExpiry = bpi.validUntil();
+        if (trustIdentityExpiry == null) {
+            throw new BusinessDataIntegrityViolationException("Partner has no trust identity expiry date.");
+        }
+        var timeUntilExpiry = Duration.between(Instant.now(), trustIdentityExpiry);
+        var isWithinThreshold = timeUntilExpiry.compareTo(PROFILE_CHANGE_THRESHOLD) <= 0;
+
+        if (submissionType == TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_MANDATORY && !isWithinThreshold) {
+            throw new BusinessDataIntegrityViolationException(
+                "Mandatory profile change only allowed within 3 years of trust identity expiry."
+            );
+        }
+        if (submissionType == TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_VOLUNTARY && isWithinThreshold) {
+            throw new BusinessDataIntegrityViolationException(
+                "Voluntary profile change only allowed outside 3 years of trust identity expiry."
+            );
+        }
+    }
+
+    /**
+     * Build ProofOfPossession from trustedIdentifier (List<String> of DIDs) with status NOT_SUPPLIED. Users need
+     * to re-do the proof-of-possession.
+     */
+    private List<ProofOfPossession> createProofOfPossessionsFromAlreadyTrustedDids(BusinessPartnerIdentityDto bpi) {
+        if (bpi.trustedIdentifier() == null) {
+            return List.of();
+        }
+        return bpi
+            .trustedIdentifier()
+            .stream()
+            .map(did -> new ProofOfPossession(did, UUID.randomUUID().toString()).toNotSupplied())
+            .toList();
+    }
+
+    /**
+     * Returns true if any field that is reflected in the Declaration of Intent has changed.
+     * Affected fields: UID, organisation name, address, DIDs (proof of possessions), signing rule, signatories.
+     */
+    private boolean hasDoiRelevantChanges(
+        TrustOnboardingSubmission current,
+        TrustOnboardingSubmissionRequestDto dto,
+        String newUid
+    ) {
+        return (
+            !Objects.equals(current.getUid(), newUid) ||
+            !Objects.equals(current.getEntityName(), dto.entityName()) ||
+            !Objects.equals(AddressMapper.toAddressDto(current.getEntityAddress()), dto.entityAddress()) ||
+            !proofOfPossessionValidator.isDidSelectionEqual(current.getProofOfPossessions(), dto.dids()) ||
+            !Objects.equals(current.getSigningRule(), toSigningRule(dto.signingRule())) ||
+            !Objects.equals(current.getSignatories(), toSignatories(dto.signatories()))
+        );
     }
 
     private void updateBusinessPartnerWithSubmissionDetails(TrustOnboardingSubmission trustOnboardingSubmission) {

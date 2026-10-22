@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding;
 
+import static ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper.toAddressDto;
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper.toAddressEntity;
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerType;
 import static ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentMapper.toTrustOnboardingSubmissionDocumentListItemDto;
@@ -18,7 +19,6 @@ import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.email.PendingReviewSubmission;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessDataIntegrityViolationException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
-import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
 import ch.admin.bj.swiyu.core.business.modules.documents.api.PartnerDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.documents.api.TrustOnboardingSubmissionDocumentListItemDto;
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
@@ -37,6 +37,7 @@ import jakarta.persistence.OptimisticLockException;
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -50,8 +51,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.BeanPropertyBindingResult;
-import org.springframework.validation.Errors;
 import tools.jackson.databind.JsonNode;
 
 @Slf4j
@@ -105,11 +104,7 @@ public class TrustOnboardingService {
             trustOnboardingSubmissionId
         );
 
-        var errors = trustOnboardingSubmissionDocumentValidator.validateDocument(submission, request.file(), null);
-
-        if (errors.hasErrors()) {
-            throw new ValidationException("TrustOnboardingSubmissionDocument has missing/invalid fields.", errors);
-        }
+        trustOnboardingSubmissionDocumentValidator.validateCanUpload(submission, request.file());
 
         JsonNode doiValidationFileReportAsJson = null;
         if (request.type() == TRUST_ONBOARDING_DECLARATION_OF_INTENT) {
@@ -156,16 +151,7 @@ public class TrustOnboardingService {
         var submission = trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(
             trustOnboardingSubmissionId
         );
-        if (submission.getType() == TrustOnboardingSubmissionType.RENEWAL) {
-            throw new ValidationException(
-                "Documents cannot be deleted from a RENEWAL submission.",
-                new BeanPropertyBindingResult(submission, "trustOnboardingSubmission")
-            );
-        }
-        var errors = trustOnboardingSubmissionValidator.validateTrustOnboardingSubmissionCanBeEdited(submission, null);
-        if (errors.hasErrors()) {
-            throw new ValidationException("Submission cannot be edited.", errors);
-        }
+        trustOnboardingSubmissionValidator.validateCanDelete(submission);
         if (!partnerDocumentService.isDocumentBelongingToSubmission(documentId, trustOnboardingSubmissionId)) {
             throw new AuthorizationDeniedException(
                 "Document '%s' does not belong to trust onboarding submission '%s'".formatted(
@@ -245,7 +231,7 @@ public class TrustOnboardingService {
         }
 
         String uid = null;
-        if (request.registryIds() != null && request.registryIds().containsKey("UID")) {
+        if (request.hasUid()) {
             uid = request.registryIds().get("UID");
         }
 
@@ -293,11 +279,7 @@ public class TrustOnboardingService {
         // Capture the ID before nulling the reference — we need it for the S3 delete after flush.
         UUID doiDocumentIdToDelete = null;
         if (discardDoi) {
-            var doi = submission.getDeclarationOfIntent();
-            if (doi != null) {
-                doiDocumentIdToDelete = doi.getFullySignedDocumentId();
-                submission.removeDeclarationOfIntent(doiDocumentIdToDelete);
-            }
+            doiDocumentIdToDelete = discardDeclarationOfIntend(submission, doiDocumentIdToDelete);
         }
 
         // Flush first: if this throws (e.g. OptimisticLockException), S3 is still untouched.
@@ -358,46 +340,35 @@ public class TrustOnboardingService {
     }
 
     @Transactional
-    public void submit(UUID trustOnboardingSubmissionId, TrustOnboardingSubmitRequestDto requestDto) {
-        var trustOnboardingSubmission = trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(
+    public void submit(UUID trustOnboardingSubmissionId, TrustOnboardingSubmitRequestDto request) {
+        var submission = trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(
             trustOnboardingSubmissionId
         );
 
-        if (!trustOnboardingSubmission.getVersion().equals(requestDto.getVersion())) {
+        if (!submission.getVersion().equals(request.getVersion())) {
             throw new OptimisticLockException(
-                "Version mismatch " + trustOnboardingSubmission.getVersion() + " != " + requestDto.getVersion()
+                "Version mismatch " + submission.getVersion() + " != " + request.getVersion()
             );
         }
 
-        var businessPartnerType = businessPartnerService.getBusinessPartnerType(
-            trustOnboardingSubmission.getPartnerId()
-        );
+        var businessPartnerType = businessPartnerService.getBusinessPartnerType(submission.getPartnerId());
 
-        Errors errors = validator.validate(trustOnboardingSubmission, businessPartnerType);
+        validator.validateCanSubmit(submission, businessPartnerType);
 
-        if (errors.hasErrors()) {
-            throw new ValidationException("Submission has missing/invalid fields.", errors);
-        }
-
-        trustOnboardingSubmission.markAsSubmitted();
-        trustOnboardingSubmission = trustOnboardingSubmissionRepository.saveAndFlush(trustOnboardingSubmission);
-        var doiS3Keys = partnerDocumentService.getAllStorageKeysByTrustOnboardingSubmissionId(
-            trustOnboardingSubmission.getId()
-        );
+        submission.markAsSubmitted();
+        submission = trustOnboardingSubmissionRepository.saveAndFlush(submission);
+        var doiS3Keys = partnerDocumentService.getAllStorageKeysByTrustOnboardingSubmissionId(submission.getId());
         auditPublisher.trustOnboardingSubmitted(
-            trustOnboardingSubmission.getId().toString(),
-            String.valueOf(trustOnboardingSubmission.getVersion()),
-            trustOnboardingSubmission.getPartnerId().toString(),
-            AuditMapper.toAuditJson(trustOnboardingSubmission),
+            submission.getId().toString(),
+            String.valueOf(submission.getVersion()),
+            submission.getPartnerId().toString(),
+            AuditMapper.toAuditJson(submission),
             doiS3Keys
         );
         domainEventPublisher.publishTiTrustOnboardingSubmissionAcceptedEvent(
-            EventMapper.mapToTiTrustOnboardingSubmissionAcceptedEvent(
-                trustOnboardingSubmission.getId(),
-                trustOnboardingSubmission.getPartnerId()
-            )
+            EventMapper.mapToTiTrustOnboardingSubmissionAcceptedEvent(submission.getId(), submission.getPartnerId())
         );
-        var partnerId = trustOnboardingSubmission.getPartnerId();
+        var partnerId = submission.getPartnerId();
         emailCommandPublisher.submissionAccepted(partnerId);
     }
 
@@ -435,6 +406,15 @@ public class TrustOnboardingService {
         updateBusinessPartnerWithSubmissionDetails(trustOnboardingSubmission);
 
         publishSubmissionOutcomeEmail(trustOnboardingSubmission, Outcome.SUCCEEDED);
+    }
+
+    private static UUID discardDeclarationOfIntend(TrustOnboardingSubmission submission, UUID doiDocumentIdToDelete) {
+        var doi = submission.getDeclarationOfIntent();
+        if (doi != null) {
+            doiDocumentIdToDelete = doi.getFullySignedDocumentId();
+            submission.removeDeclarationOfIntent(doiDocumentIdToDelete);
+        }
+        return doiDocumentIdToDelete;
     }
 
     private void validateIsExpectedSubmissionType(
@@ -521,9 +501,8 @@ public class TrustOnboardingService {
             );
 
         var pops = toProofOfPossession(request.dids());
-        if (submissionType.isRenewal()) {
-            // when doing a renewal, one can not select the dids. all dids that are currently trusted must
-            // be revalidated by the user
+        if (submissionType.isProfileChangeOrRenewal()) {
+            // on any renewal or profile change -> the selected dids are the already trusted dids
             pops = createProofOfPossessionsFromAlreadyTrustedDids(bpi);
         }
 
@@ -655,20 +634,51 @@ public class TrustOnboardingService {
     /**
      * Returns true if any field that is reflected in the Declaration of Intent has changed.
      * Affected fields: UID, organisation name, address, DIDs (proof of possessions), signing rule, signatories.
+     *
+     * <p>Internally collects the keys of all changed fields into a list, which is logged for traceability.
+     * If the list is empty no DOI-relevant field changed, so {@code false} is returned.
      */
     private boolean hasDoiRelevantChanges(
-        TrustOnboardingSubmission current,
-        TrustOnboardingSubmissionRequestDto dto,
+        TrustOnboardingSubmission submission,
+        TrustOnboardingSubmissionRequestDto request,
         String newUid
     ) {
-        return (
-            !Objects.equals(current.getUid(), newUid) ||
-            !Objects.equals(current.getEntityName(), dto.entityName()) ||
-            !Objects.equals(AddressMapper.toAddressDto(current.getEntityAddress()), dto.entityAddress()) ||
-            !proofOfPossessionValidator.isDidSelectionEqual(current.getProofOfPossessions(), dto.dids()) ||
-            !Objects.equals(current.getSigningRule(), toSigningRule(dto.signingRule())) ||
-            !Objects.equals(current.getSignatories(), toSignatories(dto.signatories()))
-        );
+        var changedFields = new ArrayList<String>();
+
+        if (!Objects.equals(submission.getUid(), newUid)) {
+            changedFields.add("uid");
+        }
+        if (!Objects.equals(submission.getEntityName(), request.entityName())) {
+            changedFields.add("entityName");
+        }
+        // edge case renewal: address can be changed when it is a RENEWAL submission
+        if (
+            !submission.isRenewal() &&
+            !Objects.equals(toAddressDto(submission.getEntityAddress()), request.entityAddress())
+        ) {
+            changedFields.add("entityAddress");
+        }
+        if (!proofOfPossessionValidator.isDidSelectionEqual(submission.getProofOfPossessions(), request.dids())) {
+            changedFields.add("dids");
+        }
+        if (!Objects.equals(submission.getSigningRule(), toSigningRule(request.signingRule()))) {
+            changedFields.add("signingRule");
+        }
+        if (!Objects.equals(submission.getSignatories(), toSignatories(request.signatories()))) {
+            changedFields.add("signatories");
+        }
+        if (changedFields.isEmpty()) {
+            return false;
+        }
+        log.debug("DOI-relevant fields changed for submission {}: {}", submission.getId(), changedFields);
+        if (submission.isRenewal()) {
+            log.error(
+                "Relevant fields changed ({}) of the submission {} which is in type RENEWAL. This should not happen",
+                changedFields,
+                submission.getId()
+            );
+        }
+        return true;
     }
 
     private void updateBusinessPartnerWithSubmissionDetails(TrustOnboardingSubmission trustOnboardingSubmission) {

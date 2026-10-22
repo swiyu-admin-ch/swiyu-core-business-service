@@ -1,11 +1,13 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation;
 
+import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.VirusDetectedException;
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentValidatorErrorCodeDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionLimitProperties;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionType;
+import com.google.common.annotations.VisibleForTesting;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +26,15 @@ public class TrustOnboardingSubmissionDocumentValidator {
     private final PartnerDocumentService partnerDocumentService;
     private final TrustOnboardingSubmissionValidator trustOnboardingSubmissionValidator;
 
-    public Errors validateDocument(
+    public void validateCanUpload(TrustOnboardingSubmission submission, MultipartFile file) {
+        var errors = validateCanUpload(submission, file, null);
+        if (errors.hasErrors()) {
+            throw new ValidationException("TrustOnboardingSubmissionDocument has missing/invalid fields.", errors);
+        }
+    }
+
+    @VisibleForTesting
+    public Errors validateCanUpload(
         TrustOnboardingSubmission trustOnboardingSubmission,
         MultipartFile file,
         @Nullable Errors errors

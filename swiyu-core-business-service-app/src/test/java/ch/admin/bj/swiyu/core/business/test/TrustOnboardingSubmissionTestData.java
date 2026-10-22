@@ -133,6 +133,18 @@ public class TrustOnboardingSubmissionTestData {
         return trustOnboardingSubmission(id, partnerId, TrustOnboardingSubmissionStatus.UNSUBMITTED, Instant.now());
     }
 
+    public static TrustOnboardingSubmission trustOnboardingSubmissionOfTypeRenewalWithDoi() {
+        // For a RENEWAL submission the entity address may be changed without invalidating the signed DOI.
+        var submission = trustOnboardingSubmission(
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            TrustOnboardingSubmissionType.RENEWAL
+        );
+        var doiDocumentId2 = UUID.randomUUID();
+        submission.updateDeclarationOfIntent(new DeclarationOfIntent(doiDocumentId2, null));
+        return submission;
+    }
+
     public static TrustOnboardingSubmission trustOnboardingSubmission(
         UUID id,
         UUID partnerId,

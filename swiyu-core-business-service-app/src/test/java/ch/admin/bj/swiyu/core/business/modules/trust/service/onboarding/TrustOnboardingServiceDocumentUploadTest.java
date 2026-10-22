@@ -1,38 +1,39 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding;
 
+import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerTypeDto;
 import static ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocument.createTrustOnboardingSubissionPartnerDocument;
 import static ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentMapper.toPartnerDocumentDto;
+import static ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.TrustOnboardingMapper.*;
 import static ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTestData.*;
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.util.CollectionUtils.isEmpty;
 
+import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.modules.documents.api.PartnerDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocumentType;
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
-import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.DeclarationOfIntentValidationResult;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentUploadRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionRequestDto;
-import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionDoiValidationProperties;
-import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionLimitProperties;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
-import ch.admin.bj.swiyu.core.business.modules.trust.domain.publisher.DomainEventPublisher;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.DeclarationOfIntentValidator;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.ProofOfPossessionValidator;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.TrustOnboardingSubmissionDocumentValidator;
-import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.TrustOnboardingSubmissionOnSubmitValidator;
-import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.TrustOnboardingSubmissionValidator;
-import ch.admin.suis.client.core.service.IValidationServiceClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,40 +52,16 @@ import tools.jackson.databind.node.JsonNodeFactory;
 class TrustOnboardingServiceDocumentUploadTest {
 
     @Mock
-    private DomainEventPublisher domainEventPublisher;
-
-    @Mock
     private TrustOnboardingSubmissionRepository trustOnboardingSubmissionRepository;
 
     @Mock
     private TrustOnboardingSubmissionDomainService trustOnboardingSubmissionDomainService;
 
     @Mock
-    private BusinessPartnerService businessPartnerService;
-
-    @Mock
-    private TrustOnboardingSubmissionOnSubmitValidator validator;
-
-    @Mock
     private ProofOfPossessionValidator proofOfPossessionValidator;
 
     @Mock
     private PartnerDocumentService partnerDocumentService;
-
-    @Mock
-    private TrustDeclarationOfIntentPdfService trustDeclarationOfIntentPdfService;
-
-    @Mock
-    private TrustOnboardingSubmissionValidator trustOnboardingSubmissionValidator;
-
-    @Mock
-    private TrustOnboardingSubmissionLimitProperties limitProperties;
-
-    @Mock
-    private TrustOnboardingSubmissionDoiValidationProperties doiValidationProperties;
-
-    @Mock
-    private IValidationServiceClient validationServiceClient;
 
     @Mock
     private DeclarationOfIntentValidator declarationOfIntentValidator;
@@ -97,10 +74,8 @@ class TrustOnboardingServiceDocumentUploadTest {
 
     @BeforeEach
     void setUp() {
-        // Initialize the mock validator to return empty errors by default
-        lenient()
-            .when(trustOnboardingSubmissionDocumentValidator.validateDocument(any(), any(), any()))
-            .thenReturn(new BeanPropertyBindingResult(new Object(), "file"));
+        // The service calls the void 2-arg validator overload, so default it to no-op.
+        lenient().doNothing().when(trustOnboardingSubmissionDocumentValidator).validateCanUpload(any(), any());
     }
 
     @Test
@@ -116,7 +91,6 @@ class TrustOnboardingServiceDocumentUploadTest {
             .type(TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT)
             .file(file)
             .build();
-        var errors = new BeanPropertyBindingResult(file, "file");
         var document = toPartnerDocumentDto(
             createTrustOnboardingSubissionPartnerDocument(
                 UUID.randomUUID(),
@@ -135,7 +109,7 @@ class TrustOnboardingServiceDocumentUploadTest {
         when(trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(submission.getId())).thenReturn(
             submission
         );
-        when(trustOnboardingSubmissionDocumentValidator.validateDocument(submission, file, null)).thenReturn(errors);
+        doNothing().when(trustOnboardingSubmissionDocumentValidator).validateCanUpload(submission, file);
         when(declarationOfIntentValidator.validateDeclarationOfIntent(file, submission.getSigningRule())).thenReturn(
             declarationOfIntentValidationResult()
         );
@@ -177,7 +151,6 @@ class TrustOnboardingServiceDocumentUploadTest {
             .type(TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_OTHER)
             .file(file)
             .build();
-        var errors = new BeanPropertyBindingResult(file, "file");
         var document = toPartnerDocumentDto(
             createTrustOnboardingSubissionPartnerDocument(
                 UUID.randomUUID(),
@@ -195,7 +168,7 @@ class TrustOnboardingServiceDocumentUploadTest {
         when(trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(submission.getId())).thenReturn(
             submission
         );
-        when(trustOnboardingSubmissionDocumentValidator.validateDocument(submission, file, null)).thenReturn(errors);
+        doNothing().when(trustOnboardingSubmissionDocumentValidator).validateCanUpload(submission, file);
         when(
             partnerDocumentService.createTrustOnboardingSubmissionDocument(
                 submission.getPartnerId(),
@@ -253,8 +226,45 @@ class TrustOnboardingServiceDocumentUploadTest {
         assertThat(submission.getDeclarationOfIntent()).isNull();
     }
 
-    private DeclarationOfIntentValidationResult declarationOfIntentValidationResult() {
-        return new DeclarationOfIntentValidationResult(JsonNodeFactory.instance.objectNode());
+    @Test
+    void updateTrustOnboardingSubmission_keepsDoiDocument_whenOnlyAddressChangesForRenewal() {
+        // GIVEN
+        var submission = trustOnboardingSubmissionOfTypeRenewalWithDoi();
+        var doiDocumentId = submission.getDeclarationOfIntent().getFullySignedDocumentId();
+        var request = TrustOnboardingSubmissionRequestDto.builder()
+            .partnerId(submission.getPartnerId())
+            .entityName(submission.getEntityName())
+            .entityAddress(
+                AddressDto.builder() // changed address
+                    .street("New Street")
+                    .postalCode("9999")
+                    .city("New City")
+                    .country("CH")
+                    .build()
+            )
+            .entityEmail(submission.getEntityEmail())
+            .contactPerson(toContactDto(submission.getContactPerson()))
+            .registryIds(toRegistryIds(submission.getUid()))
+            .dids(toDids(submission.getProofOfPossessions()))
+            .requestedPartnerType(toBusinessPartnerTypeDto(submission.getRequestedPartnerType()))
+            .signingRule(toSigningRuleDto(submission.getSigningRule()))
+            .signatories(toSignatoryDtos(submission.getSignatories()))
+            .build();
+
+        when(trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(submission.getId())).thenReturn(
+            submission
+        );
+        when(
+            proofOfPossessionValidator.isDidSelectionEqual(submission.getProofOfPossessions(), request.dids())
+        ).thenReturn(true);
+        when(trustOnboardingSubmissionRepository.saveAndFlush(submission)).thenReturn(submission);
+
+        // WHEN
+        trustOnboardingService.updateTrustOnboardingSubmission(submission.getId(), request);
+
+        verify(partnerDocumentService, never()).deletePartnerDocument(any());
+        assertThat(submission.getDeclarationOfIntent()).isNotNull();
+        assertThat(submission.getDeclarationOfIntent().getFullySignedDocumentId()).isEqualTo(doiDocumentId);
     }
 
     @Test
@@ -271,7 +281,9 @@ class TrustOnboardingServiceDocumentUploadTest {
         when(trustOnboardingSubmissionDomainService.getTrustOnboardingSubmission(submission.getId())).thenReturn(
             submission
         );
-        when(trustOnboardingSubmissionDocumentValidator.validateDocument(submission, file, null)).thenReturn(errors);
+        doThrow(new ValidationException("TrustOnboardingSubmissionDocument has missing/invalid fields.", errors))
+            .when(trustOnboardingSubmissionDocumentValidator)
+            .validateCanUpload(submission, file);
 
         var request = TrustOnboardingSubmissionDocumentUploadRequestDto.builder()
             .type(TrustOnboardingSubmissionDocumentTypeDto.TRUST_ONBOARDING_OTHER)
@@ -282,5 +294,16 @@ class TrustOnboardingServiceDocumentUploadTest {
         assertThatThrownBy(() -> trustOnboardingService.uploadTrustOnboardingSubmissionDocument(submissionId, request))
             .isInstanceOf(ValidationException.class)
             .hasMessageContaining("editing_blocked");
+    }
+
+    private DeclarationOfIntentValidationResult declarationOfIntentValidationResult() {
+        return new DeclarationOfIntentValidationResult(JsonNodeFactory.instance.objectNode());
+    }
+
+    private List<String> toDids(List<ProofOfPossession> proofOfPossessions) {
+        if (isEmpty(proofOfPossessions)) {
+            return emptyList();
+        }
+        return proofOfPossessions.stream().map(ProofOfPossession::getDid).toList();
     }
 }

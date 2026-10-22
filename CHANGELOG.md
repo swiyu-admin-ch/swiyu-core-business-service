@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.6.2
+
+### Changed
+
+- fix interpreting whitespace UID as uid when submitting TrustOnboardingSubmission
+- when creating a new TrustOnboardingSubmission of type PROFILE_CHANGE_VOLUNTARY, PROFILE_CHANGE_MANDATORY or RENEWAL,
+  the proof-of-possessions are initialized with the current trusted identifiers
+
+## 4.6.1
+
+### Changed
+
+- Missing Audit events are now also delivered as scheduled audit commands instead of immediate sends
+
+## 4.6.0
+
+### Changed
+
+- Audit events are now delivered as scheduled audit commands instead of immediate sends
+- Updated jeap-spring-boot-parent from 41.14.0 to 41.21.0
+
 ## 4.5.6
 
 ### Removed

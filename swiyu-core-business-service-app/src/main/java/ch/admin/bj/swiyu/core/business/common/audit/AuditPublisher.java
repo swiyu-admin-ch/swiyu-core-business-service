@@ -119,10 +119,10 @@ public class AuditPublisher {
 
     /**
      * @param trigger who ordered the deletion. Needed only because the hard delete runs in a Kafka
-     *     consumer, where the security context holds this service and not the person in TMS who ordered
-     *     it - that person travels in the command payload. A new audit method does <b>not</b> need this
-     *     parameter unless it, too, audits an action ordered from outside the current request; see
-     *     {@link AuditTrigger}.
+     *                consumer, where the security context holds this service and not the person in TMS who ordered
+     *                it - that person travels in the command payload. A new audit method does <b>not</b> need this
+     *                parameter unless it, too, audits an action ordered from outside the current request; see
+     *                {@link AuditTrigger}.
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void businessPartnerDeleted(
@@ -142,7 +142,9 @@ public class AuditPublisher {
         );
     }
 
-    /** @param trigger see {@link #businessPartnerDeleted} - same reason, same caller. */
+    /**
+     * @param trigger see {@link #businessPartnerDeleted} - same reason, same caller.
+     */
     @Transactional(propagation = Propagation.MANDATORY)
     public void businessPartnerDocumentDeleted(
         String documentId,
@@ -162,7 +164,9 @@ public class AuditPublisher {
         );
     }
 
-    /** @param trigger see {@link #businessPartnerDeleted} - same reason, same caller. */
+    /**
+     * @param trigger see {@link #businessPartnerDeleted} - same reason, same caller.
+     */
     @Transactional(propagation = Propagation.MANDATORY)
     public void identifierEntryDeleted(
         String identifierEntryId,
@@ -183,7 +187,9 @@ public class AuditPublisher {
         );
     }
 
-    /** @param trigger see {@link #businessPartnerDeleted} - same reason, same caller. */
+    /**
+     * @param trigger see {@link #businessPartnerDeleted} - same reason, same caller.
+     */
     @Transactional(propagation = Propagation.MANDATORY)
     public void statusListEntryDeleted(
         String statusListEntryId,
@@ -217,7 +223,7 @@ public class AuditPublisher {
             .addAuditObjectDataJSON(NEW, DataJsonFieldName.TRUST_ONBOARDING_DOCUMENT_META, partnerDocumentJson)
             .addAuditObjectDataS3(NEW, DataS3FieldName.TRUST_ONBOARDING_DOCUMENT, s3Key)
             .build();
-        sender.auditEvent(auditCommand);
+        sender.auditEventScheduled(auditCommand);
     }
 
     private void logAuditEvent(AuditUseCase useCase, String businessPartnerId) {
@@ -252,7 +258,7 @@ public class AuditPublisher {
         for (var s3Key : doiS3Keys) {
             builder.addAuditObjectDataS3(NEW, DataS3FieldName.TRUST_ONBOARDING_DOCUMENT, s3Key);
         }
-        sender.auditEvent(builder.build());
+        sender.auditEventScheduled(builder.build());
     }
 
     @Transactional
@@ -264,7 +270,7 @@ public class AuditPublisher {
             "0", // emails do not have versions
             businessPartnerId.toString()
         ).addAuditObjectDataJSON(NEW, EMAIL_SENT.getDataJsonFieldName(), emailJson);
-        sender.auditEvent(builder.build());
+        sender.auditEventScheduled(builder.build());
     }
 
     private void publishAuditEvent(
@@ -284,10 +290,12 @@ public class AuditPublisher {
         if (dataValue != null) {
             builder.addAuditObjectDataValue(NEW, useCase.getDataValueFieldName(), dataValue);
         }
-        sender.auditEvent(builder.build());
+        sender.auditEventScheduled(builder.build());
     }
 
-    /** Snapshot of data that is about to be deleted, so stored as {@code OLD}. */
+    /**
+     * Snapshot of data that is about to be deleted, so stored as {@code OLD}.
+     */
     private void publishDeletedEvent(
         AuditUseCase useCase,
         String objectId,
@@ -306,7 +314,7 @@ public class AuditPublisher {
         if (dataValue != null) {
             builder.addAuditObjectDataValue(OLD, useCase.getDataValueFieldName(), dataValue);
         }
-        sender.auditEvent(builder.build());
+        sender.auditEventScheduled(builder.build());
     }
 
     private CreateAuditRecordCommandBuilder withCommonFields(

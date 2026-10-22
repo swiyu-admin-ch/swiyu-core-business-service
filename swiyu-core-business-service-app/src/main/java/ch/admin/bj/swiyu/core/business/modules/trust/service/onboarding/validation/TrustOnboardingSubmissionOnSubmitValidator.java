@@ -5,9 +5,11 @@ import static ch.admin.bj.swiyu.core.business.modules.trust.api.SigningRuleValid
 
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
 import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
+import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.common.features.FeaturesProperties;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.ProofOfPossessionStatus;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
+import com.google.common.annotations.VisibleForTesting;
 import jakarta.validation.Validator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -63,37 +65,32 @@ public class TrustOnboardingSubmissionOnSubmitValidator {
 
     private final TrustOnboardingSubmissionValidator trustOnboardingSubmissionValidator;
 
-    public Errors validate(TrustOnboardingSubmission s, BusinessPartnerTypeDto businessPartnerType) {
-        Errors errors = new SimpleErrors(s);
-
-        trustOnboardingSubmissionValidator.validateTrustOnboardingSubmissionCanBeEdited(s, errors);
-
-        // Generic required checks
-        validateRequiredFields(s, errors);
-        validateEntityNameDefaultTranslation(s, errors);
-
-        validateSigningRule(s, errors);
-
-        validateSignatories(s, errors);
-
-        validateContactPerson(s, errors);
-
-        if (Boolean.TRUE.equals(featuresProperties.getEidartfe1220ProofOfPossession())) {
-            // POP check
-            validateProofs(s, errors);
+    public void validateCanSubmit(TrustOnboardingSubmission submission, BusinessPartnerTypeDto currentPartnerType) {
+        var errors = validate(submission, currentPartnerType);
+        if (errors.hasErrors()) {
+            throw new ValidationException("Submission has missing/invalid fields.", errors);
         }
+    }
 
-        // Email format check (only if present and not blank)
-        validateEmailFormat(s, errors);
-
-        // requested partner type check
-        validatePartnerTypeGovernmentDidNotChange(s.getRequestedPartnerType(), businessPartnerType, errors);
-
-        validateDeclarationOfIntentPresent(s, errors);
-
+    @VisibleForTesting
+    Errors validate(TrustOnboardingSubmission submission, BusinessPartnerTypeDto currentPartnerType) {
+        var errors = new SimpleErrors(submission);
+        trustOnboardingSubmissionValidator.validateTrustOnboardingSubmissionCanBeEdited(submission, errors);
+        validateRequiredFields(submission, errors);
+        validateEntityNameDefaultTranslation(submission, errors);
+        validateSigningRule(submission, errors);
+        validateSignatories(submission, errors);
+        validateContactPerson(submission, errors);
+        if (Boolean.TRUE.equals(featuresProperties.getEidartfe1220ProofOfPossession())) {
+            validateProofs(submission, errors);
+        }
+        validateEmailFormat(submission, errors);
+        validatePartnerTypeGovernmentDidNotChange(submission.getRequestedPartnerType(), currentPartnerType, errors);
+        validateDeclarationOfIntentPresent(submission, errors);
         return errors;
     }
 
+    /** Email format check (only if present and not blank) */
     private static void validateEmailFormat(TrustOnboardingSubmission s, Errors errors) {
         if (!errors.hasFieldErrors(Field.ENTITY_EMAIL)) {
             String email = s.getEntityEmail();
@@ -105,12 +102,12 @@ public class TrustOnboardingSubmissionOnSubmitValidator {
 
     private static void validatePartnerTypeGovernmentDidNotChange(
         BusinessPartnerType requestedBusinessPartnerType,
-        BusinessPartnerTypeDto partnerType,
+        BusinessPartnerTypeDto currentPartnerType,
         Errors errors
     ) {
         if (
             requestedBusinessPartnerType == BusinessPartnerType.GOVERNMENTAL_INSTITUTION &&
-            partnerType != BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION
+            currentPartnerType != BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION
         ) {
             errors.rejectValue("requestedPartnerType", ErrorCode.INVALID);
         }

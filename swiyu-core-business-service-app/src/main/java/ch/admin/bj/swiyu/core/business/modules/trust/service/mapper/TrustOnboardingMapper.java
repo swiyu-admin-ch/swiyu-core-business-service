@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +52,7 @@ public class TrustOnboardingMapper {
             toBusinessPartnerTypeDto(source.getRequestedPartnerType()),
             toSigningRuleDto(source.getSigningRule()),
             toSignatoryDtos(source.getSignatories()),
-            source.getUid() == null ? emptyMap() : Collections.singletonMap("UID", source.getUid()), // EID-5476
+            toRegistryIds(source.getUid()),
             source.getIsRegisteredInCommercialRegister(),
             source.getRejectReason() == null ? null : String.valueOf(source.getRejectReason()),
             source.getDeclineReason() == null ? null : String.valueOf(source.getDeclineReason()),
@@ -65,6 +66,10 @@ public class TrustOnboardingMapper {
             truncateInstantToMicroseconds(source.getAuditMetadata().getCreatedAt()),
             truncateInstantToMicroseconds(source.getAuditMetadata().getLastModifiedAt())
         );
+    }
+
+    public static Map<String, String> toRegistryIds(String uid) {
+        return uid == null ? emptyMap() : Collections.singletonMap("UID", uid);
     }
 
     public static TrustOnboardingSubmissionTypeDto toTrustOnboardingSubmissionTypeDto(

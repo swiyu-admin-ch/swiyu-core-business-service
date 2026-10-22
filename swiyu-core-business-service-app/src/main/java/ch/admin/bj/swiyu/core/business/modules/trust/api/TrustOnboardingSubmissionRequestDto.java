@@ -2,12 +2,14 @@ package ch.admin.bj.swiyu.core.business.modules.trust.api;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static org.springframework.util.StringUtils.hasText;
 
 import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
 import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
 import ch.admin.bj.swiyu.core.business.common.i18n.ValidLocalizedMap;
 import ch.admin.bj.swiyu.core.business.common.validation.ValidRegistryIds;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -85,5 +87,10 @@ public record TrustOnboardingSubmissionRequestDto(
         signatories = (signatories == null) ? emptyList() : signatories;
         registryIds = (registryIds == null) ? emptyMap() : registryIds;
         submissionType = (submissionType == null) ? TrustOnboardingSubmissionTypeDto.REGISTRATION : submissionType;
+    }
+
+    @JsonIgnore
+    public boolean hasUid() {
+        return registryIds != null && registryIds.containsKey("UID") && hasText(registryIds.get("UID"));
     }
 }

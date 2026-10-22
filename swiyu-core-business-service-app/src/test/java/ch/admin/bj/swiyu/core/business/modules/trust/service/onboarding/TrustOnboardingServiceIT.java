@@ -1047,7 +1047,7 @@ class TrustOnboardingServiceIT {
         assertEquals(TrustOnboardingSubmissionType.PROFILE_CHANGE_MANDATORY, persisted.getType());
         assertEquals("CHE-123.456.789", persisted.getUid());
         assertEquals(Map.of("default", "Test Partner AG"), persisted.getEntityName());
-        assertThat(persisted.getProofOfPossessions()).isEmpty();
+        assertThat(persisted.getProofOfPossessions()).hasSameSizeAs(previousSubmission.getProofOfPossessions());
     }
 
     @Test

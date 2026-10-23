@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.7.0
+
+### Changed
+
+- Sync Demo BPs to PAMS
+
+## 4.6.4
+
+### Changed
+
+- Upgrade the jEAP Spring Boot parent from 41.21.0 to 41.23.0
+
+## 4.6.3
+
+### Changed
+
+- Only update PAMS BP info if name is changed
+
 ## 4.6.2
 
 ### Changed

@@ -66,7 +66,7 @@ class DefaultPamsClient implements PamsClient {
     }
 
     @Override
-    public void updateBusinessPartner(BusinessEntity businessPartner) {
+    public void updateBusinessPartnerName(BusinessEntity businessPartner) {
         try {
             // The PAMS api spec does not specify that this endpoint is protected, but it actually is protected.
             // Due to this inconsistency we cannot rely on openapi bearer token helpers here and need to populate
@@ -76,20 +76,7 @@ class DefaultPamsClient implements PamsClient {
                 .addDefaultHeader("Authorization", "Bearer %s".formatted(pamsProperties.createToken()));
             var bp = new ApiBusinesspartnersForeignIDPutRequest();
 
-            // If BPI is ACTIVE the trust management service owns the canonical name.
-            // Otherwise use the self-declared entity name.
-            var bpi = businessPartner.getBusinessPartnerIdentity();
-            String nameForPams;
-            if (
-                bpi != null &&
-                bpi.getStatus() ==
-                ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus.ACTIVE &&
-                bpi.getEntityName() != null
-            ) {
-                nameForPams = LocalizedMapUtil.getDefaultValue(bpi.getEntityName());
-            } else {
-                nameForPams = LocalizedMapUtil.getDefaultValue(businessPartner.getEntityName());
-            }
+            String nameForPams = LocalizedMapUtil.getDefaultValue(businessPartner.getEffectiveName());
             bp.setName(nameForPams);
 
             var response = businessPartnerApi.apiBusinesspartnersForeignIDPut(

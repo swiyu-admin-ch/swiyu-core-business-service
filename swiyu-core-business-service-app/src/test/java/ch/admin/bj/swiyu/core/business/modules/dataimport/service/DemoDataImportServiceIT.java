@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import ch.admin.bj.swiyu.antivirus.client.api.ScanApi;
 import ch.admin.bj.swiyu.antivirus.client.model.ScanResult;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionType;
 import ch.admin.bj.swiyu.core.business.test.TestRepositories;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
@@ -41,6 +42,9 @@ class DemoDataImportServiceIT {
 
     @MockitoBean
     DemoDataAsyncExecutor demoDataAsyncExecutor;
+
+    @MockitoBean
+    PamsClient pamsClient;
 
     @BeforeEach
     void setUp() {

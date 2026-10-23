@@ -24,7 +24,7 @@ public class MockPamsClient implements PamsClient {
     }
 
     @Override
-    public void updateBusinessPartner(BusinessEntity businessPartner) {
+    public void updateBusinessPartnerName(BusinessEntity businessPartner) {
         log.debug("mocking invocation of updateBusinessPartner");
     }
 

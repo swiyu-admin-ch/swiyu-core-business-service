@@ -6,9 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import ch.admin.bit.jeap.security.resource.token.JeapAuthenticationToken;
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
@@ -22,6 +20,7 @@ import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
 import ch.admin.bj.swiyu.core.business.modules.management.api.CreatePartnerDto;
 import ch.admin.bj.swiyu.core.business.modules.management.api.UpdateBusinessEntityDto;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.status.service.StatusListEntryService;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.publisher.DomainEventPublisher;
 import ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData;
@@ -48,6 +47,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.jdbc.Sql;
 
 /**
@@ -92,6 +92,28 @@ class BusinessPartnerServiceIT {
 
     @Autowired
     EntityManagerFactory entityManagerFactory;
+
+    @MockitoSpyBean
+    PamsClient pamsClient;
+
+    private static String lookupPamsAdminUserUid() {
+        return (
+            (JeapAuthenticationToken) SecurityContextHolder.getContext().getAuthentication()
+        ).getPreferredUsername();
+    }
+
+    private static BusinessPartnerIdentityUpdatedPayload businessPartnerIdentityUpdatedPayload() {
+        return new BusinessPartnerIdentityUpdatedPayload(
+            UUID.randomUUID(),
+            Instant.now(),
+            List.of("did:example:partner1", "did:example:partner2"),
+            BusinessPartnerIdentityStatus.ACTIVE,
+            Instant.now(),
+            "CHE-123.456.789",
+            Map.of("default", "Test Partner AG"),
+            1L
+        );
+    }
 
     @Test
     void getBusinessEntities() {
@@ -191,6 +213,7 @@ class BusinessPartnerServiceIT {
             updateBusinessEntityDto
         );
         // THEN
+        verify(pamsClient).updateBusinessPartnerName(any());
         assertThat(businessEntity).isNotNull();
         assertThat(businessEntity.contactEmailAddress()).isEqualTo("hello.brave.new.world@example.com");
         assertThat(businessEntity.id()).isEqualTo(oldBusinessEntity.id());
@@ -206,6 +229,26 @@ class BusinessPartnerServiceIT {
         verify(domainEventPublisher, times(2)).publishTiBusinessPartnerUpdatedEvent(
             argThat(event -> event.getPayload().getBusinessPartnerId().equals(oldBusinessEntity.id()))
         );
+    }
+
+    @Test
+    void updateBusinessEntity_NoNameChange() {
+        // GIVEN
+        var oldBusinessEntity = businessPartnerService.createBusinessPartnerV2(
+            BusinessEntityTestData.createPartnerDto(),
+            lookupPamsAdminUserUid()
+        );
+        var updateBusinessEntityDto = new UpdateBusinessEntityDto("Hallo Welt AG", "hello.brave.new.world@example.com");
+        reset(pamsClient);
+
+        // WHEN
+        var businessEntity = businessPartnerService.updateBusinessEntity(
+            oldBusinessEntity.id(),
+            updateBusinessEntityDto
+        );
+        // THEN
+        verifyNoInteractions(pamsClient);
+        assertThat(businessEntity).isNotNull();
     }
 
     @SuppressWarnings("java:S1874") // remove with EID-6624
@@ -622,24 +665,5 @@ class BusinessPartnerServiceIT {
         assertThat(
             repos.businessPartner.findById(businessEntity.getId()).orElseThrow().isHardDeleteAllowed()
         ).isFalse();
-    }
-
-    private static String lookupPamsAdminUserUid() {
-        return (
-            (JeapAuthenticationToken) SecurityContextHolder.getContext().getAuthentication()
-        ).getPreferredUsername();
-    }
-
-    private static BusinessPartnerIdentityUpdatedPayload businessPartnerIdentityUpdatedPayload() {
-        return new BusinessPartnerIdentityUpdatedPayload(
-            UUID.randomUUID(),
-            Instant.now(),
-            List.of("did:example:partner1", "did:example:partner2"),
-            BusinessPartnerIdentityStatus.ACTIVE,
-            Instant.now(),
-            "CHE-123.456.789",
-            Map.of("default", "Test Partner AG"),
-            1L
-        );
     }
 }

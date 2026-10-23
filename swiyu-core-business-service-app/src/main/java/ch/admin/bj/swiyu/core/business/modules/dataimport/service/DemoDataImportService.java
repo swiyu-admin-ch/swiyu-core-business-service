@@ -17,6 +17,7 @@ import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntry
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerIdentityService;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentUploadRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
@@ -57,7 +58,7 @@ public class DemoDataImportService {
     private final TrustOnboardingService trustOnboardingService;
     private final ProtectedVerificationSubmissionRepository protectedVerificationSubmissionRepository;
     private final PartnerDocumentService partnerDocumentService;
-
+    private final PamsClient pamsClient;
     private final IdentifierEntryService identifierEntryService;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -81,6 +82,28 @@ public class DemoDataImportService {
                 businessEntityRepository.saveAndFlush(dbEntity);
             } else {
                 businessEntityRepository.saveAndFlush(d);
+            }
+        }
+    }
+
+    public void syncBusinessPartnersToPams() {
+        var data = Arrays.stream(DemoData.DemoCase.values())
+            .map(demoCase -> DemoDataMapper.toBusinessEntity(demoCase.bp))
+            .toList();
+
+        for (var d : data) {
+            var bp = businessEntityRepository.getReferenceById(d.getId());
+            try {
+                pamsClient.createBusinessPartner(
+                    bp,
+                    "8C96FE5C-2F05-4396-41E4-D76D1FB96240" // eid-test-user-1@yopmail.com
+                );
+            } catch (Exception _) {
+                try {
+                    pamsClient.updateBusinessPartnerName(bp);
+                } catch (Exception e) {
+                    log.info("Failure to save Demo BP name to PAMS.", e);
+                }
             }
         }
     }

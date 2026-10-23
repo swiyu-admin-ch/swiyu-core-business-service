@@ -26,11 +26,7 @@ import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.identifier.api.IdentifierEntryFilterDto;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
 import ch.admin.bj.swiyu.core.business.modules.management.api.*;
-import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
-import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentity;
-import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityRepository;
-import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
-import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.*;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper;
 import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionLimitProperties;
@@ -72,6 +68,34 @@ public class BusinessPartnerService {
 
     private static @NonNull Supplier<ResourceNotFoundException> throwNotFoundException(UUID id) {
         return () -> new ResourceNotFoundException(String.format(BUSINESS_PARTNER_WITH_ID_S_NOT_FOUND, id));
+    }
+
+    private static @NonNull IdentityVerificationProgressStatusDto computeSubmittedSubmissionStatus(boolean hasBpi) {
+        return hasBpi
+            ? IdentityVerificationProgressStatusDto.RE_VERIFICATION_IN_PROGRESS
+            : IdentityVerificationProgressStatusDto.VERIFICATION_IN_PROGRESS;
+    }
+
+    private static @NonNull IdentityVerificationProgressStatusDto computeUnsubmittedSubmissionStatus(
+        TrustOnboardingSubmission submission,
+        boolean hasBpi
+    ) {
+        if (
+            submission.getSubmittedAt() != null
+        ) return IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED_STARTED;
+        return hasBpi
+            ? IdentityVerificationProgressStatusDto.RE_VERIFICATION_STARTED
+            : IdentityVerificationProgressStatusDto.VERIFICATION_STARTED;
+    }
+
+    private static String contactEmailOf(BusinessEntity businessPartner) {
+        return businessPartner.getContact() == null ? null : businessPartner.getContact().getEmail();
+    }
+
+    private static void validateHardDeleteAllowed(BusinessEntity businessPartner) {
+        if (!businessPartner.isHardDeleteAllowed()) {
+            throw new HardDeleteNotAllowedException(businessPartner.getId());
+        }
     }
 
     @Transactional(readOnly = true)
@@ -120,7 +144,8 @@ public class BusinessPartnerService {
         return toBusinessPartnerDto(businessPartner);
     }
 
-    @SuppressWarnings("java:S1874") // Remove with EID-6624: uses deprecated UpdateBusinessEntityDto fields and getContactPhone()
+    @SuppressWarnings("java:S1874")
+    // Remove with EID-6624: uses deprecated UpdateBusinessEntityDto fields and getContactPhone()
     @Transactional
     public BusinessEntityDto updateBusinessEntity(
         UUID businessEntityId,
@@ -144,7 +169,7 @@ public class BusinessPartnerService {
         var newDefaultName = updateBusinessEntityDto.name();
         if (!previousDefaultName.equals(newDefaultName)) {
             businessPartner.setName(LocalizedMapUtil.fromSingleName(updateBusinessEntityDto.name()));
-            pamsClient.updateBusinessPartner(businessPartner);
+            pamsClient.updateBusinessPartnerName(businessPartner);
         }
         businessPartner = businessPartnerRepository.saveAndFlush(businessPartner);
         auditPublisher.businessPartnerUpdated(
@@ -172,6 +197,7 @@ public class BusinessPartnerService {
         var contact = BusinessPartnerMapper.toContact(dto.contact());
         var address = toAddress(dto.address());
 
+        var oldName = businessPartner.getEffectiveName();
         if (businessPartner.isBusinessPartnerIdentityActive()) {
             // BPI is ACTIVE: name and uid are owned by TMS and must not be overwritten.
             // Only the irrelevant info (address + contact) may change, and only when provided.
@@ -181,8 +207,9 @@ public class BusinessPartnerService {
             // PAMS is never updated with an empty name/uid.
             businessPartner.applyPartialUpdateFromPortal(dto.name(), dto.uid(), contact, address);
         }
-
-        pamsClient.updateBusinessPartner(businessPartner);
+        if (!oldName.equals(businessPartner.getEffectiveName())) {
+            pamsClient.updateBusinessPartnerName(businessPartner);
+        }
         businessPartner = businessPartnerRepository.saveAndFlush(businessPartner);
         auditPublisher.businessPartnerUpdated(
             businessPartner.getId().toString(),
@@ -232,6 +259,7 @@ public class BusinessPartnerService {
     /**
      * Compute the current trust state of Business Partner based on his BusinessPartnerIdentity, and it's different submissions.
      * This state does not consider the presence of Did for the business partner.
+     *
      * @param partner
      * @param submissions
      * @return identityVerificationProgress
@@ -331,24 +359,6 @@ public class BusinessPartnerService {
             default -> throw new IllegalStateException("Unexpected active submission status");
         };
         return new IdentityVerificationProgressDto(status, computeMaxDate(latestActive));
-    }
-
-    private static @NonNull IdentityVerificationProgressStatusDto computeSubmittedSubmissionStatus(boolean hasBpi) {
-        return hasBpi
-            ? IdentityVerificationProgressStatusDto.RE_VERIFICATION_IN_PROGRESS
-            : IdentityVerificationProgressStatusDto.VERIFICATION_IN_PROGRESS;
-    }
-
-    private static @NonNull IdentityVerificationProgressStatusDto computeUnsubmittedSubmissionStatus(
-        TrustOnboardingSubmission submission,
-        boolean hasBpi
-    ) {
-        if (
-            submission.getSubmittedAt() != null
-        ) return IdentityVerificationProgressStatusDto.VERIFICATION_INFORMATION_REQUESTED_STARTED;
-        return hasBpi
-            ? IdentityVerificationProgressStatusDto.RE_VERIFICATION_STARTED
-            : IdentityVerificationProgressStatusDto.VERIFICATION_STARTED;
     }
 
     private boolean isExpiringSoon(BusinessPartnerIdentity bpi) {
@@ -456,10 +466,6 @@ public class BusinessPartnerService {
         return businessPartnerRepository.findIdentitiesExpiringBetween(windowStart, windowEnd, pageable);
     }
 
-    private static String contactEmailOf(BusinessEntity businessPartner) {
-        return businessPartner.getContact() == null ? null : businessPartner.getContact().getEmail();
-    }
-
     @Transactional
     public void updateBusinessPartner(
         UUID businessPartnerId,
@@ -483,7 +489,7 @@ public class BusinessPartnerService {
         businessPartner.changeType(type);
 
         if (nameChanged) {
-            pamsClient.updateBusinessPartner(businessPartner);
+            pamsClient.updateBusinessPartnerName(businessPartner);
         }
 
         businessPartner = businessPartnerRepository.saveAndFlush(businessPartner);
@@ -539,19 +545,15 @@ public class BusinessPartnerService {
         validateHardDeleteAllowed(loadBusinessPartner(businessPartnerId));
     }
 
-    private static void validateHardDeleteAllowed(BusinessEntity businessPartner) {
-        if (!businessPartner.isHardDeleteAllowed()) {
-            throw new HardDeleteNotAllowedException(businessPartner.getId());
-        }
-    }
-
     private BusinessEntity loadBusinessPartner(UUID businessPartnerId) {
         return businessPartnerRepository
             .findById(businessPartnerId)
             .orElseThrow(throwNotFoundException(businessPartnerId));
     }
 
-    /** Treats 404 as done, so a retry of a partially completed hard delete gets through. */
+    /**
+     * Treats 404 as done, so a retry of a partially completed hard delete gets through.
+     */
     public void deleteFromPams(UUID businessPartnerId) {
         // Loads the partner itself instead of calling the transactional validateHardDeleteAllowed(UUID): no
         // transaction must stay open across the PAMS call, and the in-class call would bypass the proxy anyway.

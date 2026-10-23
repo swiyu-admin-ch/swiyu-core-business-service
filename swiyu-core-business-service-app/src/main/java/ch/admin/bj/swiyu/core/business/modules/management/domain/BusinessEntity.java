@@ -198,7 +198,9 @@ public class BusinessEntity {
         this.hardDeleteAllowed = true;
     }
 
-    /** Locks the partner against hard delete. */
+    /**
+     * Locks the partner against hard delete.
+     */
     public void unallowHardDelete() {
         this.hardDeleteAllowed = false;
     }
@@ -287,6 +289,27 @@ public class BusinessEntity {
     private void applyGovernmentalHardDeleteGuard() {
         if (type == BusinessPartnerType.GOVERNMENTAL_INSTITUTION) {
             this.hardDeleteAllowed = false;
+        }
+    }
+
+    /**
+     * Gets the name of the BP from BPI or BP, depending on the trust state
+     *
+     * @return LocalizedMap
+     */
+    public Map<String, String> getEffectiveName() {
+        // If BPI is ACTIVE the trust management service owns the canonical name.
+        // Otherwise, use the self-declared entity name.
+        var bpi = this.getBusinessPartnerIdentity();
+        if (
+            bpi != null &&
+            bpi.getStatus() ==
+            ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus.ACTIVE &&
+            bpi.getEntityName() != null
+        ) {
+            return bpi.getEntityName();
+        } else {
+            return this.getEntityName();
         }
     }
 }

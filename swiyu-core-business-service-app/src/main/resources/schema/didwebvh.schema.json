@@ -218,13 +218,15 @@
                 "properties": {
                   "kty": {
                     "enum": [
-                      "EC"
+                      "EC",
+                      "OKP"
                     ],
-                    "$comment": "The 'kty' (key type) parameter identifies the cryptographic algorithm family used with the key, such as 'RSA' or 'EC'."
+                    "$comment": "The 'kty' (key type) parameter identifies the cryptographic algorithm family used with the key, such as 'RSA', 'EC' or 'OKP'."
                   },
                   "crv": {
                     "enum": [
-                      "P-256"
+                      "P-256",
+                      "Ed25519"
                     ],
                     "$comment": "The 'crv' (curve) parameter identifies the cryptographic curve used with the key."
                   },
@@ -236,12 +238,12 @@
                   "x": {
                     "type": "string",
                     "minLength": 43,
-                    "$comment": "The 'x' (x coordinate) parameter contains the x coordinate for the Elliptic Curve point."
+                    "$comment": "The 'x' (x coordinate) parameter contains the x coordinate for the Elliptic Curve point, or the public key for an OKP (Ed25519) key."
                   },
                   "y": {
                     "type": "string",
                     "minLength": 43,
-                    "$comment": "The 'y' (y coordinate) parameter contains the y coordinate for the Elliptic Curve point."
+                    "$comment": "The 'y' (y coordinate) parameter contains the y coordinate for the Elliptic Curve point. It is only used by EC keys and MUST be absent for OKP (Ed25519) keys."
                   },
                   "use": {
                     "enum": [
@@ -255,8 +257,45 @@
                   "kty",
                   "crv",
                   "kid",
-                  "x",
-                  "y"
+                  "x"
+                ],
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "kty": {
+                          "const": "EC"
+                        }
+                      },
+                      "required": [
+                        "kty"
+                      ]
+                    },
+                    "then": {
+                      "required": [
+                        "y"
+                      ]
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kty": {
+                          "const": "OKP"
+                        }
+                      },
+                      "required": [
+                        "kty"
+                      ]
+                    },
+                    "then": {
+                      "not": {
+                        "required": [
+                          "y"
+                        ]
+                      }
+                    }
+                  }
                 ],
                 "additionalProperties": false,
                 "$comment": "The publicKeyJwk property is OPTIONAL. If present, the value MUST be a map representing a JSON Web Key that conforms to [RFC7517]. CAUTION (e-ID conformity): Although the 'publicKeyJwk' property is REQUIRED (not OPTIONAL) in e-ID, it is kept as OPTIONAL (not REQUIRED) for the sake of being able to validate test vectors from third parties."

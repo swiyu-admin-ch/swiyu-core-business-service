@@ -228,6 +228,33 @@ class IdentifierB2BControllerIT {
     @Test
     @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
     @WithTestSpan
+    void updateIdentifierEntry_authorizedWithDidV2_3_0Eddsa() throws Exception {
+        // GIVEN
+        // BusinessEntity provided through SQL
+        var identifierEntryId = identifierEntryService.createIdentifierEntry(DEFAULT_ENTITY).id();
+        // WHEN
+        var result = mockMvc
+            .perform(
+                MockMvcRequestBuilders.put(
+                    BASE_URL +
+                        "business-entities/" +
+                        BusinessEntityTestData.DEFAULT_ENTITY_S +
+                        "/identifier-entries/" +
+                        identifierEntryId
+                )
+                    .content(identifierTestData.validDidWebvhLogV2_3_0Eddsa())
+                    .contentType("application/jsonl+json")
+            )
+            .andReturn()
+            .getResponse();
+        // THEN
+        assertThat(result).isNotNull();
+        assertThat(result.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@identifier_#write" })
+    @WithTestSpan
     void updateIdentifierEntry_authoirzedWithValidDidWebvhEntry() throws Exception {
         // GIVEN
         // BusinessEntity provided through SQL

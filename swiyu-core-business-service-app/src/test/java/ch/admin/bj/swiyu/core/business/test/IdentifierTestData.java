@@ -32,6 +32,9 @@ public class IdentifierTestData {
     @Value("classpath:data/identifier/didtoolbox/2.1.0/valid.jsonl")
     private Resource validDidWebvhLogV2_1_0;
 
+    @Value("classpath:data/identifier/didtoolbox/2.3.0/valid_eddsa.jsonl")
+    private Resource validDidWebvhLogV2_3_0Eddsa;
+
     @Value("classpath:data/identifier/didtoolbox/1.0.0/valid.jsonl")
     private Resource validDidTdwLog;
 
@@ -84,6 +87,10 @@ public class IdentifierTestData {
 
     public String validDidWebvhLogV2_1_0() {
         return FileUtil.asString(validDidWebvhLogV2_1_0);
+    }
+
+    public String validDidWebvhLogV2_3_0Eddsa() {
+        return FileUtil.asString(validDidWebvhLogV2_3_0Eddsa);
     }
 
     public String invalidDidTdwLogDataIntegrity() {

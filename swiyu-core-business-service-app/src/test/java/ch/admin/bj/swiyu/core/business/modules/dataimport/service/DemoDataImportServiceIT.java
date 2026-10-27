@@ -7,7 +7,13 @@ import static org.mockito.Mockito.when;
 
 import ch.admin.bj.swiyu.antivirus.client.api.ScanApi;
 import ch.admin.bj.swiyu.antivirus.client.model.ScanResult;
+import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.DemoData;
+import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.DemoPaymentData;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.Amount;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.Payment;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentStatus;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.ProductType;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionType;
 import ch.admin.bj.swiyu.core.business.test.TestRepositories;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
@@ -60,6 +66,68 @@ class DemoDataImportServiceIT {
                     .clamavDatabaseVersion("clamav-db-v1")
             )
         );
+    }
+
+    @Test
+    void generatedPayments_canBeReimported() {
+        setSystemSecurityContext();
+        demoDataImportService.generatePayments();
+        demoDataImportService.deleteDemoPayments();
+        demoDataImportService.generatePayments();
+
+        assertThat(repos.payment.findAll()).hasSize(DemoPaymentData.PAYMENTS.size());
+        assertThat(repos.payment.findAll())
+            .extracting(Payment::getStatus)
+            .contains(PaymentStatus.PENDING, PaymentStatus.FAILED, PaymentStatus.CANCELLED, PaymentStatus.SUCCEEDED);
+    }
+
+    @Test
+    void generatedPayments_pendingPaymentOfTester_isKeptAndDemoPendingPaymentSkipped() {
+        setSystemSecurityContext();
+        var demoPartnerId = DemoData.DemoCase.BP_WANTS_TO_BE_TRUSTED.bp.id();
+        var testerPayment = repos.payment.saveAndFlush(
+            new Payment(
+                UUID.randomUUID(),
+                demoPartnerId,
+                "P-0000FFFF",
+                ProductType.BASE_REGISTRATION,
+                Amount.chf(15_000),
+                "https://portal.example.local/callback"
+            )
+        );
+
+        demoDataImportService.deleteDemoPayments();
+        demoDataImportService.generatePayments();
+
+        var demoPendingPaymentId = DemoPaymentData.PAYMENTS.stream()
+            .filter(payment -> payment.businessPartnerId().equals(demoPartnerId))
+            .findFirst()
+            .orElseThrow()
+            .id();
+        assertThat(repos.payment.findById(testerPayment.getId())).isPresent();
+        assertThat(repos.payment.findById(demoPendingPaymentId)).isEmpty();
+        assertThat(repos.payment.findAll()).hasSize(DemoPaymentData.PAYMENTS.size());
+    }
+
+    @Test
+    void deleteDemoPayments_paymentOfTesterForDemoPartner_isKept() {
+        setSystemSecurityContext();
+        var demoPartnerId = DemoData.DemoCase.BUSINESS_BP_TRUST_ONBOARDING_RE_VERIFICATION.bp.id();
+        var testerPayment = new Payment(
+            UUID.randomUUID(),
+            demoPartnerId,
+            "P-0000FFFE",
+            ProductType.BASE_REGISTRATION,
+            Amount.chf(15_000),
+            "https://portal.example.local/callback"
+        );
+        testerPayment.markAsFailed();
+        repos.payment.saveAndFlush(testerPayment);
+        demoDataImportService.generatePayments();
+
+        demoDataImportService.deleteDemoPayments();
+
+        assertThat(repos.payment.findAll()).extracting(Payment::getId).containsExactly(testerPayment.getId());
     }
 
     @Test

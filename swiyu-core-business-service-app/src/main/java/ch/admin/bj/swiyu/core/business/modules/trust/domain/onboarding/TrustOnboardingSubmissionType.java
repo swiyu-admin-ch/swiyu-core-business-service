@@ -6,13 +6,22 @@ package ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding;
  * partner data and require an already-trusted partner (ACTIVE BusinessPartnerIdentity).
  */
 public enum TrustOnboardingSubmissionType {
-    /** Initial onboarding of an untrusted partner; all fields user-supplied and editable. */
+    /**
+     * Initial onboarding of an untrusted partner; all fields user-supplied and editable.
+     */
     REGISTRATION,
 
-    /** Profile update, allowed only <em>within</em> 3 years of trust-identity expiry; UID fixed. */
+    /**
+     * Mandatory Profile update, allowed only <em>within</em> 3 years of trust-identity expiry; UID fixed. When the
+     * submission gets rejected, all trust statements get deactivated since BusinessPartnerIdentity in TMS is getting
+     * deactivated.
+     */
     PROFILE_CHANGE_MANDATORY,
 
-    /** Profile update, allowed only <em>outside</em> 3 years of expiry; mirror of {@link #PROFILE_CHANGE_MANDATORY}. */
+    /**
+     * Voluntary Profile update, allowed at any time. When the submission gets rejected, all trust statements remain
+     * with their original expiration date since BusinessPartnerIdentity in TMS stays untouched.
+     */
     PROFILE_CHANGE_VOLUNTARY,
 
     /**

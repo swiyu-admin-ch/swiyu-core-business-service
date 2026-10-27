@@ -609,11 +609,6 @@ public class TrustOnboardingService {
                 "Mandatory profile change only allowed within 3 years of trust identity expiry."
             );
         }
-        if (submissionType == TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_VOLUNTARY && isWithinThreshold) {
-            throw new BusinessDataIntegrityViolationException(
-                "Voluntary profile change only allowed outside 3 years of trust identity expiry."
-            );
-        }
     }
 
     /**

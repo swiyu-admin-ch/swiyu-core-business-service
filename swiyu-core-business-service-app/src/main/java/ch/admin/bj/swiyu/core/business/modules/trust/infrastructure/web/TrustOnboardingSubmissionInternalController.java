@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.HashSet;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,22 +70,10 @@ public class TrustOnboardingSubmissionInternalController {
             hidden = true
         ) final Pageable pageable
     ) {
-        if (authSupport.hasRoleForAllPartners("trustonboardingsubmission", "read")) {
-            return new PagedModel<>(trustOnboardingService.getAllTrustOnboardings(filter, pageable));
-        } else {
-            var authorizedPartnerIds = authSupport.getPartnerIdsForRole("trustonboardingsubmission", "read");
-            if (filter.businessPartnerIds() == null) {
-                filter = filter.of(authorizedPartnerIds);
-            } else {
-                // validate that authorization for all requested BP is available
-                if (!(new HashSet<>(authorizedPartnerIds).containsAll(filter.businessPartnerIds()))) {
-                    throw new AccessDeniedException(
-                        "Permission has not been granted to access all of the requested business partners."
-                    );
-                }
-            }
-            return new PagedModel<>(trustOnboardingService.getAllTrustOnboardings(filter, pageable));
-        }
+        var authorizedFilter = filter.of(
+            authSupport.resolveAuthorizedPartnerIds("trustonboardingsubmission", "read", filter.businessPartnerIds())
+        );
+        return new PagedModel<>(trustOnboardingService.getAllTrustOnboardings(authorizedFilter, pageable));
     }
 
     @GetMapping("/{id}")

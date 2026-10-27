@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.core.business.modules.payment.domain;
 
 import ch.admin.bj.swiyu.core.business.common.domain.AuditMetadata;
+import com.google.common.annotations.VisibleForTesting;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
@@ -93,6 +94,7 @@ public class Payment {
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "amount_value"))
     @AttributeOverride(name = "currency", column = @Column(name = "amount_currency"))
+    @NotNull
     @Valid
     private Amount amount;
 
@@ -127,5 +129,18 @@ public class Payment {
     /** Applied when the payment could not be completed, e.g. the Saferpay PaymentPage/Initialize call failed. */
     public void markAsFailed() {
         this.status = PaymentStatus.FAILED;
+    }
+
+    /** Only for demo data until the finalize-payment ticket implements the real transition. */
+    @VisibleForTesting
+    public void markAsSucceeded(Instant payedAt) {
+        this.status = PaymentStatus.SUCCEEDED;
+        this.payedAt = payedAt;
+    }
+
+    /** Only for demo data until the cancel/abort handling implements the real transition. */
+    @VisibleForTesting
+    public void markAsCancelled() {
+        this.status = PaymentStatus.CANCELLED;
     }
 }

@@ -5,8 +5,8 @@ import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessExceptionErrorC
 import lombok.Getter;
 
 /**
- * A payment could not be initiated. The error code tells the caller why, e.g. PAYMENT_DISABLED,
- * PAYMENT_ALREADY_PENDING or PAYMENT_RETURN_URL_NOT_ALLOWED.
+ * A payment could not be initiated. The error code tells the caller why, e.g. PAYMENT_ALREADY_PENDING or
+ * PAYMENT_RETURN_URL_NOT_ALLOWED.
  */
 public class PaymentInitializationFailedException extends BusinessException {
 

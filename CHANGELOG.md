@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.9.2
+
+### Changed
+
+- creation of a TrustOnboardingSubmission of type PROFILE_CHANGE_VOLUNTARY is no longer bound to a specific expiration
+  threshold
+
+## 4.9.1
+
+### Changed
+
+- Use the business partner identity status and the submission type to compute the verification progress of profile
+  changes and renewals
+
+## 4.9.0
+
+### Added
+
+- Internal endpoints to read a single payment and all payments paged and filtered
+
 ## 4.8.0
 
 ### Added

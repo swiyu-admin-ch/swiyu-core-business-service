@@ -25,8 +25,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
  *
  * BPI ACTIVATED and validUntil less than 90 days from now    → RE_VERIFICATION_REQUIRED
  *
- * VERIFICATION_REJECTED / RE_VERIFICATION_REJECTED / RE_VERIFICATION_SUCCEEDED
- *   are reserved for future PROFILE_CHANGE / RENEWAL flows (EID-6620).
+ * No BPI, last closed submission REJECTED                     → VERIFICATION_REJECTED
+ * BPI ACTIVE or DEACTIVATED, last closed submission REJECTED  → RE_VERIFICATION_REJECTED
+ * BPI ACTIVE, last closed submission SUCCEEDED and of type PROFILE_CHANGE_* or RENEWAL
+ *                                          → RE_VERIFICATION_SUCCEEDED
+ * BPI DEACTIVATED, no active submission and none rejected     → VERIFICATION_NOT_STARTED
  * </pre>
  *
  * <p>Key rule for RE_* states: a partner has a "previous successful onboarding" whenever a

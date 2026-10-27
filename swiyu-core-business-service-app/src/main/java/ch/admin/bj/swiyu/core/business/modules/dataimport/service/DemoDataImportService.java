@@ -8,6 +8,7 @@ import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.DemoData;
+import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.DemoPaymentData;
 import ch.admin.bj.swiyu.core.business.modules.dataimport.domain.MockMultipartFile;
 import ch.admin.bj.swiyu.core.business.modules.documents.api.PartnerDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocumentsRepository;
@@ -19,6 +20,13 @@ import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerIdentityService;
+import ch.admin.bj.swiyu.core.business.modules.payment.config.PaymentProperties;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.Amount;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.Payment;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentProductCatalog;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentRepository;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentStatus;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.ProductType;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentUploadRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.protectedverification.ProtectedVerificationSubmission;
@@ -59,6 +67,10 @@ public class DemoDataImportService {
     private final ProtectedVerificationSubmissionRepository protectedVerificationSubmissionRepository;
     private final PartnerDocumentService partnerDocumentService;
     private final PamsClient pamsClient;
+    private final PaymentRepository paymentRepository;
+    private final PaymentProductCatalog paymentProductCatalog;
+    private final PaymentProperties paymentProperties;
+
     private final IdentifierEntryService identifierEntryService;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -233,6 +245,53 @@ public class DemoDataImportService {
                     protectedVerificationSubmissionRepository.saveAndFlush(sub);
                 })
         );
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void deleteDemoPayments() {
+        // only the demo ids: payments initiated by testers for a demo partner are real records and must survive
+        paymentRepository.deleteAllById(DemoPaymentData.ids());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void generatePayments() {
+        log.debug("Importing demo payments...");
+        var returnOrigin = paymentProperties
+            .allowedReturnOrigins()
+            .stream()
+            .findFirst()
+            .orElse(DemoPaymentData.FALLBACK_RETURN_ORIGIN);
+        for (var demoPayment : DemoPaymentData.PAYMENTS) {
+            if (
+                demoPayment.status() == DemoPaymentData.DemoPayment.DemoPaymentStatus.PENDING &&
+                paymentRepository.existsByBusinessPartnerIdAndProductAndStatus(
+                    demoPayment.businessPartnerId(),
+                    ProductType.BASE_REGISTRATION,
+                    PaymentStatus.PENDING
+                )
+            ) {
+                // a payment initiated by a tester is still pending; a second one would violate the unique index
+                log.debug("Skipping demo payment {}: business partner already has a pending payment", demoPayment.id());
+                continue;
+            }
+            var payment = new Payment(
+                demoPayment.id(),
+                demoPayment.businessPartnerId(),
+                demoPayment.referenceId(),
+                ProductType.BASE_REGISTRATION,
+                Amount.chf(paymentProductCatalog.priceFor(ProductType.BASE_REGISTRATION)),
+                DemoPaymentData.returnUrl(returnOrigin, demoPayment.id())
+            );
+            switch (demoPayment.status()) {
+                case FAILED -> payment.markAsFailed();
+                case CANCELLED -> payment.markAsCancelled();
+                case SUCCEEDED -> payment.markAsSucceeded(demoPayment.payedAt());
+                case PENDING -> {
+                    // Nothing to do, that's the status right after construction
+                }
+            }
+            paymentRepository.saveAndFlush(payment);
+        }
     }
 
     private TrustOnboardingSubmission generateTrustOnboardingSubmission(

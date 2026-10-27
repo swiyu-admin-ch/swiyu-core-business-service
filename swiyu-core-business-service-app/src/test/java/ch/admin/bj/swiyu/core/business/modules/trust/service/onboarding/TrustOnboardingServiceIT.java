@@ -1109,7 +1109,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void createTrustOnboardingSubmission_PROFILE_CHANGE_VOLUNTARY_failsWithinThreshold() {
+    void createTrustOnboardingSubmission_PROFILE_CHANGE_VOLUNTARY_succeedsWithinThreshold() {
         // Given a partner with ACTIVE BPI and validUntil WITHIN 3 years
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
@@ -1122,15 +1122,15 @@ class TrustOnboardingServiceIT {
         repos.trustOnboardingSubmission.saveAndFlush(previousSubmission);
 
         // When creating a PROFILE_CHANGE_VOLUNTARY submission
-        var request = TrustOnboardingSubmissionRequestDto.builder()
-            .partnerId(partnerId)
-            .submissionType(TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_VOLUNTARY)
-            .build();
-
-        // Then it should fail with BusinessDataIntegrityViolationException
-        assertThrows(BusinessDataIntegrityViolationException.class, () ->
-            service.createTrustOnboardingSubmission(request)
+        var submission = service.createTrustOnboardingSubmission(
+            TrustOnboardingSubmissionRequestDto.builder()
+                .partnerId(partnerId)
+                .submissionType(TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_VOLUNTARY)
+                .build()
         );
+
+        // THEN
+        assertThat(submission).isNotNull();
     }
 
     @Test

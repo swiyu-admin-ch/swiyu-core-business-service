@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.common.api.ProductTypeDto;
-import ch.admin.bj.swiyu.core.business.common.features.FeaturesProperties;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentInitializationRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.Amount;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.Payment;
@@ -50,14 +49,10 @@ class PaymentServiceIT {
     @MockitoBean
     SaferpayClient saferpayClient;
 
-    @MockitoBean
-    FeaturesProperties featuresProperties;
-
     @BeforeEach
     void setUp() {
         insertTestBusinessPartners(repos.businessPartner);
         repos.payment.deleteAll();
-        when(featuresProperties.getEidartfe1297Payment()).thenReturn(true);
     }
 
     @Test

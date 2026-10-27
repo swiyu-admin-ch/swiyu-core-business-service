@@ -1,9 +1,11 @@
 package ch.admin.bj.swiyu.core.business.modules.payment.service;
 
+import ch.admin.bj.swiyu.core.business.common.api.utils.PageableUtils;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessExceptionErrorCode;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
-import ch.admin.bj.swiyu.core.business.common.features.FeaturesProperties;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
+import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentDto;
+import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentFilterDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentInitializationRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentInitializationResponseDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.Amount;
@@ -13,14 +15,20 @@ import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentReferenceId
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentRepository;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentReturnUrlValidator;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentStatus;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.QPayment;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayClient;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayInitializePaymentCommand;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayInitializeResult;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentInitializationFailedException;
+import com.querydsl.core.BooleanBuilder;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -34,7 +42,6 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final PaymentReturnUrlValidator paymentReturnUrlValidator;
     private final PaymentProductCatalog paymentProductCatalog;
-    private final FeaturesProperties featuresProperties;
     private final BusinessPartnerService businessPartnerService;
     private final SaferpayClient saferpayClient;
     private final TransactionTemplate transactionTemplate;
@@ -51,12 +58,6 @@ public class PaymentService {
      * not keep a database connection occupied.
      */
     public PaymentInitializationResponseDto initiatePayment(PaymentInitializationRequestDto request) {
-        if (!Boolean.TRUE.equals(featuresProperties.getEidartfe1297Payment())) {
-            throw new PaymentInitializationFailedException(
-                BusinessExceptionErrorCode.PAYMENT_DISABLED,
-                "Payment feature is disabled."
-            );
-        }
         // the returnUrl is supplied by the caller - only accept it if it points to one of our own frontends
         paymentReturnUrlValidator.validate(request.returnUrl());
         businessPartnerService.validateBusinessPartnerExists(request.businessPartnerId());
@@ -76,6 +77,37 @@ public class PaymentService {
 
         var updated = transactionTemplate.execute(status -> applySaferpayResult(pending.getId(), result));
         return PaymentMapper.toResponseDto(updated);
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentDto getPayment(UUID paymentId) {
+        return PaymentMapper.toPaymentDto(findPayment(paymentId));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PaymentDto> getPayments(PaymentFilterDto filter, Pageable pageable) {
+        var payment = QPayment.payment;
+        var where = new BooleanBuilder();
+        if (filter.businessPartnerIds() != null) {
+            where.and(payment.businessPartnerId.in(filter.businessPartnerIds()));
+        }
+        if (filter.productTypes() != null) {
+            where.and(payment.product.in(filter.productTypes().stream().map(PaymentMapper::toProductType).toList()));
+        }
+        if (filter.statuses() != null) {
+            where.and(payment.status.in(filter.statuses().stream().map(PaymentMapper::toPaymentStatus).toList()));
+        }
+        return paymentRepository
+            .findAll(
+                where,
+                PageableUtils.toDbPageableFromUserPageable(
+                    PaymentDto.class,
+                    Payment.class,
+                    pageable,
+                    Map.of("amount", "amount.value")
+                )
+            )
+            .map(PaymentMapper::toPaymentDto);
     }
 
     /**

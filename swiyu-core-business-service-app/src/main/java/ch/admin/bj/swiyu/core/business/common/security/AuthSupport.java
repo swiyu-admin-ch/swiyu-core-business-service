@@ -4,6 +4,7 @@ import static org.springframework.util.CollectionUtils.isEmpty;
 
 import ch.admin.bit.jeap.security.resource.semanticAuthentication.ServletSemanticAuthorization;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -76,6 +77,31 @@ public class AuthSupport {
 
     public boolean hasRoleForAllPartners(String resource, String operation) {
         return jeapAuthorization.hasRoleForAllPartners(resource, operation);
+    }
+
+    /**
+     * Resolves the business partner filter of a list endpoint against the roles of the current user:
+     * <ul>
+     *     <li>role for all partners: the requested partner ids are returned unchanged (null = no restriction)</li>
+     *     <li>no partner ids requested: the partner ids the user has the role for are returned</li>
+     *     <li>partner ids requested: they are returned if the user has the role for all of them, otherwise an
+     *     AccessDeniedException is thrown</li>
+     * </ul>
+     */
+    public List<UUID> resolveAuthorizedPartnerIds(String resource, String operation, List<UUID> requestedPartnerIds) {
+        if (hasRoleForAllPartners(resource, operation)) {
+            return requestedPartnerIds;
+        }
+        var authorizedPartnerIds = getPartnerIdsForRole(resource, operation);
+        if (requestedPartnerIds == null) {
+            return authorizedPartnerIds;
+        }
+        if (!new HashSet<>(authorizedPartnerIds).containsAll(requestedPartnerIds)) {
+            throw new AccessDeniedException(
+                "Permission has not been granted to access all of the requested business partners."
+            );
+        }
+        return requestedPartnerIds;
     }
 
     /**

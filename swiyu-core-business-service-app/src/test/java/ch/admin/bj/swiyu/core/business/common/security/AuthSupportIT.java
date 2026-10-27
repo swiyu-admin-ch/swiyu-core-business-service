@@ -100,4 +100,40 @@ class AuthSupportIT {
     void isGovernmentalAllowlistUser_IsFalse() {
         assertFalse(authSupport.isGovernmentalAllowlistUser());
     }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = "ti_@payment_#read")
+    void resolveAuthorizedPartnerIds_roleForAllPartners_returnsRequested() {
+        assertNull(authSupport.resolveAuthorizedPartnerIds("payment", "read", null));
+        var requested = List.of(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+        assertEquals(requested, authSupport.resolveAuthorizedPartnerIds("payment", "read", requested));
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(bpRoles = { "00000000-0000-0000-0000-000000000000 = ti_@payment_#read" })
+    void resolveAuthorizedPartnerIds_nothingRequested_returnsAuthorized() {
+        assertEquals(
+            List.of(UUID.fromString("00000000-0000-0000-0000-000000000000")),
+            authSupport.resolveAuthorizedPartnerIds("payment", "read", null)
+        );
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(bpRoles = { "00000000-0000-0000-0000-000000000000 = ti_@payment_#read" })
+    void resolveAuthorizedPartnerIds_authorizedRequested_returnsRequested() {
+        var requested = List.of(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+        assertEquals(requested, authSupport.resolveAuthorizedPartnerIds("payment", "read", requested));
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(bpRoles = { "00000000-0000-0000-0000-000000000000 = ti_@payment_#read" })
+    void resolveAuthorizedPartnerIds_unauthorizedRequested_throws() {
+        var requested = List.of(
+            UUID.fromString("00000000-0000-0000-0000-000000000000"),
+            UUID.fromString("00000000-0000-0000-0000-000000000001")
+        );
+        assertThrows(AccessDeniedException.class, () ->
+            authSupport.resolveAuthorizedPartnerIds("payment", "read", requested)
+        );
+    }
 }

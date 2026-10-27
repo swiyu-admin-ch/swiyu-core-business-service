@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 
 import ch.admin.bj.swiyu.core.business.common.api.ProductTypeDto;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessExceptionErrorCode;
-import ch.admin.bj.swiyu.core.business.common.features.FeaturesProperties;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentInitializationRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.config.PaymentProperties;
@@ -50,7 +49,6 @@ class PaymentServiceTest {
 
     private PaymentRepository paymentRepository;
     private PaymentReturnUrlValidator paymentReturnUrlValidator;
-    private FeaturesProperties featuresProperties;
     private SaferpayClient saferpayClient;
     private PaymentService paymentService;
 
@@ -58,7 +56,6 @@ class PaymentServiceTest {
     void setUp() {
         paymentRepository = mock(PaymentRepository.class);
         paymentReturnUrlValidator = mock(PaymentReturnUrlValidator.class);
-        featuresProperties = mock(FeaturesProperties.class);
         var businessPartnerService = mock(BusinessPartnerService.class);
         saferpayClient = mock(SaferpayClient.class);
         var paymentProperties = new PaymentProperties(
@@ -81,27 +78,12 @@ class PaymentServiceTest {
             paymentRepository,
             paymentReturnUrlValidator,
             new PaymentProductCatalog(paymentProperties),
-            featuresProperties,
             businessPartnerService,
             saferpayClient,
             transactionTemplate
         );
 
-        when(featuresProperties.getEidartfe1297Payment()).thenReturn(true);
         when(paymentRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
-    }
-
-    @Test
-    void initiatePayment_featureDisabled_throwsAndNeverCallsSaferpay() {
-        when(featuresProperties.getEidartfe1297Payment()).thenReturn(false);
-
-        var request = request();
-
-        assertThatThrownBy(() -> paymentService.initiatePayment(request))
-            .isInstanceOf(PaymentInitializationFailedException.class)
-            .hasFieldOrPropertyWithValue("errorCode", BusinessExceptionErrorCode.PAYMENT_DISABLED);
-
-        verifyNoInteractions(saferpayClient, paymentRepository);
     }
 
     @Test

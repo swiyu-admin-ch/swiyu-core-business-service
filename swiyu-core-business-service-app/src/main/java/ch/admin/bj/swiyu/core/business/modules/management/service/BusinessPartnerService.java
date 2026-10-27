@@ -34,6 +34,7 @@ import ch.admin.bj.swiyu.core.business.modules.trust.domain.event.TiBusinessPart
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.event.TiBusinessPartnerUpdatedEventBuilder;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionRepository;
+import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionType;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.publisher.DomainEventPublisher;
 import jakarta.validation.Valid;
 import java.time.Instant;
@@ -282,25 +283,25 @@ public class BusinessPartnerService {
         // recent closed submission outcome (SUCCEEDED / REJECTED / expired). Most Recent closed submission states clear any
         // prior active submission; the most recent closed submission outcome decides when none is ongoing.
         var hasPreviouslySucceeded = hasBpi;
-        var lastClosedSubmissionSucceeded = false;
+        TrustOnboardingSubmission lastClosedSubmissionSucceeded = null;
         var lastClosedSubmissionRejected = false;
         TrustOnboardingSubmission latestActive = null;
         for (var submission : sortedSubmissions) {
             switch (submission.getStatus()) {
                 case SUCCEEDED -> {
                     hasPreviouslySucceeded = true;
-                    lastClosedSubmissionSucceeded = true;
+                    lastClosedSubmissionSucceeded = submission;
                     lastClosedSubmissionRejected = false;
                     latestActive = null;
                 }
                 case REJECTED -> {
                     hasPreviouslySucceeded = false;
-                    lastClosedSubmissionSucceeded = false;
+                    lastClosedSubmissionSucceeded = null;
                     lastClosedSubmissionRejected = true;
                     latestActive = null;
                 }
                 case UNSUBMITTED_TIMEOUT -> {
-                    lastClosedSubmissionSucceeded = false;
+                    lastClosedSubmissionSucceeded = null;
                     latestActive = null;
                 }
                 case UNSUBMITTED, SUBMITTED, INFORMATION_REQUESTED, RESUBMITTED -> {
@@ -333,13 +334,17 @@ public class BusinessPartnerService {
 
     private @NonNull IdentityVerificationProgressDto computeProgressStateWhenHasBpi(
         BusinessPartnerIdentity bpi,
-        boolean lastTerminalSucceeded
+        TrustOnboardingSubmission lastClosedSubmissionSucceeded
     ) {
         if (bpi.getStatus() == BusinessPartnerIdentityStatus.ACTIVE) {
             if (isExpiringSoon(bpi)) {
                 return IdentityVerificationProgressDto.of(RE_VERIFICATION_REQUIRED);
             }
-            if (lastTerminalSucceeded) {
+            // only a succeeded profile change or renewal is a re-verification, a registration is the first one
+            if (
+                lastClosedSubmissionSucceeded != null &&
+                lastClosedSubmissionSucceeded.getType() != TrustOnboardingSubmissionType.REGISTRATION
+            ) {
                 return new IdentityVerificationProgressDto(RE_VERIFICATION_SUCCEEDED, bpi.getValidUntil());
             }
             return IdentityVerificationProgressDto.of(VERIFICATION_SUCCEEDED);
@@ -379,16 +384,20 @@ public class BusinessPartnerService {
      * VERIFICATION_STARTED             → VERIFICATION_STARTED
      * VERIFICATION_IN_PROGRESS         → VERIFICATION_IN_PROGRESS
      * VERIFICATION_INFORMATION_REQUESTED → INFORMATION_REQUESTED
-     * VERIFICATION_REJECTED            → NOT_VERIFIED  (placeholder, EID-6620)
+     * VERIFICATION_REJECTED            → NOT_VERIFIED
      * VERIFICATION_SUCCEEDED           → VERIFIED
      * RE_VERIFICATION_REQUIRED         → VERIFIED
      * RE_VERIFICATION_STARTED          → RE_VERIFICATION_STARTED
      * RE_VERIFICATION_IN_PROGRESS      → RE_VERIFICATION_IN_PROGRESS
-     * RE_VERIFICATION_REJECTED         → NOT_VERIFIED  (placeholder, EID-6620)
-     * RE_VERIFICATION_SUCCEEDED        → VERIFIED      (placeholder, EID-6620)
+     * RE_VERIFICATION_REJECTED         → VERIFIED if the BPI is still ACTIVE (rejected voluntary profile change),
+     *                                    NOT_VERIFIED otherwise (e.g. rejected mandatory profile change)
+     * RE_VERIFICATION_SUCCEEDED        → VERIFIED
      * </pre>
      */
-    private BusinessPartnerTrustStatusDto toLegacyTrustStatus(IdentityVerificationProgressDto progress) {
+    static BusinessPartnerTrustStatusDto toLegacyTrustStatus(
+        IdentityVerificationProgressDto progress,
+        BusinessPartnerIdentity bpi
+    ) {
         return switch (progress.status()) {
             case VERIFICATION_NOT_STARTED -> BusinessPartnerTrustStatusDto.NOT_VERIFIED;
             case VERIFICATION_STARTED -> BusinessPartnerTrustStatusDto.VERIFICATION_STARTED;
@@ -400,7 +409,9 @@ public class BusinessPartnerService {
             case RE_VERIFICATION_REQUIRED -> BusinessPartnerTrustStatusDto.VERIFIED;
             case RE_VERIFICATION_STARTED -> BusinessPartnerTrustStatusDto.RE_VERIFICATION_STARTED;
             case RE_VERIFICATION_IN_PROGRESS -> BusinessPartnerTrustStatusDto.RE_VERIFICATION_IN_PROGRESS;
-            case RE_VERIFICATION_REJECTED -> BusinessPartnerTrustStatusDto.NOT_VERIFIED;
+            case RE_VERIFICATION_REJECTED -> bpi != null && bpi.getStatus() == BusinessPartnerIdentityStatus.ACTIVE
+                ? BusinessPartnerTrustStatusDto.VERIFIED
+                : BusinessPartnerTrustStatusDto.NOT_VERIFIED;
             case RE_VERIFICATION_SUCCEEDED -> BusinessPartnerTrustStatusDto.VERIFIED;
         };
     }
@@ -716,7 +727,7 @@ public class BusinessPartnerService {
         var progress = computeVerificationProgress(entity, submissions);
         return BusinessPartnerMapper.toBusinessPartnerDto(
             entity,
-            toLegacyTrustStatus(progress),
+            toLegacyTrustStatus(progress, entity.getBusinessPartnerIdentity()),
             progress.maxDateForStatus()
         );
     }
@@ -730,7 +741,7 @@ public class BusinessPartnerService {
         var progress = computeVerificationProgress(entity, submissions);
         return BusinessPartnerMapper.toBusinessPartnerListItemDto(
             entity,
-            toLegacyTrustStatus(progress),
+            toLegacyTrustStatus(progress, entity.getBusinessPartnerIdentity()),
             progress.maxDateForStatus()
         );
     }

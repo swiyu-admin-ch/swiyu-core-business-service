@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mock;
 
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
+import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerTrustStatusDto;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityRepository;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
@@ -381,6 +382,18 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
     }
 
     @Test
+    void activeBpi_latestSubmissionRegistrationSucceeded_returnsVerificationSucceeded() {
+        // Given
+        var partner = partnerWithActivatedIdentity();
+        var submissions = List.of(submission(REGISTRATION, SUCCEEDED));
+        // When
+        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        // Then
+        assertThat(progress.status()).isEqualTo(VERIFICATION_SUCCEEDED);
+        assertThat(progress.maxDateForStatus()).isNull();
+    }
+
+    @Test
     void activeBpi_latestSubmissionProfileChangeMandatorySucceeded_returnsReVerificationSucceeded() {
         // Given
         var partner = partnerWithActivatedIdentity();
@@ -650,6 +663,34 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_INFORMATION_REQUESTED_REQUIRED);
         assertThat(progress.maxDateForStatus()).isNotNull();
+    }
+
+    // -------------------------------------------------------------------------
+    // Legacy trust status
+    // -------------------------------------------------------------------------
+
+    @Test
+    void activeBpi_lastSubmissionProfileChangeVoluntaryRejected_legacyTrustStatusIsVerified() {
+        // Given
+        var partner = partnerWithActivatedIdentity();
+        var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(PROFILE_CHANGE_VOLUNTARY, REJECTED));
+        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        // When
+        var trustStatus = BusinessPartnerService.toLegacyTrustStatus(progress, partner.getBusinessPartnerIdentity());
+        // Then
+        assertThat(trustStatus).isEqualTo(BusinessPartnerTrustStatusDto.VERIFIED);
+    }
+
+    @Test
+    void deactivatedBpi_lastSubmissionProfileChangeMandatoryRejected_legacyTrustStatusIsNotVerified() {
+        // Given
+        var partner = partnerWithDeactivatedIdentity();
+        var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(PROFILE_CHANGE_MANDATORY, REJECTED));
+        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        // When
+        var trustStatus = BusinessPartnerService.toLegacyTrustStatus(progress, partner.getBusinessPartnerIdentity());
+        // Then
+        assertThat(trustStatus).isEqualTo(BusinessPartnerTrustStatusDto.NOT_VERIFIED);
     }
 
     // -------------------------------------------------------------------------

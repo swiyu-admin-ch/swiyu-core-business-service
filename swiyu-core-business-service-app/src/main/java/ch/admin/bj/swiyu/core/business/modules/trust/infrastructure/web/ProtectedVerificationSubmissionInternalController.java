@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +21,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PagedModel;
 import org.springframework.data.web.SortDefault;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -81,26 +79,16 @@ public class ProtectedVerificationSubmissionInternalController {
             hidden = true
         ) final Pageable pageable
     ) {
-        if (authSupport.hasRoleForAllPartners("protectedverificationsubmission", "read")) {
-            return new PagedModel<>(
-                protectedVerificationSubmissionService.getAllProtectedVerificationSubmissions(filter, pageable)
-            );
-        } else {
-            var authorizedPartnerIds = authSupport.getPartnerIdsForRole("protectedverificationsubmission", "read");
-            if (filter.businessPartnerIds() == null) {
-                filter = filter.of(authorizedPartnerIds);
-            } else {
-                // validate that authorization for all requested BP is available
-                if (!(new HashSet<>(authorizedPartnerIds).containsAll(filter.businessPartnerIds()))) {
-                    throw new AccessDeniedException(
-                        "Permission has not been granted to access all of the requested business partners."
-                    );
-                }
-            }
-            return new PagedModel<>(
-                protectedVerificationSubmissionService.getAllProtectedVerificationSubmissions(filter, pageable)
-            );
-        }
+        var authorizedFilter = filter.of(
+            authSupport.resolveAuthorizedPartnerIds(
+                "protectedverificationsubmission",
+                "read",
+                filter.businessPartnerIds()
+            )
+        );
+        return new PagedModel<>(
+            protectedVerificationSubmissionService.getAllProtectedVerificationSubmissions(authorizedFilter, pageable)
+        );
     }
 
     @GetMapping("/{id}")

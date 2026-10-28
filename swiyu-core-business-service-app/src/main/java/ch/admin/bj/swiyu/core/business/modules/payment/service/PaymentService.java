@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.payment.service;
 
+import ch.admin.bit.jeap.messaging.transactionaloutbox.outbox.TransactionalOutbox;
 import ch.admin.bj.swiyu.core.business.common.api.utils.PageableUtils;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessExceptionErrorCode;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
@@ -16,12 +17,15 @@ import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentRepository;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentReturnUrlValidator;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentStatus;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.QPayment;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.event.TiPaymentNotificationReceivedEventBuilder;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayClient;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayInitializePaymentCommand;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayInitializeResult;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentInitializationFailedException;
+import ch.admin.bj.swiyu.messagetype.ti.TiPaymentNotificationReceivedEvent;
 import com.querydsl.core.BooleanBuilder;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -44,6 +48,7 @@ public class PaymentService {
     private final PaymentProductCatalog paymentProductCatalog;
     private final BusinessPartnerService businessPartnerService;
     private final SaferpayClient saferpayClient;
+    private final TransactionalOutbox transactionalOutbox;
     private final TransactionTemplate transactionTemplate;
 
     /**
@@ -219,5 +224,29 @@ public class PaymentService {
      */
     private static String appendPaymentIdPathSegment(String returnUrl, UUID paymentId) {
         return UriComponentsBuilder.fromUriString(returnUrl).pathSegment(paymentId.toString()).build().toUriString();
+    }
+
+    /**
+     * Handles a payment notification from Saferpay (B2B callback).
+     * Publishes a TiPaymentNotificationReceivedEvent if the payment exists.
+     * Returns 200 even if payment is not found (idempotency - Saferpay may retry).
+     *
+     * @param referenceId the payment referenceId from Saferpay
+     */
+    public void handleNotification(String referenceId) {
+        Optional<Payment> paymentOpt = paymentRepository.findByReferenceId(referenceId);
+        if (paymentOpt.isEmpty()) {
+            // Return 200 even if not found (idempotency - Saferpay may retry)
+            return;
+        }
+        var payment = paymentOpt.get();
+
+        var event = TiPaymentNotificationReceivedEventBuilder.create().paymentId(payment.getId()).build();
+
+        transactionalOutbox.sendMessage(
+            event,
+            payment.getId().toString(),
+            TiPaymentNotificationReceivedEvent.TypeRef.DEFAULT_TOPIC
+        );
     }
 }

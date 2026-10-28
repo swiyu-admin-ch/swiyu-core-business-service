@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import ch.admin.bit.jeap.messaging.transactionaloutbox.outbox.TransactionalOutbox;
 import ch.admin.bj.swiyu.core.business.common.api.ProductTypeDto;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessExceptionErrorCode;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -50,6 +52,7 @@ class PaymentServiceTest {
     private PaymentRepository paymentRepository;
     private PaymentReturnUrlValidator paymentReturnUrlValidator;
     private SaferpayClient saferpayClient;
+    private TransactionalOutbox transactionalOutbox;
     private PaymentService paymentService;
 
     @BeforeEach
@@ -58,6 +61,7 @@ class PaymentServiceTest {
         paymentReturnUrlValidator = mock(PaymentReturnUrlValidator.class);
         var businessPartnerService = mock(BusinessPartnerService.class);
         saferpayClient = mock(SaferpayClient.class);
+        transactionalOutbox = mock(TransactionalOutbox.class);
         var paymentProperties = new PaymentProperties(
             List.of("https://portal.example.local"),
             new PaymentProperties.SaferpayProperties(
@@ -80,6 +84,7 @@ class PaymentServiceTest {
             new PaymentProductCatalog(paymentProperties),
             businessPartnerService,
             saferpayClient,
+            transactionalOutbox,
             transactionTemplate
         );
 
@@ -265,5 +270,32 @@ class PaymentServiceTest {
         } catch (MalformedURLException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    @Test
+    void handleNotification_existingPayment_publishesEvent() {
+        var payment = pendingPayment("P-ABC12345");
+        when(paymentRepository.findByReferenceId("P-ABC12345")).thenReturn(Optional.of(payment));
+
+        paymentService.handleNotification("P-ABC12345");
+
+        verify(transactionalOutbox).sendMessage(
+            ArgumentMatchers.any(),
+            ArgumentMatchers.eq(payment.getId().toString()),
+            ArgumentMatchers.anyString()
+        );
+    }
+
+    @Test
+    void handleNotification_nonExistingPayment_doesNotPublishEvent() {
+        when(paymentRepository.findByReferenceId("P-NOTEXIST")).thenReturn(Optional.empty());
+
+        paymentService.handleNotification("P-NOTEXIST");
+
+        verify(transactionalOutbox, never()).sendMessage(
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.anyString()
+        );
     }
 }

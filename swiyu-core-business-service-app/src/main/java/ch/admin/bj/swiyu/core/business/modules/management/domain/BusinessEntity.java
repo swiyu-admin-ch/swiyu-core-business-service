@@ -127,8 +127,11 @@ public class BusinessEntity {
 
     /**
      * Convenience constructor for callers that only have a single-language name and a flat
-     * email/phone contact (no contact-person name or language): demo-data import and tests.
+     * email/phone contact (no contact-person name or language) only for tests.
+     *
+     * EID-6624 - check if this method can be removed, test data can be setup with propper constructor/methods maybe?
      */
+    @VisibleForTesting
     public BusinessEntity(
         UUID id,
         String name,
@@ -138,14 +141,7 @@ public class BusinessEntity {
         String uid,
         String contactPhone
     ) {
-        this(
-            id,
-            fromSingleName(name),
-            Contact.builder().email(contactEmail).phone(contactPhone).build(),
-            type,
-            address,
-            uid
-        );
+        this(id, fromSingleName(name), Contact.of(contactEmail, contactPhone), type, address, uid);
     }
 
     protected BusinessEntity() {
@@ -173,6 +169,35 @@ public class BusinessEntity {
         if (address != null) {
             this.address = address;
         }
+        return this;
+    }
+
+    /**
+     * Kept for callers that still use the old update path from TrustOnboardingService.
+     * Will be cleaned up in the same sprint once all callers are migrated.
+     */
+    public BusinessEntity update(
+        Map<String, String> entityName,
+        String contactEmail,
+        Address address,
+        String uid,
+        String contactPhone
+    ) {
+        this.entityName = entityName;
+        // EID-6624 - clarify with Business what the expected behavior should be. Why are we just taking the email/phone from submission?
+        if (this.contact == null) {
+            this.contact = Contact.of(contactEmail, contactPhone);
+        } else {
+            this.contact = new Contact(
+                this.contact.getFirstName(),
+                this.contact.getLastName(),
+                contactEmail,
+                contactPhone,
+                this.contact.getCorrespondingLanguage()
+            );
+        }
+        this.address = address;
+        this.uid = uid;
         return this;
     }
 
@@ -213,28 +238,6 @@ public class BusinessEntity {
             businessPartnerIdentity != null &&
             businessPartnerIdentity.getStatus() == BusinessPartnerIdentityStatus.ACTIVE
         );
-    }
-
-    /**
-     * Kept for callers that still use the old update path from TrustOnboardingService.
-     * Will be cleaned up in the same sprint once all callers are migrated.
-     */
-    public BusinessEntity update(
-        Map<String, String> entityName,
-        String contactEmail,
-        Address address,
-        String uid,
-        String contactPhone
-    ) {
-        this.entityName = entityName;
-        this.contact = Contact.builder()
-            .email(contactEmail)
-            .phone(contactPhone)
-            .correspondingLanguage(this.contact != null ? this.contact.getCorrespondingLanguage() : null)
-            .build();
-        this.address = address;
-        this.uid = uid;
-        return this;
     }
 
     public void addPayedForDidSlots(int slots) {

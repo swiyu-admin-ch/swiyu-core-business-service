@@ -37,6 +37,7 @@ import jakarta.persistence.OptimisticLockException;
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -61,13 +62,12 @@ public class TrustOnboardingService {
     /**
      * Time window before a partner's trust identity expiry during which profile changes are governed.
      *
-     * <p>Set to 3 years. Within this window a {@code PROFILE_CHANGE_MANDATORY} submission is allowed
-     * (and a {@code PROFILE_CHANGE_VOLUNTARY} is rejected); outside this window the rule is inverted:
-     * voluntary changes are allowed and mandatory ones are rejected.
+     * <p>Set to 3 calendar years. Using calendar years instead of a fixed 365-day duration avoids
+     * leap-year drift, e.g. 3 years is not always exactly 1095 days.
      *
      * @see #validateProfileChangeRespectsTrustExpiration(TrustOnboardingSubmissionTypeDto, BusinessPartnerIdentityDto)
      */
-    private static final Duration PROFILE_CHANGE_THRESHOLD = Duration.ofDays(365L * 3);
+    private static final long PROFILE_CHANGE_THRESHOLD_YEARS = 3;
 
     private final DomainEventPublisher domainEventPublisher;
     private final TrustOnboardingSubmissionRepository trustOnboardingSubmissionRepository;
@@ -408,6 +408,35 @@ public class TrustOnboardingService {
         publishSubmissionOutcomeEmail(trustOnboardingSubmission, Outcome.SUCCEEDED);
     }
 
+    /**
+     * Submissions that have been waiting for review longer than {@code minDelay}, one page at a time.
+     *
+     * <p>For the nightly "review delayed" reminder. Paged for the same reason as the renewal query: the
+     * number of open submissions is not bounded by anything the code controls.
+     */
+    @Transactional(readOnly = true)
+    public Page<PendingReviewSubmission> findSubmissionsPendingReviewLongerThan(Duration minDelay, Pageable pageable) {
+        var cutoff = Instant.now().minus(minDelay);
+        return trustOnboardingSubmissionRepository.findPendingReviewSubmittedBefore(cutoff, pageable);
+    }
+
+    @Transactional
+    public void trustOnboardingSubmissionCheckForUnsubmittedTimeout() {
+        // To assert that the lock is held (prevents misconfiguration errors)
+        LockAssert.assertLocked();
+
+        var maxAgeTimestamp = Instant.now().minus(limitProperties.maxAgeInUnsubmitted());
+        log.debug("Checking for TrustOnboardingSubmissions expiry with maxAgeTimestamp: {}", maxAgeTimestamp);
+        var editedRows = trustOnboardingSubmissionRepository.updateStatusToTimeout(maxAgeTimestamp);
+        log.info("{} TrustOnboardingSubmissions did expire.", editedRows);
+    }
+
+    @Transactional
+    public void hardDeleteByPartnerId(UUID partnerId) {
+        log.info("Hard deleting all TrustOnboardingSubmissions of business partner '{}'", partnerId);
+        trustOnboardingSubmissionRepository.deleteByPartnerId(partnerId);
+    }
+
     private static UUID discardDeclarationOfIntend(TrustOnboardingSubmission submission, UUID doiDocumentIdToDelete) {
         var doi = submission.getDeclarationOfIntent();
         if (doi != null) {
@@ -512,13 +541,13 @@ public class TrustOnboardingService {
         Contact contactPerson = null;
         if (contact != null) {
             var language = contact.correspondingLanguage();
-            contactPerson = Contact.builder()
-                .firstName(contact.firstName())
-                .lastName(contact.lastName())
-                .email(contact.email())
-                .phone(contact.phone())
-                .correspondingLanguage(language != null ? toLanguage(language) : Language.DE)
-                .build();
+            contactPerson = new Contact(
+                contact.firstName(),
+                contact.lastName(),
+                contact.email(),
+                contact.phone(),
+                language != null ? toLanguage(language) : Language.DE
+            );
         }
 
         // Derive signingRule and signatories from latest submission
@@ -601,12 +630,16 @@ public class TrustOnboardingService {
         if (trustIdentityExpiry == null) {
             throw new BusinessDataIntegrityViolationException("Partner has no trust identity expiry date.");
         }
-        var timeUntilExpiry = Duration.between(Instant.now(), trustIdentityExpiry);
-        var isWithinThreshold = timeUntilExpiry.compareTo(PROFILE_CHANGE_THRESHOLD) <= 0;
-
+        var maxExpiry = Instant.now()
+            .atOffset(ZoneOffset.UTC)
+            .toLocalDateTime()
+            .plusYears(PROFILE_CHANGE_THRESHOLD_YEARS)
+            .toInstant(ZoneOffset.UTC);
+        var isWithinThreshold = trustIdentityExpiry.isBefore(maxExpiry) || trustIdentityExpiry.equals(maxExpiry);
         if (submissionType == TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_MANDATORY && !isWithinThreshold) {
-            throw new BusinessDataIntegrityViolationException(
-                "Mandatory profile change only allowed within 3 years of trust identity expiry."
+            log.warn(
+                "Mandatory profile change attempted outside of 3 years threshold for trust identity expiry: {}",
+                trustIdentityExpiry
             );
         }
     }
@@ -737,34 +770,5 @@ public class TrustOnboardingService {
         TrustOnboardingSubmission trustOnboardingSubmission
     ) {
         return TrustOnboardingMapper.toTrustOnboardingSubmissionDto(trustOnboardingSubmission);
-    }
-
-    /**
-     * Submissions that have been waiting for review longer than {@code minDelay}, one page at a time.
-     *
-     * <p>For the nightly "review delayed" reminder. Paged for the same reason as the renewal query: the
-     * number of open submissions is not bounded by anything the code controls.
-     */
-    @Transactional(readOnly = true)
-    public Page<PendingReviewSubmission> findSubmissionsPendingReviewLongerThan(Duration minDelay, Pageable pageable) {
-        var cutoff = Instant.now().minus(minDelay);
-        return trustOnboardingSubmissionRepository.findPendingReviewSubmittedBefore(cutoff, pageable);
-    }
-
-    @Transactional
-    public void trustOnboardingSubmissionCheckForUnsubmittedTimeout() {
-        // To assert that the lock is held (prevents misconfiguration errors)
-        LockAssert.assertLocked();
-
-        var maxAgeTimestamp = Instant.now().minus(limitProperties.maxAgeInUnsubmitted());
-        log.debug("Checking for TrustOnboardingSubmissions expiry with maxAgeTimestamp: {}", maxAgeTimestamp);
-        var editedRows = trustOnboardingSubmissionRepository.updateStatusToTimeout(maxAgeTimestamp);
-        log.info("{} TrustOnboardingSubmissions did expire.", editedRows);
-    }
-
-    @Transactional
-    public void hardDeleteByPartnerId(UUID partnerId) {
-        log.info("Hard deleting all TrustOnboardingSubmissions of business partner '{}'", partnerId);
-        trustOnboardingSubmissionRepository.deleteByPartnerId(partnerId);
     }
 }

@@ -41,7 +41,7 @@ public class DemoDataMapper {
         if (bp.contact() != null) {
             return toContact(bp.contact());
         }
-        return Contact.builder().email(bp.email()).phone(bp.contactPhone()).build();
+        return Contact.of(bp.email(), bp.contactPhone());
     }
 
     static BusinessPartnerType toBusinessPartnerType(DemoData.DemoBusinessPartner.DemoBusinessPartnerType type) {

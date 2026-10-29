@@ -322,13 +322,13 @@ class TrustDeclarationOfIntentPdfServiceTest {
     }
 
     private static Contact contactWithAddress() {
-        return Contact.builder()
-            .firstName("John")
-            .lastName("Doe")
-            .email("john.doe@example.com")
-            .phone("+41 79 123 45 67")
-            .correspondingLanguage(ch.admin.bj.swiyu.core.business.common.domain.Language.DE)
-            .build();
+        return new Contact(
+            "John",
+            "Doe",
+            "john.doe@example.com",
+            "+41 79 123 45 67",
+            ch.admin.bj.swiyu.core.business.common.domain.Language.DE
+        );
     }
 
     private static Signatory signatory(String firstName, String lastName) {

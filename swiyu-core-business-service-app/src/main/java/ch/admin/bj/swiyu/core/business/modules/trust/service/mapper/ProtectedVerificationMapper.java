@@ -90,18 +90,17 @@ public class ProtectedVerificationMapper {
         );
     }
 
-    public static Contact toContactEntity(ContactDto dto) {
-        if (dto == null) {
+    public static Contact toContactEntity(ContactDto source) {
+        if (source == null) {
             return null;
         }
-        return Contact.builder()
-            .firstName(dto.firstName())
-            .lastName(dto.lastName())
-            .email(dto.email())
-            .phone(dto.phone())
-            .correspondingLanguage(toLanguage(dto.correspondingLanguage()))
-            .build();
-        // note: deprecated dto.address() is intentionally not mapped
+        return new Contact(
+            source.firstName(),
+            source.lastName(),
+            source.email(),
+            source.phone(),
+            toLanguage(source.correspondingLanguage())
+        );
     }
 
     private static LanguageDto toLanguageDto(Language source) {

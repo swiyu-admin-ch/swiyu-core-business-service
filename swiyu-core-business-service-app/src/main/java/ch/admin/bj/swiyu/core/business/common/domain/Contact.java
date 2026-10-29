@@ -9,7 +9,6 @@ import lombok.*;
 @Embeddable
 @Getter
 @ToString
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PUBLIC) // JPA
 public class Contact {
@@ -28,5 +27,10 @@ public class Contact {
 
     public String getFullName() {
         return firstName + " " + lastName;
+    }
+
+    // EID-6624 this needs documentation - why are contacts so often created without the other fields
+    public static Contact of(String email, String phone) {
+        return new Contact(null, null, email, phone, null);
     }
 }

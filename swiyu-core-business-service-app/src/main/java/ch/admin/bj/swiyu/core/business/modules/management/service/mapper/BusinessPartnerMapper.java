@@ -33,14 +33,13 @@ public class BusinessPartnerMapper {
         if (source == null) {
             return null;
         }
-        return Contact.builder()
-            .firstName(source.firstName())
-            .lastName(source.lastName())
-            .email(source.email())
-            .phone(source.phone())
-            .correspondingLanguage(toLanguage(source.correspondingLanguage()))
-            .build();
-        // note: deprecated source.address() is intentionally not mapped
+        return new Contact(
+            source.firstName(),
+            source.lastName(),
+            source.email(),
+            source.phone(),
+            toLanguage(source.correspondingLanguage())
+        );
     }
 
     @SuppressWarnings("java:S1874") // Remove with EID-6624

@@ -1051,7 +1051,7 @@ class TrustOnboardingServiceIT {
     }
 
     @Test
-    void createProfileChangeMandatorySubmission_failsOutsideThreshold() {
+    void createProfileChangeMandatorySubmission_succeedsOutsideThreshold() {
         // Given a partner with ACTIVE BPI and validUntil OUTSIDE 3 years
         UUID partnerId = BusinessEntityTestData.ENTITY_A;
         var partner = repos.businessPartner.findById(partnerId).orElseThrow();
@@ -1071,10 +1071,9 @@ class TrustOnboardingServiceIT {
             .submissionType(PROFILE_CHANGE_MANDATORY)
             .build();
 
-        // Then it should fail with BusinessDataIntegrityViolationException
-        assertThrows(BusinessDataIntegrityViolationException.class, () ->
-            service.createTrustOnboardingSubmission(request)
-        );
+        // Then it should succeed (we don't throw an exception anymore since UI is not ready)
+        var submission = service.createTrustOnboardingSubmission(request);
+        assertThat(submission).isNotNull();
     }
 
     @Test
@@ -1322,12 +1321,7 @@ class TrustOnboardingServiceIT {
         );
         var partnerId = businessEntity.id();
         var sub = trustOnboardingSubmission(UUID.randomUUID(), partnerId, TrustOnboardingSubmissionType.RENEWAL);
-        sub.updateForTypeRenewal(
-            null,
-            "old@example.com",
-            Contact.builder().email("contact@example.com").phone("+41791234567").build(),
-            List.of()
-        );
+        sub.updateForTypeRenewal(null, "old@example.com", Contact.of("contact@example.com", "+41791234567"), List.of());
         sub.markAsSubmitted();
         repos.trustOnboardingSubmission.saveAndFlush(sub);
 

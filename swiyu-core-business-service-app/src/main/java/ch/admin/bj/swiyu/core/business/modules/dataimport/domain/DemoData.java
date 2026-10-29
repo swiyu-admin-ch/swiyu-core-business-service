@@ -800,7 +800,7 @@ public class DemoData {
          * expiring soon (validUntil &lt; 90 days). Computed verification progress is
          * RE_VERIFICATION_REQUIRED.
          */
-        BP_RE_VERIFICATION_REQUIRED(
+        BP_RE_VERIFICATION_REQUIRED_1(
             DemoBusinessPartner.of(
                 DemoBusinessPartner.DemoBusinessPartnerType.BUSINESS,
                 "11111111-2222-4333-8444-555566667001",
@@ -860,6 +860,83 @@ public class DemoData {
                         ),
                         new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask(
                             UUID.fromString("11111111-2222-4333-8444-555566667201"),
+                            DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask.DemoTrustTaskStatus.ACCEPTED,
+                            Instant.now().minus(5, ChronoUnit.DAYS),
+                            Instant.now().minus(35, ChronoUnit.DAYS)
+                        )
+                    )
+                ),
+                new DemoBusinessPartner.DemoBusinessPartnerIdentity(
+                    DemoBusinessPartner.DemoBusinessPartnerIdentity.DemoBusinessPartnerIdentityStatus.ACTIVE,
+                    Instant.now().plus(30, ChronoUnit.DAYS),
+                    List.of(),
+                    List.of()
+                )
+            )
+        ),
+        /**
+         * Same as BP_RE_VERIFICATION_REQUIRED_1, but other data.
+         */
+        BP_RE_VERIFICATION_REQUIRED_2(
+            DemoBusinessPartner.of(
+                DemoBusinessPartner.DemoBusinessPartnerType.BUSINESS,
+                "11111111-2222-4333-8444-555566667004",
+                "expiring.verification2@demo.local",
+                fromLanguages(
+                    "Expiring Verification 2 AG",
+                    "Ablaufende Verifizierung 2 AG (DE)",
+                    "Vérification Expirante 2 SA (FR)",
+                    "Verifica in Scadenza 2 S.r.l. (IT)",
+                    "Expiring Verification 2 AG (EN)",
+                    "Ablaufende Verifizierung 2 AG (RM)"
+                ),
+                new DemoBusinessPartner.DemoAddress("Geschäftsstraße 41", "Demohausen", "1111", "CH"),
+                new DemoBusinessPartner.DemoContact(
+                    "Edith",
+                    "Demo",
+                    "expiring.verification2@demo.local",
+                    "+41548884421",
+                    DemoBusinessPartner.DemoContact.Language.DE
+                ),
+                DemoBusinessPartner.DemoSigningRule.SINGLE_SIGNATURE,
+                List.of(
+                    new DemoBusinessPartner.DemoSignatory(
+                        "Edith",
+                        "Demo",
+                        "+41776665521",
+                        "expiring.verification@demo.local"
+                    )
+                ),
+                null,
+                "+41776665321",
+                null,
+                List.of(
+                    new DemoBusinessPartner.DemoIdentifier(
+                        UUID.fromString("11111111-2222-4333-8444-555566668101"),
+                        "did:webvh:QmRv1ReVerificationRequired000000000000000000000000000000000:localhost%3A8190:api:v1:did:11111111-2222-4333-8444-555566667304",
+                        "Re-verification required DID",
+                        null,
+                        true
+                    )
+                ),
+                List.of(
+                    new DemoBusinessPartner.DemoTrustOnboarding(
+                        UUID.fromString("11111111-2222-4333-8444-555566668102"),
+                        DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionStatus.SUCCEEDED,
+                        List.of(
+                            new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
+                                "Declaration of intent.pdf",
+                                TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+                                "something"
+                            ),
+                            new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingSubmissionDocument(
+                                "vertrag-x.pdf",
+                                TRUST_ONBOARDING_OTHER,
+                                "something"
+                            )
+                        ),
+                        new DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask(
+                            UUID.fromString("11111111-2222-4333-8444-555566668103"),
                             DemoBusinessPartner.DemoTrustOnboarding.DemoTrustOnboardingTask.DemoTrustTaskStatus.ACCEPTED,
                             Instant.now().minus(5, ChronoUnit.DAYS),
                             Instant.now().minus(35, ChronoUnit.DAYS)

@@ -34,12 +34,7 @@ class BusinessEntityPartialUpdateTest {
     @Test
     void onlyContact_keepsNameUidAndAddress() {
         var entity = entity("Old Name");
-        var newContact = Contact.builder()
-            .firstName("A")
-            .lastName("B")
-            .email("a@b.ch")
-            .phone("+41 79 123 45 67")
-            .build();
+        var newContact = new Contact("A", "B", "a@b.ch", "+41 79 123 45 67", null);
 
         entity.applyPartialUpdateFromPortal(null, null, newContact, null);
 

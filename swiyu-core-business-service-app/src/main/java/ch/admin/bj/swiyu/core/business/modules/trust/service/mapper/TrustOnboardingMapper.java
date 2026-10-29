@@ -166,18 +166,17 @@ public class TrustOnboardingMapper {
         );
     }
 
-    public static Contact toContactEntity(ContactDto dto) {
-        if (dto == null) {
+    public static Contact toContactEntity(ContactDto source) {
+        if (source == null) {
             return null;
         }
-
-        return Contact.builder()
-            .firstName(dto.firstName())
-            .lastName(dto.lastName())
-            .email(dto.email())
-            .phone(dto.phone())
-            .correspondingLanguage(toLanguageEntity(dto.correspondingLanguage()))
-            .build();
+        return new Contact(
+            source.firstName(),
+            source.lastName(),
+            source.email(),
+            source.phone(),
+            toLanguageEntity(source.correspondingLanguage())
+        );
     }
 
     public static List<ProofOfPossession> toProofOfPossession(List<String> dids) {

@@ -5,7 +5,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-core-business-service</artifactId>
-    <version>4.10.2-SNAPSHOT</version>
+    <version>4.10.3-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
@@ -15,7 +15,7 @@
             from the dependencyManagement section
          -->
         <!-- see https://github.com/jeap-admin-ch/jeap-spring-boot-parent/blob/main/CHANGELOG.md -->
-        <version>41.23.0</version>
+        <version>41.28.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -29,25 +29,6 @@
         <prettier.version>3.8.1</prettier.version>
         <prettier-plugin-java.version>2.8.1</prettier-plugin-java.version>
         <sonar.scm.disabled>true</sonar.scm.disabled>
-        <!-- CVE-OVERRIDE start -->
-        <!-- Override Tomcat to >= 11.0.27 to fix six Snyk findings on the embedded Tomcat 11.0.25
-             that the parent's Spring Boot manages: -21716509 (critical, HTTP Request Smuggling,
-             CVE-2026-86350), -21707477 (critical, Access Control Bypass, CVE-2026-101356),
-             -21707475 (critical, Missing Critical Step in Authentication, CVE-2026-101296),
-             -20552494 (critical, Authentication Bypass by Alternate Name, CVE-2026-76183),
-             -21715436 (high, CVE-2026-78383) and -21246252 (high, CVE-2026-79677).
-             11.0.27 is the first release fixing all six; the Snyk remediation hint (Spring Boot
-             4.1.2) is not reachable, jEAP parent 41.23.0 (the latest) still manages Spring Boot
-             4.1.1. The property is what the Spring Boot BOM reads for tomcat-embed-core, -el and
-             -websocket, so all three move together.
-             Remove when the parent manages Spring Boot with Tomcat >= 11.0.27. -->
-        <tomcat.version>11.0.27</tomcat.version>
-        <!-- Override PostgreSQL to >= 42.7.14 to fix SNYK-JAVA-ORGPOSTGRESQL-20571163 (high,
-             Not Failing Securely / 'Failing Open', CVE-2026-107314). Spring Boot 4.1.1 manages
-             42.7.13.
-             Remove when the parent manages PostgreSQL >= 42.7.14. -->
-        <postgresql.version>42.7.14</postgresql.version>
-        <!-- CVE-OVERRIDE end -->
     </properties>
 
 
@@ -78,20 +59,34 @@
                 <artifactId>swiyu-discrete-validator-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
             <!-- CVE-OVERRIDE start -->
-            <!-- CVE-2026-108106 and CVE-2026-93452 via kafka-clients, both fixed in 1.1.10.9; pinned to the
-                 newest 1.1.10.x. Remove once kafka-clients pins 1.1.10.9 or later. -->
+            <!-- Override Jackson to >= 2.22.4 (com.fasterxml.jackson) and >= 3.2.4 (tools.jackson) to fix the
+                 critical deserialization findings SNYK-JAVA-COMFASTERXMLJACKSONCORE-21761837 and
+                 SNYK-JAVA-TOOLSJACKSONCORE-21761838. jEAP parent 41.28.0 manages 2.22.3 / 3.2.3 via
+                 jeap-internal-spring-boot-parent 11.9.0 and Spring Boot 4.1.2 is the newest release, so no
+                 upgrade path exists yet; 2.22.4 / 3.2.4 are the first releases fixing both findings. Core and
+                 databind are pinned together to keep each Jackson family consistent.
+                 Remove when the parent manages Jackson >= 2.22.4 / 3.2.4. -->
             <dependency>
-                <groupId>org.xerial.snappy</groupId>
-                <artifactId>snappy-java</artifactId>
-                <version>1.1.10.12</version>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>2.22.4</version>
             </dependency>
-            <!-- CVE-2026-102554, fixed in 33.7.2-jre. Reached via Pact (test) and kafka-schema-registry-client
-                 (compile), and our main sources use @VisibleForTesting - hence no scope here. -->
             <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>33.7.2-jre</version>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>2.22.4</version>
+            </dependency>
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>3.2.4</version>
+            </dependency>
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>3.2.4</version>
             </dependency>
             <!-- CVE-OVERRIDE end -->
 

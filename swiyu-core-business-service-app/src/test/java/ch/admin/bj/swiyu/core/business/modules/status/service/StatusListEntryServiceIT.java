@@ -14,6 +14,7 @@ import ch.admin.bit.jeap.messaging.kafka.interceptor.JeapKafkaMessageCallback;
 import ch.admin.bj.swiyu.core.business.common.config.JsonSchemaConfig;
 import ch.admin.bj.swiyu.core.business.common.did.CryptoIntegrityValidator;
 import ch.admin.bj.swiyu.core.business.common.did.DidPublicKeyLoader;
+import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ObjectCountLimitApiException;
 import ch.admin.bj.swiyu.core.business.modules.identifier.config.IdentifierSchemaConfig;
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierValidator;
@@ -73,6 +74,9 @@ class StatusListEntryServiceIT {
 
     @MockitoBean
     BusinessPartnerService businessPartnerService;
+
+    @MockitoBean
+    EmailCommandPublisher emailCommandPublisher;
 
     @MockitoSpyBean
     StatusListsLimitProperties statusListsLimitProperties;

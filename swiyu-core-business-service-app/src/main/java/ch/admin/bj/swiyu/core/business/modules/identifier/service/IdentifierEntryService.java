@@ -10,6 +10,7 @@ import ch.admin.bj.swiyu.core.business.common.audit.AuditMapper;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditTrigger;
 import ch.admin.bj.swiyu.core.business.common.did.DidUtil;
+import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ObjectCountLimitApiException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.modules.identifier.api.IdentifierEntryDto;
@@ -25,6 +26,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -43,6 +45,7 @@ public class IdentifierEntryService {
     private final JsonMapper jsonMapper;
     private final IdentifierEntryMapper identifierEntryMapper;
     private final AuditPublisher auditPublisher;
+    private final ObjectProvider<EmailCommandPublisher> emailCommandPublisher;
 
     @Transactional(readOnly = true)
     public IdentifierEntryLimitsDto getLimits(@Valid @NotNull UUID businessEntityId) {
@@ -106,14 +109,23 @@ public class IdentifierEntryService {
 
         String did = DidUtil.getId(didLog, jsonMapper);
 
+        var baseRegistryDidInitialized = false;
         if (isDidLogDeactivated(didLog)) {
             entry.updateDidAndDeactivate(did);
         } else if (entry.getUploadCount() == 0) {
             entry.updateDidAndActivate(did);
+            baseRegistryDidInitialized = true;
         }
 
         identifierEntryRepository.save(entry);
         auditChanged(entry, businessEntityId, didLog);
+
+        // Only the first initialization emails the partner: a retry of this request lands on an
+        // uploadCount > 0, and the deterministic idempotence id collapses concurrent duplicates into
+        // one notification for the identifier entry.
+        if (baseRegistryDidInitialized) {
+            emailCommandPublisher.getObject().baseRegistryDidInitialized(businessEntityId, entry.getId());
+        }
     }
 
     @Transactional(readOnly = true)

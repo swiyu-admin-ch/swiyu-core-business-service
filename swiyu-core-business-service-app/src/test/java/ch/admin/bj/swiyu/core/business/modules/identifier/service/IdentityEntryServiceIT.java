@@ -4,13 +4,14 @@ import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.DEFAUL
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.common.api.IdentifierUpdateRequestDto;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.config.JsonSchemaConfig;
+import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessExceptionErrorCode;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ObjectCountLimitApiException;
 import ch.admin.bj.swiyu.core.business.modules.identifier.api.IdentifierEntryFilterDto;
@@ -63,6 +64,9 @@ class IdentityEntryServiceIT {
 
     @MockitoBean
     AuditPublisher auditPublisher;
+
+    @MockitoBean
+    EmailCommandPublisher emailCommandPublisher;
 
     @MockitoSpyBean
     IdentifierLimitProperties identifierLimitProperties;
@@ -246,6 +250,63 @@ class IdentityEntryServiceIT {
         var entryAfter = repos.identifierEntry.findById(identifierEntryId).orElseThrow();
         // upload count still same as before
         assertThat(entryAfter.getUploadCount()).isEqualTo(identifierEntry.getUploadCount());
+    }
+
+    @Test
+    void updateIdentifierEntry_notifies_when_initialized() {
+        // GIVEN
+        var identifierEntryId = identifierEntryService.createIdentifierEntry(DEFAULT_ENTITY).id();
+        repos.commit();
+
+        // WHEN
+        identifierEntryService.updateIdentifierEntry(
+            DEFAULT_ENTITY,
+            identifierEntryId,
+            identifierTestData.validDidTdwLog()
+        );
+
+        // THEN the first upload initializes the base registry DID and notifies the partner
+        verify(emailCommandPublisher).baseRegistryDidInitialized(DEFAULT_ENTITY, identifierEntryId);
+    }
+
+    @Test
+    void updateIdentifierEntry_notifies_only_once() {
+        // GIVEN
+        var identifierEntryId = identifierEntryService.createIdentifierEntry(DEFAULT_ENTITY).id();
+        repos.commit();
+        var didTdwLog = identifierTestData.validDidTdwLog();
+        identifierEntryService.updateIdentifierEntry(DEFAULT_ENTITY, identifierEntryId, didTdwLog);
+
+        // WHEN
+        identifierEntryService.updateIdentifierEntry(DEFAULT_ENTITY, identifierEntryId, didTdwLog);
+
+        // THEN the second upload of an already initialized entry lands on uploadCount > 0 and must
+        // not notify again: one notification per identifier entry.
+        verify(emailCommandPublisher, times(1)).baseRegistryDidInitialized(DEFAULT_ENTITY, identifierEntryId);
+    }
+
+    @Test
+    void updateIdentifierEntry_does_not_notify_userDeactivated() {
+        // GIVEN
+        var identifierEntryId = identifierEntryService.createIdentifierEntry(DEFAULT_ENTITY).id();
+        var didTdwLog = identifierTestData.validDidTdwLog();
+        identifierEntryService.updateIdentifierEntry(DEFAULT_ENTITY, identifierEntryId, didTdwLog);
+
+        verify(emailCommandPublisher, times(1)).baseRegistryDidInitialized(any(), any());
+
+        // status = user_deactivated -> upload must not be possible
+        var identifierEntry = repos.identifierEntry.findById(identifierEntryId).orElseThrow();
+        identifierEntry.updateDidAndDeactivate(identifierEntry.getDid());
+        repos.identifierEntry.saveAndFlush(identifierEntry);
+        repos.commit();
+
+        // WHEN // THEN
+        assertThrows(IdentifierValidationFailedException.class, () ->
+            identifierEntryService.updateIdentifierEntry(DEFAULT_ENTITY, identifierEntryId, didTdwLog)
+        );
+
+        // THEN the failed update rolls back before the notification and must not send one
+        verify(emailCommandPublisher, times(1)).baseRegistryDidInitialized(any(), any());
     }
 
     @Test

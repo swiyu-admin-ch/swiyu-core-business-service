@@ -60,5 +60,13 @@ public class MailProperties {
         public String partnerUrl(UUID partnerId) {
             return MessageFormat.format(partnerTemplateUrl, partnerId);
         }
+
+        /**
+         * Partner detail page with the notification panel of that type preselected, e.g.
+         * {@code .../ui/business-partners/{id}?notification=did-added}.
+         */
+        public String partnerNotificationUrl(UUID partnerId, String notification) {
+            return partnerUrl(partnerId) + "?notification=" + notification;
+        }
     }
 }

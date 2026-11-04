@@ -42,6 +42,7 @@ class DefaultEmailCommandPublisherTest {
 
     private static final UUID PARTNER_ID = UUID.fromString("11111111-2222-3333-4444-555555555555");
     private static final UUID SUBMISSION_ID = UUID.fromString("99999999-8888-7777-6666-555555555555");
+    private static final UUID IDENTIFIER_ENTRY_ID = UUID.fromString("aaaa1111-bbbb-2222-cccc-333333333333");
     private static final Instant VALID_UNTIL = Instant.parse("2027-03-01T00:00:00Z");
     private static final String RECIPIENT = "contact.person@partner.example.com";
     private static final String FROM = "registries@swiyu.admin.ch";
@@ -121,6 +122,10 @@ class DefaultEmailCommandPublisherTest {
             Arguments.of(
                 TRUST_PROTECTED_VERIFICATION_AHV_REJECTED,
                 byPartnerId(EmailCommandPublisher::trustProtectedVerificationAhvRejected)
+            ),
+            Arguments.of(
+                BASE_REGISTRY_DID_INITIALIZED,
+                scheduled(p -> p.baseRegistryDidInitialized(PARTNER_ID, IDENTIFIER_ENTRY_ID))
             ),
             Arguments.of(TRUST_REVIEW_DELAYED, scheduled(p -> p.trustReviewDelayed(PARTNER_ID, SUBMISSION_ID, 6))),
             Arguments.of(
@@ -266,11 +271,53 @@ class DefaultEmailCommandPublisherTest {
     }
 
     @Test
-    void publishesNothingWhenTheReminderAlreadyWentOut() {
+    void buildsADeterministicIdempotenceIdForTheBaseRegistryDidInitialization() {
+        publisher.baseRegistryDidInitialized(PARTNER_ID, IDENTIFIER_ENTRY_ID);
+        var first = capturePublishedCommand().getIdentity().getIdempotenceId();
+
+        // A retried or concurrent update of the same identifier entry must produce the same id,
+        // otherwise the partner is notified once per duplicate instead of once per entry.
+        setUp();
+        publisher.baseRegistryDidInitialized(PARTNER_ID, IDENTIFIER_ENTRY_ID);
+        var second = capturePublishedCommand().getIdentity().getIdempotenceId();
+
+        assertThat(second)
+            .isEqualTo(first)
+            .startsWith("BASE_REGISTRY_DID_INITIALIZED")
+            .contains(PARTNER_ID.toString(), IDENTIFIER_ENTRY_ID.toString());
+    }
+
+    @Test
+    void linksTheBaseRegistryDidInitializationToTheDidNotificationPanel() {
+        publisher.baseRegistryDidInitialized(PARTNER_ID, IDENTIFIER_ENTRY_ID);
+
+        var body = capturePublishedCommand().getPayload().getPlainTextMessage();
+        // The portal preselects the DID notification panel on the partner detail page: the URL
+        // carries the notification query parameter the portal expects, in href and link text.
+        assertThat(body).contains(PORTAL_URL + "?notification=did-added");
+    }
+
+    @Test
+    void buildsADifferentIdempotenceIdPerIdentifierEntry() {
+        publisher.baseRegistryDidInitialized(PARTNER_ID, IDENTIFIER_ENTRY_ID);
+        var firstEntry = capturePublishedCommand().getIdentity().getIdempotenceId();
+
+        setUp();
+        // SUBMISSION_ID doubles as a second, different identifier entry id here: each entry gets its
+        // own notification, only retries of the same entry collapse into one.
+        publisher.baseRegistryDidInitialized(PARTNER_ID, SUBMISSION_ID);
+        var secondEntry = capturePublishedCommand().getIdentity().getIdempotenceId();
+
+        assertThat(secondEntry).isNotEqualTo(firstEntry);
+    }
+
+    @Test
+    void publishesNothingWhenTheNotificationAlreadyWentOut() {
         when(sentNotificationService.alreadySent(any())).thenReturn(true);
 
         publisher.trustRenewalReminder(PARTNER_ID, VALID_UNTIL, 180);
         publisher.trustReviewDelayed(PARTNER_ID, SUBMISSION_ID, 6);
+        publisher.baseRegistryDidInitialized(PARTNER_ID, IDENTIFIER_ENTRY_ID);
 
         verifyNoInteractions(outbox);
     }

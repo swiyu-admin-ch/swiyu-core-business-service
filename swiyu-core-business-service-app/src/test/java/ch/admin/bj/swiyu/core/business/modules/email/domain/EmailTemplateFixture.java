@@ -46,7 +46,12 @@ final class EmailTemplateFixture {
     static Map<String, Object> variablesFor(EmailType emailType) {
         Map<String, Object> variables = new HashMap<>();
         variables.put("contactEmail", CONTACT_EMAIL);
-        variables.put("servicePortalPartnerUrl", PARTNER_URL);
+        if (emailType == EmailType.BASE_REGISTRY_DID_INITIALIZED) {
+            // This email links to the partner page with the DID notification panel preselected
+            variables.put("servicePortalPartnerDidNotificationUrl", PARTNER_URL + "?notification=did-added");
+        } else {
+            variables.put("servicePortalPartnerUrl", PARTNER_URL);
+        }
         if (emailType == EmailType.TRUST_RENEWAL_REMINDER) {
             variables.put("expirationDurationDays", EXPIRATION_DAYS);
         }

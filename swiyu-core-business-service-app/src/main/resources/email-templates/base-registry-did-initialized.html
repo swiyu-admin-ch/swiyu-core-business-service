@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>DID initialisiert/ DID initialized/ DID initialisé/ DID inizializzato</title>
+        <style th:replace="~{fragments/styles :: email-styles}"></style>
+    </head>
+    <body>
+        <section lang="de">
+            <p>Guten Tag</p>
+            <p>Ihre DID wurde erfolgreich in der Basis-Registry initialisiert.</p>
+            <p>Für Fragen stehen wir Ihnen unter <a th:href="'mailto:' + ${contactEmail}" th:text="${contactEmail}">contact</a> zur Verfügung.</p>
+            <p>Link zu Ihrem Business Partner: <a th:href="${servicePortalPartnerDidNotificationUrl}" th:text="${servicePortalPartnerDidNotificationUrl}">link</a></p>
+            <div th:replace="~{fragments/signature :: signature-de}"></div>
+        </section>
+        <hr />
+        <section lang="fr">
+            <p>Bonjour</p>
+            <p>Votre DID a été initialisée avec succès dans la base registry.</p>
+            <p>Pour toute question, nous restons à votre disposition à l'adresse <a th:href="'mailto:' + ${contactEmail}" th:text="${contactEmail}">contact</a>.</p>
+            <p>Lien vers votre business partner: <a th:href="${servicePortalPartnerDidNotificationUrl}" th:text="${servicePortalPartnerDidNotificationUrl}">link</a></p>
+            <div th:replace="~{fragments/signature :: signature-fr}"></div>
+        </section>
+        <hr />
+        <section lang="it">
+            <p>Buongiorno</p>
+            <p>La vostra DID è stata inizializzata con successo nella base registry.</p>
+            <p>Per eventuali domande, restiamo a disposizione all'indirizzo <a th:href="'mailto:' + ${contactEmail}" th:text="${contactEmail}">contact</a>.</p>
+            <p>Link al Business Partner: <a th:href="${servicePortalPartnerDidNotificationUrl}" th:text="${servicePortalPartnerDidNotificationUrl}">link</a></p>
+            <div th:replace="~{fragments/signature :: signature-it}"></div>
+        </section>
+        <hr />
+        <section lang="en">
+            <p>Hello</p>
+            <p>Your DID has been successfully initialized in the base registry.</p>
+            <p>If you have any questions, please contact us at <a th:href="'mailto:' + ${contactEmail}" th:text="${contactEmail}">contact</a>.</p>
+            <p>Link to your business partner: <a th:href="${servicePortalPartnerDidNotificationUrl}" th:text="${servicePortalPartnerDidNotificationUrl}">link</a></p>
+            <div th:replace="~{fragments/signature :: signature-en}"></div>
+        </section>
+    </body>
+</html>

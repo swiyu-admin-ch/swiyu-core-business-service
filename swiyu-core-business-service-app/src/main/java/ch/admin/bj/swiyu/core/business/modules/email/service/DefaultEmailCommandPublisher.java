@@ -57,6 +57,13 @@ public class DefaultEmailCommandPublisher implements EmailCommandPublisher {
      */
     private static final int INITIAL_REMINDER_DAYS = 180;
 
+    /**
+     * The notification panel the portal preselects when the partner detail page is opened from the
+     * base registry DID initialization email. The value is the portal's contract, not ours to
+     * rename - the email type itself is {@code BASE_REGISTRY_DID_INITIALIZED}.
+     */
+    private static final String DID_INIT_NOTIFICATION_VALUE = "did-added";
+
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void submissionAccepted(UUID partnerId) {
@@ -127,6 +134,24 @@ public class DefaultEmailCommandPublisher implements EmailCommandPublisher {
     @Transactional(propagation = Propagation.MANDATORY)
     public void trustProtectedVerificationAhvRejected(UUID partnerId) {
         publish(TRUST_PROTECTED_VERIFICATION_AHV_REJECTED, partnerId);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void baseRegistryDidInitialized(UUID partnerId, UUID identifierEntryId) {
+        // identifierEntryId is in the id so a retry of the update request or a concurrent one produces
+        // the same command: the consumer processes one and drops the rest, while a second identifier
+        // entry still gets its own notification.
+        var idempotenceId = "%s-%s-%s".formatted(BASE_REGISTRY_DID_INITIALIZED, partnerId, identifierEntryId);
+        var notificationUrl = mailProperties
+            .getServicePortal()
+            .partnerNotificationUrl(partnerId, DID_INIT_NOTIFICATION_VALUE);
+        publishScheduled(
+            BASE_REGISTRY_DID_INITIALIZED,
+            partnerId,
+            idempotenceId,
+            Map.of("servicePortalPartnerDidNotificationUrl", notificationUrl)
+        );
     }
 
     @Override

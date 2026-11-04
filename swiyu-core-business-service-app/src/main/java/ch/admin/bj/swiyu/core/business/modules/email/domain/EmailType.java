@@ -22,6 +22,7 @@ public enum EmailType {
     TRUST_ADDITIONAL_DID_ADDED("trust-additional-did-added"),
     TRUST_PROTECTED_VERIFICATION_AHV_APPROVED("trust-protected-verification-ahv-approved"),
     TRUST_PROTECTED_VERIFICATION_AHV_REJECTED("trust-protected-verification-ahv-rejected"),
+    BASE_REGISTRY_DID_INITIALIZED("base-registry-did-initialized"),
     // Scheduled emails: not triggered by an event but by EmailNotificationJob.
     TRUST_REVIEW_DELAYED("trust-review-delayed"),
     TRUST_RENEWAL_REMINDER_INITIAL("trust-renewal-reminder-initial"),

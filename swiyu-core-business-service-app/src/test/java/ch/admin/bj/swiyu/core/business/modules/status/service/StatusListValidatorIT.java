@@ -13,6 +13,7 @@ import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.common.config.JsonSchemaConfig;
 import ch.admin.bj.swiyu.core.business.common.did.CryptoIntegrityValidator;
 import ch.admin.bj.swiyu.core.business.common.did.DidPublicKeyLoader;
+import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.modules.identifier.config.IdentifierSchemaConfig;
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierValidator;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryMapper;
@@ -73,6 +74,9 @@ class StatusListValidatorIT {
 
     @MockitoSpyBean
     StatusListsLimitProperties statusListsLimitProperties;
+
+    @MockitoBean
+    EmailCommandPublisher emailCommandPublisher;
 
     @MockitoBean(answers = Answers.RETURNS_DEEP_STUBS)
     @Qualifier("didResolverClient")

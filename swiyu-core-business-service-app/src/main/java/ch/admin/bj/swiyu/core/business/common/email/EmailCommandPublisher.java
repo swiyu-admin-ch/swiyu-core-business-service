@@ -45,6 +45,8 @@ public interface EmailCommandPublisher {
 
     void trustProtectedVerificationAhvRejected(UUID partnerId);
 
+    void baseRegistryDidInitialized(UUID partnerId, UUID identifierEntryId);
+
     void trustReviewDelayed(UUID partnerId, UUID trustOnboardingSubmissionId, int delayDurationDays);
 
     void trustRenewalReminder(UUID partnerId, Instant validUntil, int daysUntilExpiration);

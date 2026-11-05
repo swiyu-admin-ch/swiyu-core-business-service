@@ -31,10 +31,10 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 @WithAllTestContainerInitializers
+@WithJeapAuthenticationToken
 class SaferpayNotifyB2BControllerIT {
 
     private static final String NOTIFY_URL = "/api/v1/saferpay/notify";
-    private static final String READ_ROLE = "ti_@payment_#read";
 
     @Autowired
     MockMvc mockMvc;
@@ -53,7 +53,6 @@ class SaferpayNotifyB2BControllerIT {
     }
 
     @Test
-    @WithJeapAuthenticationToken(userRoles = READ_ROLE)
     void notify_existingPayment_publishesEventAndReturns200() throws Exception {
         var payment = createTestPayment("P-ABC12345");
         repos.payment.saveAndFlush(payment);
@@ -64,7 +63,6 @@ class SaferpayNotifyB2BControllerIT {
     }
 
     @Test
-    @WithJeapAuthenticationToken(userRoles = READ_ROLE)
     void notify_nonExistingPayment_returns200() throws Exception {
         mockMvc.perform(get(NOTIFY_URL).param("referenceId", "P-NOTEXIST")).andExpect(status().isOk());
 
@@ -72,7 +70,6 @@ class SaferpayNotifyB2BControllerIT {
     }
 
     @Test
-    @WithJeapAuthenticationToken(userRoles = READ_ROLE)
     void notify_integration_withDatabase_publishesEvent() throws Exception {
         var payment = new Payment(
             UUID.randomUUID(),

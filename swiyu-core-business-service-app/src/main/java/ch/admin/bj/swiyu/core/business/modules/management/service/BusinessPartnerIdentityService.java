@@ -91,6 +91,16 @@ public class BusinessPartnerIdentityService {
         return true;
     }
 
+    @Transactional(readOnly = true)
+    public boolean isIdentifierTrusted(UUID businessPartnerId, String did) {
+        return businessPartnerIdentityRepository
+            .findById(businessPartnerId)
+            .filter(BusinessPartnerIdentity::isActive)
+            .map(BusinessPartnerIdentity::getTrustedIdentifier)
+            .map(trustedIdentifiers -> trustedIdentifiers.contains(did))
+            .orElse(false);
+    }
+
     /**
      * Removes the identities of the given business partners with a single bulk delete that bypasses the
      * persistence context. Must be called before the partners are loaded in the same transaction: a

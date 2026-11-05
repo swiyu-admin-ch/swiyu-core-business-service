@@ -122,4 +122,22 @@ public class OpenApiConfig {
             .addOpenApiCustomizer(jsonNodeSchemaCustomizer())
             .build();
     }
+
+    @Bean
+    public GroupedOpenApi saferPay() {
+        return GroupedOpenApi.builder()
+            .group("B2B_PAYMNET")
+            .pathsToMatch("/api/*/saferpay/**")
+            .packagesToScan(API_PACKAGE_NAME)
+            .addOpenApiCustomizer(openApi ->
+                openApi.info(
+                    new Info()
+                        .title("Business Payment API")
+                        .description("IF-016 B2B Payment API.")
+                        .version(buildProperties.getVersion())
+                )
+            )
+            .addOpenApiCustomizer(jsonNodeSchemaCustomizer())
+            .build();
+    }
 }

@@ -66,7 +66,7 @@ class PaymentMapperTest {
             Amount.chf(15_000),
             "https://portal.example.local/callback/id"
         );
-        payment.markAsSucceeded(payedAt);
+        payment.markAsSucceeded("TEST-TX-123", payedAt, "TEST", "Test Holder", true);
 
         var dto = PaymentMapper.toPaymentDto(payment);
 

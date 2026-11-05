@@ -4,7 +4,11 @@ import ch.admin.bj.swiyu.core.business.common.features.FeaturesProperties;
 import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 /**
@@ -43,5 +47,13 @@ public class PaymentConfig {
                 "The payment feature is enabled, but these properties are not set: " + String.join(", ", missing)
             );
         }
+    }
+
+    @Bean("transactionTemplateRequiresNew")
+    @ConditionalOnProperty(name = "features.eidartfe1297-payment", havingValue = "true", matchIfMissing = false)
+    public TransactionTemplate transactionTemplateRequiresNew(PlatformTransactionManager transactionManager) {
+        var template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
+        return template;
     }
 }

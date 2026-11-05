@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import ch.admin.bit.jeap.messaging.transactionaloutbox.outbox.TransactionalOutbox;
 import ch.admin.bj.swiyu.core.business.common.api.ProductTypeDto;
+import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessExceptionErrorCode;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentInitializationRequestDto;
@@ -29,6 +30,7 @@ import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayC
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayInitializePaymentCommand;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayInitializeResult;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentInitializationFailedException;
+import jakarta.persistence.EntityManager;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.time.Instant;
@@ -53,6 +55,7 @@ class PaymentServiceTest {
     private PaymentReturnUrlValidator paymentReturnUrlValidator;
     private SaferpayClient saferpayClient;
     private TransactionalOutbox transactionalOutbox;
+    private AuditPublisher auditPublisher;
     private PaymentService paymentService;
 
     @BeforeEach
@@ -62,6 +65,7 @@ class PaymentServiceTest {
         var businessPartnerService = mock(BusinessPartnerService.class);
         saferpayClient = mock(SaferpayClient.class);
         transactionalOutbox = mock(TransactionalOutbox.class);
+        auditPublisher = mock(AuditPublisher.class);
         var paymentProperties = new PaymentProperties(
             List.of("https://portal.example.local"),
             new PaymentProperties.SaferpayProperties(
@@ -77,6 +81,12 @@ class PaymentServiceTest {
             TransactionCallback<?> callback = invocation.getArgument(0);
             return callback.doInTransaction(null);
         });
+        var transactionTemplateRequiresNew = mock(TransactionTemplate.class);
+        when(transactionTemplateRequiresNew.execute(any())).thenAnswer(invocation -> {
+            TransactionCallback<?> callback = invocation.getArgument(0);
+            return callback.doInTransaction(null);
+        });
+        var entityManager = mock(EntityManager.class);
 
         paymentService = new PaymentService(
             paymentRepository,
@@ -85,7 +95,10 @@ class PaymentServiceTest {
             businessPartnerService,
             saferpayClient,
             transactionalOutbox,
-            transactionTemplate
+            transactionTemplate,
+            transactionTemplateRequiresNew,
+            entityManager,
+            auditPublisher
         );
 
         when(paymentRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -273,11 +286,11 @@ class PaymentServiceTest {
     }
 
     @Test
-    void handleNotification_existingPayment_publishesEvent() {
+    void handleSaferpayCallback_existingPayment_publishesEvent() {
         var payment = pendingPayment("P-ABC12345");
         when(paymentRepository.findByReferenceId("P-ABC12345")).thenReturn(Optional.of(payment));
 
-        paymentService.handleNotification("P-ABC12345");
+        paymentService.handleSaferpayCallback("P-ABC12345");
 
         verify(transactionalOutbox).sendMessage(
             ArgumentMatchers.any(),
@@ -287,10 +300,10 @@ class PaymentServiceTest {
     }
 
     @Test
-    void handleNotification_nonExistingPayment_doesNotPublishEvent() {
+    void handleSaferpayCallback_nonExistingPayment_doesNotPublishEvent() {
         when(paymentRepository.findByReferenceId("P-NOTEXIST")).thenReturn(Optional.empty());
 
-        paymentService.handleNotification("P-NOTEXIST");
+        paymentService.handleSaferpayCallback("P-NOTEXIST");
 
         verify(transactionalOutbox, never()).sendMessage(
             ArgumentMatchers.any(),

@@ -1,11 +1,8 @@
 package ch.admin.bj.swiyu.core.business.modules.management.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Version;
+import static ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus.ACTIVE;
+
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.List;
@@ -109,5 +106,9 @@ public class BusinessPartnerIdentity {
     public void deactivate(long tmsVersion) {
         this.status = BusinessPartnerIdentityStatus.DEACTIVATED;
         this.tmsVersion = tmsVersion;
+    }
+
+    public boolean isActive() {
+        return this.getStatus() == ACTIVE;
     }
 }

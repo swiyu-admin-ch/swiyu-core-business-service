@@ -1,7 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.payment.domain;
 
 import ch.admin.bj.swiyu.core.business.common.domain.AuditMetadata;
-import com.google.common.annotations.VisibleForTesting;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
@@ -19,10 +18,9 @@ import lombok.Getter;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
- * A payment for a product, initiated with Saferpay. Some fields (status transitions to
- * SUCCEEDED/FAILED, saferpayTransactionId, inventoryGrantedAt, payedAt, holdername,
- * paymentMethod) are only populated by later stages of the payment lifecycle
- * (notify/assert/capture) which are not yet implemented.
+ * A payment for a product, initiated with Saferpay. Fields for status transitions to
+ * SUCCEEDED/FAILED/CANCELLED, saferpayTransactionId, payedAt, holdername, paymentMethod,
+ * and liabilityShift are populated by the payment finalization flow (assert/capture).
  */
 @Entity
 @Getter
@@ -91,6 +89,9 @@ public class Payment {
 
     private String paymentMethod;
 
+    /** Liability shift indicator from 3D-Secure. */
+    private Boolean liabilityShift;
+
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "amount_value"))
     @AttributeOverride(name = "currency", column = @Column(name = "amount_currency"))
@@ -131,16 +132,36 @@ public class Payment {
         this.status = PaymentStatus.FAILED;
     }
 
-    /** Only for demo data until the finalize-payment ticket implements the real transition. */
-    @VisibleForTesting
-    public void markAsSucceeded(Instant payedAt) {
+    /**
+     * Marks payment as SUCCEEDED after successful capture.
+     * Called when Saferpay Transaction/Capture returns CAPTURED status.
+     */
+    public void markAsSucceeded(
+        String saferpayTransactionId,
+        Instant payedAt,
+        String paymentMethod,
+        String holdername,
+        Boolean liabilityShift
+    ) {
         this.status = PaymentStatus.SUCCEEDED;
+        this.saferpayTransactionId = saferpayTransactionId;
         this.payedAt = payedAt;
+        this.paymentMethod = paymentMethod;
+        this.holdername = holdername;
+        this.liabilityShift = liabilityShift;
     }
 
-    /** Only for demo data until the cancel/abort handling implements the real transition. */
-    @VisibleForTesting
+    /**
+     * Marks payment as CANCELLED when user aborts or payment expires.
+     */
     public void markAsCancelled() {
         this.status = PaymentStatus.CANCELLED;
+    }
+
+    /**
+     * Sets the Saferpay transaction ID immediately after Assert (crash-safety).
+     */
+    public void setSaferpayTransactionId(String saferpayTransactionId) {
+        this.saferpayTransactionId = saferpayTransactionId;
     }
 }

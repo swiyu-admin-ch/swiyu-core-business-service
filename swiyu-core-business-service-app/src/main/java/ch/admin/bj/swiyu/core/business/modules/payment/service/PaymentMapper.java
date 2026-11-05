@@ -9,6 +9,9 @@ import ch.admin.bj.swiyu.core.business.modules.payment.domain.Amount;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.Payment;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentStatus;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.ProductType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -16,6 +19,10 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class PaymentMapper {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+        .registerModule(new JavaTimeModule())
+        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     public static PaymentInitializationResponseDto toResponseDto(Payment payment) {
         return PaymentInitializationResponseDto.builder()
@@ -81,4 +88,22 @@ public class PaymentMapper {
             throw new IllegalStateException("Saferpay returned an invalid redirect URL: " + url, e);
         }
     }
+
+    private record AuditPaymentDto(
+        java.util.UUID id,
+        java.util.UUID businessPartnerId,
+        String referenceId,
+        PaymentStatus status,
+        ProductType product,
+        Amount amount,
+        String returnUrl,
+        String saferpayToken,
+        java.time.Instant saferpayExpiration,
+        String saferpayRedirectUrl,
+        String saferpayTransactionId,
+        java.time.Instant payedAt,
+        String holdername,
+        String paymentMethod,
+        Boolean liabilityShift
+    ) {}
 }

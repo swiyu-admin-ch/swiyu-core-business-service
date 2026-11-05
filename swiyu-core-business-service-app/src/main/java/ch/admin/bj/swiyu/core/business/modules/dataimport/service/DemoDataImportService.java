@@ -285,7 +285,13 @@ public class DemoDataImportService {
             switch (demoPayment.status()) {
                 case FAILED -> payment.markAsFailed();
                 case CANCELLED -> payment.markAsCancelled();
-                case SUCCEEDED -> payment.markAsSucceeded(demoPayment.payedAt());
+                case SUCCEEDED -> payment.markAsSucceeded(
+                    "DEMO-TX-" + demoPayment.id(), // demo transaction ID
+                    demoPayment.payedAt(),
+                    "DEMO", // demo payment method
+                    "Demo Cardholder", // demo holder name
+                    true // demo liability shift
+                );
                 case PENDING -> {
                     // Nothing to do, that's the status right after construction
                 }

@@ -5,7 +5,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-core-business-service</artifactId>
-    <version>4.11.1-SNAPSHOT</version>
+    <version>4.11.2-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
@@ -73,6 +73,17 @@
     <build>
 
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Run tests in parallel by default; PaymentServiceIT uses @Execution(SAME_THREAD) for sequential execution -->
+                    <parallel>methods</parallel>
+                    <threadCount>4</threadCount>
+                    <perCoreThreadCount>false</perCoreThreadCount>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <!-- See https://www.baeldung.com/checkstyle-java for more info -->
                 <groupId>org.apache.maven.plugins</groupId>

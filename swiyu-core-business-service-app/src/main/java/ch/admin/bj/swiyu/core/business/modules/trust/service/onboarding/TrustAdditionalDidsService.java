@@ -4,6 +4,7 @@ import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
+import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerIdentityService;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustAdditionalDidsSubmissionCreateRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustAdditionalDidsSubmissionInternalDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustAdditionalDidsSubmissionResponseDto;
@@ -15,7 +16,6 @@ import ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.EventMapper;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.mapper.TrustAdditionalDidsMapper;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.ProofOfPossessionValidator;
 import ch.admin.bj.swiyu.messagetype.ti.RejectReason;
-import ch.admin.bj.swiyu.trust.registry.client.api.TrustStatementApi;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,13 +33,14 @@ import org.springframework.validation.SimpleErrors;
 public class TrustAdditionalDidsService {
 
     private static final String SUBMISSION_WITH_ID_NOT_FOUND = "TrustAdditionalDidsSubmission with id '%s' not found.";
-    private final TrustAdditionalDidsSubmissionRepository repository;
-    private final TrustAdditionalDidsSubmissionLimitProperties limitProperties;
-    private final TrustStatementApi trustStatementApi;
-    private final IdentifierEntryService identifierEntryService;
-    private final ProofOfPossessionValidator proofOfPossessionValidator;
+
+    private final BusinessPartnerIdentityService businessPartnerIdentityService;
     private final DomainEventPublisher domainEventPublisher;
     private final EmailCommandPublisher emailCommandPublisher;
+    private final IdentifierEntryService identifierEntryService;
+    private final TrustAdditionalDidsSubmissionLimitProperties limitProperties;
+    private final ProofOfPossessionValidator proofOfPossessionValidator;
+    private final TrustAdditionalDidsSubmissionRepository repository;
 
     private static TrustAdditionalDidsRejectReason toTrustAdditionalDidsRejectReason(RejectReason source) {
         if (source == null) {
@@ -181,10 +182,9 @@ public class TrustAdditionalDidsService {
             throw new ValidationException("permissionDid validation failed", errors);
         }
 
-        var identityStatements = trustStatementApi.getIdentityTrustStatementsForDid(permissionDid, true);
-        if (identityStatements == null || identityStatements.isEmpty()) {
+        if (!businessPartnerIdentityService.isIdentifierTrusted(partnerId, permissionDid)) {
             var errors = new SimpleErrors(permissionDid);
-            errors.reject("MISSING_TRUST_STATEMENT", "permissionDid has no valid trust statement");
+            errors.reject("MISSING_TRUST_STATEMENT", "permissionDid is not trusted");
             throw new ValidationException("permissionDid trust statement validation failed", errors);
         }
     }

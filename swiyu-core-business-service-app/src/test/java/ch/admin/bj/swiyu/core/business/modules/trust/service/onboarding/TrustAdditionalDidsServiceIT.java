@@ -15,6 +15,8 @@ import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.modules.identifier.domain.IdentifierEntry;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentity;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustAdditionalDidsSubmissionCreateRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustAdditionalDidsSubmissionUpdateRequestDto;
@@ -29,13 +31,13 @@ import ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData;
 import ch.admin.bj.swiyu.core.business.test.TestRepositories;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
 import ch.admin.bj.swiyu.messagetype.ti.RejectReason;
-import ch.admin.bj.swiyu.trust.registry.client.api.TrustStatementApi;
 import ch.admin.eportal.pams.client.api.BusinessPartnerApi;
 import com.nimbusds.jose.JOSEException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,9 +79,6 @@ class TrustAdditionalDidsServiceIT {
     @MockitoBean
     PamsClient pamsClient;
 
-    @MockitoBean
-    TrustStatementApi trustStatementApi;
-
     @Autowired
     TrustAdditionalDidsService service;
 
@@ -105,14 +104,19 @@ class TrustAdditionalDidsServiceIT {
         var didToAddEntry = new IdentifierEntry(UUID.randomUUID(), partnerId);
         didToAddEntry.updateDidAndActivate(didToAdd1);
         testRepositories.identifierEntry.save(didToAddEntry);
+
+        saveBusinessPartnerIdentity(List.of(permissionDid));
+    }
+
+    private void saveBusinessPartnerIdentity(List<String> trustedDids) {
+        testRepositories.businessPartnerIdentity.deleteAllInBatch();
+        testRepositories.businessPartnerIdentity.saveAndFlush(
+            BusinessEntityTestData.businessPartnerIdentity(partnerId, trustedDids)
+        );
     }
 
     @Test
     void createSubmission_persistsToDbWithSharedNonce() {
-        when(trustStatementApi.getIdentityTrustStatementsForDid(permissionDid, true)).thenReturn(
-            List.of("some-trust-statement")
-        );
-
         var result = service.createSubmission(
             partnerId,
             new TrustAdditionalDidsSubmissionCreateRequestDto(permissionDid, List.of(didToAdd1))
@@ -146,7 +150,49 @@ class TrustAdditionalDidsServiceIT {
 
     @Test
     void createSubmission_permissionDidHasNoTrustStatement_throwsAndDoesNotPersist() {
-        when(trustStatementApi.getIdentityTrustStatementsForDid(permissionDid, true)).thenReturn(List.of());
+        saveBusinessPartnerIdentity(List.of("did:tdw:example.com:other"));
+        var dto = new TrustAdditionalDidsSubmissionCreateRequestDto(permissionDid, List.of(didToAdd1));
+
+        assertThatThrownBy(() -> service.createSubmission(partnerId, dto)).isInstanceOf(ValidationException.class);
+        assertThat(repository.count()).isZero();
+    }
+
+    @Test
+    void createSubmission_partnerHasNoBusinessPartnerIdentity_throwsAndDoesNotPersist() {
+        testRepositories.businessPartnerIdentity.deleteAllInBatch();
+        var dto = new TrustAdditionalDidsSubmissionCreateRequestDto(permissionDid, List.of(didToAdd1));
+
+        assertThatThrownBy(() -> service.createSubmission(partnerId, dto)).isInstanceOf(ValidationException.class);
+        assertThat(repository.count()).isZero();
+    }
+
+    @Test
+    void createSubmission_businessPartnerIdentityDeactivated_throwsAndDoesNotPersist() {
+        testRepositories.businessPartnerIdentity.deleteAllInBatch();
+        var deactivatedBpi = BusinessEntityTestData.businessPartnerIdentity(partnerId, List.of(permissionDid));
+        deactivatedBpi.deactivate(2L);
+        testRepositories.businessPartnerIdentity.saveAndFlush(deactivatedBpi);
+        var dto = new TrustAdditionalDidsSubmissionCreateRequestDto(permissionDid, List.of(didToAdd1));
+
+        assertThatThrownBy(() -> service.createSubmission(partnerId, dto)).isInstanceOf(ValidationException.class);
+        assertThat(repository.count()).isZero();
+    }
+
+    @Test
+    void createSubmission_businessPartnerIdentityWithoutTrustedIdentifiers_throwsAndDoesNotPersist() {
+        testRepositories.businessPartnerIdentity.deleteAllInBatch();
+        testRepositories.businessPartnerIdentity.saveAndFlush(
+            new BusinessPartnerIdentity(
+                partnerId,
+                Instant.now().plusSeconds(86_400),
+                null,
+                BusinessPartnerIdentityStatus.ACTIVE,
+                Instant.now(),
+                "CHE-123.456.789",
+                Map.of("default", "Test Partner AG"),
+                1L
+            )
+        );
         var dto = new TrustAdditionalDidsSubmissionCreateRequestDto(permissionDid, List.of(didToAdd1));
 
         assertThatThrownBy(() -> service.createSubmission(partnerId, dto)).isInstanceOf(ValidationException.class);
@@ -155,9 +201,6 @@ class TrustAdditionalDidsServiceIT {
 
     @Test
     void createSubmission_didToAddNotBelongingToPartner_throwsAndDoesNotPersist() {
-        when(trustStatementApi.getIdentityTrustStatementsForDid(permissionDid, true)).thenReturn(
-            List.of("some-trust-statement")
-        );
         var dto = new TrustAdditionalDidsSubmissionCreateRequestDto(
             permissionDid,
             List.of("did:tdw:example.com:unknown")

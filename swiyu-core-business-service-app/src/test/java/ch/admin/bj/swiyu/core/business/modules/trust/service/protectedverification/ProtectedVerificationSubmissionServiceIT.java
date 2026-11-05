@@ -13,6 +13,7 @@ import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.PartnerIsNotTrustedException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
+import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerIdentityService;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.protectedverification.ProtectedVerificationSubmissionDomainService;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.protectedverification.ProtectedVerificationSubmissionStatus;
@@ -43,6 +44,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
         ProtectedVerificationSubmissionService.class,
         ProtectedVerificationSubmissionDomainService.class,
         BusinessPartnerService.class,
+        BusinessPartnerIdentityService.class,
     }
 )
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)

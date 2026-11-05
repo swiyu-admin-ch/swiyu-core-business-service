@@ -1,5 +1,11 @@
 package ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay;
 
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.model.SaferpayAmount;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.model.SaferpayBrand;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.model.SaferpayLiability;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.model.SaferpayPaymentMeans;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.model.SaferpayTransaction;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.model.SaferpayTransactionReference;
 import java.time.Duration;
 import java.time.Instant;
 import lombok.extern.slf4j.Slf4j;
@@ -29,5 +35,66 @@ public class MockSaferpayClient implements SaferpayClient {
             "https://mock.saferpay.local/redirect/" + command.orderId(),
             Instant.now().plus(Duration.ofMinutes(30))
         );
+    }
+
+    @Override
+    public SaferpayAssertResult assertPayment(SaferpayAssertCommand command) {
+        log.debug("Mocking invocation of Saferpay PaymentPage/Assert for token {}", command.token());
+        var transaction = new SaferpayTransaction(
+            "mock-txn-" + command.token(),
+            "AUTHORIZED",
+            "Payment",
+            new SaferpayAmount(50_000, "CHF"),
+            "CHF",
+            Instant.now().toString(),
+            command.token(),
+            "Mock Acquirer",
+            new SaferpayPaymentMeans(new SaferpayBrand("VISA")),
+            new SaferpayTransactionReference("mock-txn-ref-" + command.token())
+        );
+        var liability = new SaferpayLiability(true);
+        return new SaferpayAssertResult(transaction, liability);
+    }
+
+    @Override
+    public SaferpayCaptureResult captureTransaction(SaferpayCaptureCommand command) {
+        log.debug(
+            "Mocking invocation of Saferpay Transaction/Capture for transactionReference {}",
+            command.transactionReference().transactionId()
+        );
+        var transaction = new SaferpayTransaction(
+            command.transactionReference().transactionId(),
+            "CAPTURED",
+            "Payment",
+            new SaferpayAmount(50_000, "CHF"),
+            "CHF",
+            Instant.now().toString(),
+            "mock-order",
+            "Mock Acquirer",
+            new SaferpayPaymentMeans(new SaferpayBrand("VISA")),
+            new SaferpayTransactionReference(command.transactionReference().transactionId())
+        );
+        return new SaferpayCaptureResult(transaction);
+    }
+
+    @Override
+    public SaferpayCancelResult cancelTransaction(SaferpayCancelCommand command) {
+        log.debug(
+            "Mocking invocation of Saferpay Transaction/Cancel for transactionReference {}",
+            command.transactionReference().transactionId()
+        );
+        var transaction = new SaferpayTransaction(
+            command.transactionReference().transactionId(),
+            "CANCELLED",
+            "Payment",
+            new SaferpayAmount(50_000, "CHF"),
+            "CHF",
+            Instant.now().toString(),
+            "mock-order",
+            "Mock Acquirer",
+            new SaferpayPaymentMeans(new SaferpayBrand("VISA")),
+            new SaferpayTransactionReference(command.transactionReference().transactionId())
+        );
+        return new SaferpayCancelResult(transaction);
     }
 }

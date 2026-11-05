@@ -82,6 +82,13 @@ public enum AuditUseCase {
         null, // no non-json value sent
         AuditEventType.CREATED
     ),
+    PAYMENT_SUCCEEDED(
+        Category.PAYMENT,
+        ObjectType.PAYMENT,
+        DataJsonFieldName.PAYMENT_DATA,
+        null,
+        AuditEventType.CREATED
+    ),
     /** The DELETED use cases carry the full snapshot: afterwards the audit record is the only trace left. */
     BUSINESS_PARTNER_DELETED(
         Category.BUSINESS_PARTNER,
@@ -127,6 +134,7 @@ public enum AuditUseCase {
         static final String IDENTIFIER_REGISTRY = "IDENTIFIER_REGISTRY";
         static final String BUSINESS_PARTNER = "BUSINESS_PARTNER";
         static final String NOTIFICATION = "NOTIFICATION";
+        static final String PAYMENT = "PAYMENT";
     }
 
     @UtilityClass
@@ -138,6 +146,7 @@ public enum AuditUseCase {
         static final String BUSINESS_PARTNER = "BUSINESS_PARTNER";
         static final String BUSINESS_PARTNER_DOCUMENT = "BUSINESS_PARTNER_DOCUMENT";
         static final String TRUST_ONBOARDING_SUBMISSION = "TRUST_ONBOARDING_SUBMISSION";
+        static final String PAYMENT = "PAYMENT";
     }
 
     @UtilityClass
@@ -149,6 +158,7 @@ public enum AuditUseCase {
         static final String TRUST_ONBOARDING_DOCUMENT_META = "TRUST_ONBOARDING_DOCUMENT_META";
         static final String TRUST_ONBOARDING_SUBMISSION_DATA = "TRUST_ONBOARDING_SUBMISSION_DATA";
         static final String EMAIL_DATA = "EMAIL_DATA";
+        static final String PAYMENT_DATA = "PAYMENT_DATA";
     }
 
     @UtilityClass

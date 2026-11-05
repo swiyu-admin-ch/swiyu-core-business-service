@@ -58,7 +58,9 @@ public class BusinessPartnerService {
     private static final String BUSINESS_PARTNER_WITH_ID_S_NOT_FOUND = "Business partner with id '%s' not found.";
     private static final int PUBLISH_PAGE_SIZE = 500;
     private static final Map<String, String> BUSINESS_PARTNER_SORT_FIELDS = Map.of("entityName", "defaultEntityName");
+
     private final BusinessPartnerRepository businessPartnerRepository;
+    private final BusinessPartnerIdentityService businessPartnerIdentityService;
     private final BusinessPartnerIdentityRepository businessPartnerIdentityRepository;
     private final TrustOnboardingSubmissionRepository trustOnboardingSubmissionRepository;
     private final TrustOnboardingSubmissionLimitProperties trustOnboardingSubmissionLimitProperties;

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.11.2
+
+### Changed
+
+- Fix verification of Add Did Proof of possession
+
 ## 4.11.1
 
 ### Changed
@@ -48,6 +54,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Saferpay callback handling with event publishing (TiPaymentNotificationReceivedEvent)
+- implement payment finalization with Saferpay Assert and Capture API calls
+- add payment state transitions (SUCCEEDED, CANCELLED) and liability shift tracking
+- add TiPaymentSucceededEvent publishing and audit logging for successful payments
+- add Kafka consumer and processor for payment change notifications
 
 ## 4.9.2
 

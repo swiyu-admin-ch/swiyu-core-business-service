@@ -37,6 +37,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
 
     private BusinessPartnerService businessPartnerService = new BusinessPartnerService(
         mock(BusinessPartnerRepository.class),
+        mock(BusinessPartnerIdentityService.class),
         mock(BusinessPartnerIdentityRepository.class),
         mock(TrustOnboardingSubmissionRepository.class),
         mock(TrustOnboardingSubmissionLimitProperties.class),

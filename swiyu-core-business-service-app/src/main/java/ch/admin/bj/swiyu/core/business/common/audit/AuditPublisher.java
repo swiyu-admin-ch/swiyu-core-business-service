@@ -273,6 +273,18 @@ public class AuditPublisher {
         sender.auditEventScheduled(builder.build());
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void paymentSucceeded(PaymentAuditDto payment) {
+        logAuditEvent(PAYMENT_SUCCEEDED, payment.businessPartnerId().toString());
+        var builder = withCommonFields(
+            PAYMENT_SUCCEEDED,
+            payment.id().toString(),
+            payment.version().toString(),
+            payment.businessPartnerId().toString()
+        ).addAuditObjectDataJSON(NEW, PAYMENT_SUCCEEDED.getDataJsonFieldName(), payment.paymentJson());
+        sender.auditEventScheduled(builder.build());
+    }
+
     private void publishAuditEvent(
         AuditUseCase useCase,
         String objectId,

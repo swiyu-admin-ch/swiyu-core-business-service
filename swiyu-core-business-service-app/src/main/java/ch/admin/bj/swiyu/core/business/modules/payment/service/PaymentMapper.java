@@ -9,9 +9,6 @@ import ch.admin.bj.swiyu.core.business.modules.payment.domain.Amount;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.Payment;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentStatus;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.ProductType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -19,10 +16,6 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class PaymentMapper {
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-        .registerModule(new JavaTimeModule())
-        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     public static PaymentInitializationResponseDto toResponseDto(Payment payment) {
         return PaymentInitializationResponseDto.builder()

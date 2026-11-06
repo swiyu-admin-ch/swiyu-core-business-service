@@ -23,7 +23,7 @@ class DevopsInternalController {
 
     private final BusinessPartnerService businessPartnerService;
 
-    @PreAuthorize("hasRoleForAllPartners('businesspartner', 'write')")
+    @PreAuthorize("hasRoleForAllPartners('businesspartner', 'sync')")
     @PostMapping("/sync")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ApiResponse(responseCode = "204", description = "Events published for all business partners")
@@ -37,7 +37,7 @@ class DevopsInternalController {
         businessPartnerService.publishAllBusinessPartnerUpdatedEvents();
     }
 
-    @PreAuthorize("hasRoleForPartner('businesspartner', 'write', #businessPartnerId.toString())")
+    @PreAuthorize("hasRoleForPartner('businesspartner', 'sync', #businessPartnerId.toString())")
     @PostMapping("/sync/{businessPartnerId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ApiResponse(responseCode = "204", description = "Event published for the business partner")

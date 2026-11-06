@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.11.4
+
+### Changed
+
+- Upgrade the jEAP Spring Boot parent from 41.30.0 to 41.33.0
+
+## 4.11.3
+
+### Changed
+
+- DevOps sync endpoints now require business partner sync permission instead of write
+
 ## 4.11.2
 
 ### Changed
@@ -15,7 +27,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Upgrade the jEAP Spring Boot parent from 41.28.0 to 41.30.0 and remove the obsolete Jackson overrides: the parent now manages Jackson 2.22.4 / 3.2.4
+- Upgrade the jEAP Spring Boot parent from 41.28.0 to 41.30.0 and remove the obsolete Jackson overrides: the parent now
+  manages Jackson 2.22.4 / 3.2.4
 
 ## 4.11.0
 
@@ -27,11 +40,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Upgrade the jEAP Spring Boot parent from 41.23.0 to 41.28.0 and remove the obsolete Tomcat, PostgreSQL, Guava and snappy-java overrides: the parent now manages Tomcat 11.0.27, PostgreSQL 42.7.14, Guava 33.7.2-jre and snappy-java 1.1.10.12
+- Upgrade the jEAP Spring Boot parent from 41.23.0 to 41.28.0 and remove the obsolete Tomcat, PostgreSQL, Guava and
+  snappy-java overrides: the parent now manages Tomcat 11.0.27, PostgreSQL 42.7.14, Guava 33.7.2-jre and snappy-java
+  1.1.10.12
 
 ### Fixed
 
-- Override Jackson to 2.22.4 / 3.2.4 to fix the critical deserialization findings SNYK-JAVA-COMFASTERXMLJACKSONCORE-21761837 and SNYK-JAVA-TOOLSJACKSONCORE-21761838
+- Override Jackson to 2.22.4 / 3.2.4 to fix the critical deserialization findings
+  SNYK-JAVA-COMFASTERXMLJACKSONCORE-21761837 and SNYK-JAVA-TOOLSJACKSONCORE-21761838
 
 ## 4.10.2
 

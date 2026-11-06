@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
@@ -53,7 +54,7 @@ public class PaymentConfig {
     @ConditionalOnProperty(name = "features.eidartfe1297-payment", havingValue = "true", matchIfMissing = false)
     public TransactionTemplate transactionTemplateRequiresNew(PlatformTransactionManager transactionManager) {
         var template = new TransactionTemplate(transactionManager);
-        template.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         return template;
     }
 }

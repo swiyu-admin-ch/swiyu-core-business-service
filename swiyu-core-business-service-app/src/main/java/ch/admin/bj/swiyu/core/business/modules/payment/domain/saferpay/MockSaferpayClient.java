@@ -23,6 +23,10 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class MockSaferpayClient implements SaferpayClient {
 
+    private static final String TRANSACTION_TYPE = "Payment";
+    private static final String MOCK_ACQUIRER = "Mock Acquirer";
+    private static final String CURRENCY = "CHF";
+
     public MockSaferpayClient() {
         log.info("Running with mocked saferpay client");
     }
@@ -43,12 +47,12 @@ public class MockSaferpayClient implements SaferpayClient {
         var transaction = new SaferpayTransaction(
             "mock-txn-" + command.token(),
             "AUTHORIZED",
-            "Payment",
-            new SaferpayAmount(50_000, "CHF"),
-            "CHF",
+            TRANSACTION_TYPE,
+            new SaferpayAmount(50_000, CURRENCY),
+            CURRENCY,
             Instant.now().toString(),
             command.token(),
-            "Mock Acquirer",
+            MOCK_ACQUIRER,
             new SaferpayPaymentMeans(new SaferpayBrand("VISA")),
             new SaferpayTransactionReference("mock-txn-ref-" + command.token())
         );
@@ -65,12 +69,12 @@ public class MockSaferpayClient implements SaferpayClient {
         var transaction = new SaferpayTransaction(
             command.transactionReference().transactionId(),
             "CAPTURED",
-            "Payment",
-            new SaferpayAmount(50_000, "CHF"),
-            "CHF",
+            TRANSACTION_TYPE,
+            new SaferpayAmount(50_000, CURRENCY),
+            CURRENCY,
             Instant.now().toString(),
             "mock-order",
-            "Mock Acquirer",
+            MOCK_ACQUIRER,
             new SaferpayPaymentMeans(new SaferpayBrand("VISA")),
             new SaferpayTransactionReference(command.transactionReference().transactionId())
         );
@@ -86,12 +90,12 @@ public class MockSaferpayClient implements SaferpayClient {
         var transaction = new SaferpayTransaction(
             command.transactionReference().transactionId(),
             "CANCELLED",
-            "Payment",
-            new SaferpayAmount(50_000, "CHF"),
-            "CHF",
+            TRANSACTION_TYPE,
+            new SaferpayAmount(50_000, CURRENCY),
+            CURRENCY,
             Instant.now().toString(),
             "mock-order",
-            "Mock Acquirer",
+            MOCK_ACQUIRER,
             new SaferpayPaymentMeans(new SaferpayBrand("VISA")),
             new SaferpayTransactionReference(command.transactionReference().transactionId())
         );

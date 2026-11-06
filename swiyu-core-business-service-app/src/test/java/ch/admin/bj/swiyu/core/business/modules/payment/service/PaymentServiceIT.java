@@ -87,10 +87,7 @@ class PaymentServiceIT {
         when(saferpayClient.initialize(any())).thenAnswer(invocation -> {
             // At this point, the first transaction (creating the PENDING payment) must already be
             // committed - visible via a fresh repository read, before the Saferpay call happens.
-            var pendingPayments = repos.payment.findAll();
-            assertThat(pendingPayments).hasSize(1);
-            assertThat(pendingPayments.getFirst().getStatus()).isEqualTo(PaymentStatus.PENDING);
-            assertThat(pendingPayments.getFirst().getSaferpayToken()).isNull();
+            verifyPendingPaymentState();
 
             return new SaferpayInitializeResult(
                 "token-xyz",
@@ -201,7 +198,8 @@ class PaymentServiceIT {
         when(saferpayClient.assertPayment(any())).thenThrow(new IllegalStateException("saferpay down"));
 
         // When / Then
-        assertThatThrownBy(() -> paymentService.finalizePayment(payment.getId()))
+        var paymentId = payment.getId();
+        assertThatThrownBy(() -> paymentService.finalizePayment(paymentId))
             .isInstanceOf(PaymentFinalizationFailedException.class)
             .hasMessageContaining("Saferpay Assert failed");
 
@@ -216,7 +214,8 @@ class PaymentServiceIT {
         var assertResult = createAssertResultNullTransaction();
         when(saferpayClient.assertPayment(any())).thenReturn(assertResult);
 
-        assertThatThrownBy(() -> paymentService.finalizePayment(payment.getId()))
+        var paymentId = payment.getId();
+        assertThatThrownBy(() -> paymentService.finalizePayment(paymentId))
             .isInstanceOf(PaymentFinalizationFailedException.class)
             .hasMessageContaining("no transaction");
 
@@ -244,7 +243,8 @@ class PaymentServiceIT {
         var assertResult = new SaferpayAssertResult(transaction, liability);
         when(saferpayClient.assertPayment(any())).thenReturn(assertResult);
 
-        assertThatThrownBy(() -> paymentService.finalizePayment(payment.getId()))
+        var paymentId = payment.getId();
+        assertThatThrownBy(() -> paymentService.finalizePayment(paymentId))
             .isInstanceOf(PaymentFinalizationFailedException.class)
             .hasMessageContaining("missing amount or currency");
 
@@ -275,7 +275,8 @@ class PaymentServiceIT {
         var assertResult = new SaferpayAssertResult(transaction, liability);
         when(saferpayClient.assertPayment(any())).thenReturn(assertResult);
 
-        assertThatThrownBy(() -> paymentService.finalizePayment(payment.getId()))
+        var paymentId = payment.getId();
+        assertThatThrownBy(() -> paymentService.finalizePayment(paymentId))
             .isInstanceOf(PaymentFinalizationFailedException.class)
             .hasMessageContaining("missing amount or currency");
 
@@ -307,7 +308,8 @@ class PaymentServiceIT {
         var assertResult = createAssertResult("txn-123", "AUTHORIZED", 20_000L, "CHF", true, "VISA");
         when(saferpayClient.assertPayment(any())).thenReturn(assertResult);
 
-        assertThatThrownBy(() -> paymentService.finalizePayment(payment.getId()))
+        var paymentId = payment.getId();
+        assertThatThrownBy(() -> paymentService.finalizePayment(paymentId))
             .isInstanceOf(PaymentFinalizationFailedException.class)
             .hasMessageContaining("Amount mismatch");
 
@@ -325,7 +327,8 @@ class PaymentServiceIT {
         var assertResult = createAssertResult("txn-123", "AUTHORIZED", 15_000L, "EUR", true, "VISA");
         when(saferpayClient.assertPayment(any())).thenReturn(assertResult);
 
-        assertThatThrownBy(() -> paymentService.finalizePayment(payment.getId()))
+        var paymentId = payment.getId();
+        assertThatThrownBy(() -> paymentService.finalizePayment(paymentId))
             .isInstanceOf(PaymentFinalizationFailedException.class)
             .hasMessageContaining("Currency mismatch");
 
@@ -343,7 +346,8 @@ class PaymentServiceIT {
         var assertResult = createAssertResult("txn-123", "AUTHORIZED", 15_000L, "CHF", false, "VISA");
         when(saferpayClient.assertPayment(any())).thenReturn(assertResult);
 
-        assertThatThrownBy(() -> paymentService.finalizePayment(payment.getId()))
+        var paymentId = payment.getId();
+        assertThatThrownBy(() -> paymentService.finalizePayment(paymentId))
             .isInstanceOf(PaymentFinalizationFailedException.class)
             .hasMessageContaining("Liability shift not achieved");
 
@@ -361,7 +365,8 @@ class PaymentServiceIT {
         var assertResult = createAssertResult("txn-123", "AUTHORIZED", 15_000L, "CHF", false, "TWINT");
         when(saferpayClient.assertPayment(any())).thenReturn(assertResult);
 
-        assertThatThrownBy(() -> paymentService.finalizePayment(payment.getId()))
+        var paymentId = payment.getId();
+        assertThatThrownBy(() -> paymentService.finalizePayment(paymentId))
             .isInstanceOf(PaymentFinalizationFailedException.class)
             .hasMessageContaining("Liability shift not achieved");
 
@@ -381,7 +386,8 @@ class PaymentServiceIT {
         // Capture throws
         when(saferpayClient.captureTransaction(any())).thenThrow(new IllegalStateException("capture failed"));
 
-        assertThatThrownBy(() -> paymentService.finalizePayment(payment.getId()))
+        var paymentId = payment.getId();
+        assertThatThrownBy(() -> paymentService.finalizePayment(paymentId))
             .isInstanceOf(PaymentFinalizationFailedException.class)
             .hasMessageContaining("Capture failed");
 
@@ -401,7 +407,8 @@ class PaymentServiceIT {
         var captureResult = createCaptureResult("txn-123", "AUTHORIZED"); // still AUTHORIZED, not CAPTURED
         when(saferpayClient.captureTransaction(any())).thenReturn(captureResult);
 
-        assertThatThrownBy(() -> paymentService.finalizePayment(payment.getId()))
+        var paymentId = payment.getId();
+        assertThatThrownBy(() -> paymentService.finalizePayment(paymentId))
             .isInstanceOf(PaymentFinalizationFailedException.class)
             .hasMessageContaining("capture status is AUTHORIZED, expected CAPTURED");
 
@@ -506,16 +513,6 @@ class PaymentServiceIT {
         String status,
         long amountValue,
         String currencyCode,
-        boolean liabilityShift
-    ) {
-        return createAssertResult(transactionId, status, amountValue, currencyCode, liabilityShift, "VISA");
-    }
-
-    private SaferpayAssertResult createAssertResult(
-        String transactionId,
-        String status,
-        long amountValue,
-        String currencyCode,
         boolean liabilityShift,
         String paymentMethod
     ) {
@@ -553,5 +550,17 @@ class PaymentServiceIT {
             new SaferpayTransactionReference(transactionId)
         );
         return new SaferpayCaptureResult(transaction);
+    }
+
+    private void verifyPendingPaymentState() {
+        var pendingPayments = repos.payment.findAll();
+        assertThat(pendingPayments).hasSize(1).first().satisfies(verifyPendingPayment());
+    }
+
+    private java.util.function.Consumer<Payment> verifyPendingPayment() {
+        return p ->
+            assertThat(p)
+                .extracting(Payment::getStatus, Payment::getSaferpayToken)
+                .containsExactly(PaymentStatus.PENDING, null);
     }
 }

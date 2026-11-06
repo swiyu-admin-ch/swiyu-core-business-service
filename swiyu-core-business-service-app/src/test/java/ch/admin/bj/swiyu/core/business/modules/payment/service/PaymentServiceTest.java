@@ -77,15 +77,13 @@ class PaymentServiceTest {
             List.of(new PaymentProperties.Product("BASE_REGISTRATION", "swiyu Base Registry", 15_000))
         );
         var transactionTemplate = mock(TransactionTemplate.class);
-        when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
-            TransactionCallback<?> callback = invocation.getArgument(0);
-            return callback.doInTransaction(null);
-        });
+        when(transactionTemplate.execute(any())).thenAnswer(invocation ->
+            invocation.getArgument(0, TransactionCallback.class).doInTransaction(null)
+        );
         var transactionTemplateRequiresNew = mock(TransactionTemplate.class);
-        when(transactionTemplateRequiresNew.execute(any())).thenAnswer(invocation -> {
-            TransactionCallback<?> callback = invocation.getArgument(0);
-            return callback.doInTransaction(null);
-        });
+        when(transactionTemplateRequiresNew.execute(any())).thenAnswer(invocation ->
+            invocation.getArgument(0, TransactionCallback.class).doInTransaction(null)
+        );
         var entityManager = mock(EntityManager.class);
 
         paymentService = new PaymentService(

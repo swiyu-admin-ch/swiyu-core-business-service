@@ -1,9 +1,7 @@
 package ch.admin.bj.swiyu.core.business.modules.management.infrastructure.web;
 
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,9 +46,7 @@ class DevopsInternalControllerIT {
     DomainEventPublisher domainEventPublisher;
 
     @Test
-    @WithJeapAuthenticationToken(
-        bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@businesspartner_#write" }
-    )
+    @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@businesspartner_#sync" })
     void syncSingle_publishesTheEventAndChangesNothing() throws Exception {
         var partnerBefore = businessPartnerRepository.findById(BusinessEntityTestData.DEFAULT_ENTITY).orElseThrow();
 
@@ -66,9 +62,7 @@ class DevopsInternalControllerIT {
     }
 
     @Test
-    @WithJeapAuthenticationToken(
-        bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@businesspartner_#write" }
-    )
+    @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@businesspartner_#sync" })
     void syncSingle_isIdempotentAndCanBeCalledRepeatedly() throws Exception {
         mockMvc
             .perform(post(BASE_URL + "/sync/" + BusinessEntityTestData.DEFAULT_ENTITY_S))
@@ -83,7 +77,8 @@ class DevopsInternalControllerIT {
     }
 
     @Test
-    @WithJeapAuthenticationToken(userRoles = "ti_@businesspartner_#write") // wildcard, like the devops profile
+    @WithJeapAuthenticationToken(userRoles = "ti_@businesspartner_#sync")
+    // wildcard, like the devops profile
     void syncSingle_unknownPartner_returnsNotFound() throws Exception {
         mockMvc.perform(post(BASE_URL + "/sync/" + UUID.randomUUID())).andExpect(status().isNotFound());
 
@@ -101,7 +96,8 @@ class DevopsInternalControllerIT {
     }
 
     @Test
-    @WithJeapAuthenticationToken(userRoles = "ti_@businesspartner_#write") // global role, like the devops profile
+    @WithJeapAuthenticationToken(userRoles = "ti_@businesspartner_#sync")
+    // global role, like the devops profile
     void syncAll_publishesOneEventPerPartner() throws Exception {
         var partnerCount = businessPartnerRepository.count();
 
@@ -120,11 +116,11 @@ class DevopsInternalControllerIT {
         verifyNoInteractions(domainEventPublisher);
     }
 
-    /** Sync-all is an admin endpoint: a write role for a single partner must not be enough. */
+    /**
+     * Sync-all is an admin endpoint: a write role for a single partner must not be enough.
+     */
     @Test
-    @WithJeapAuthenticationToken(
-        bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@businesspartner_#write" }
-    )
+    @WithJeapAuthenticationToken(bpRoles = { BusinessEntityTestData.DEFAULT_ENTITY_S + " = ti_@businesspartner_#sync" })
     void syncAll_withOnlyASinglePartnerRole_isForbidden() throws Exception {
         // the same partner-bound role is sufficient for the partner-scoped endpoint ...
         mockMvc

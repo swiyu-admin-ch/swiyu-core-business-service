@@ -132,7 +132,7 @@ class TrustOnboardingServiceTest {
         assertThat(response.rejectionReason()).isNull();
         assertThat(response.declineReason()).isNull();
         assertThat(response.partnerNote()).isNull();
-        assertThat(response.correspondingLanguage()).hasToString(
+        assertThat(response.contactPerson().correspondingLanguage()).hasToString(
             dbEntry.getContactPerson().getCorrespondingLanguage().toString()
         );
         assertThat(response.initiatedAt()).isCloseTo(initiatedAt, within(10, ChronoUnit.MILLIS));
@@ -166,7 +166,9 @@ class TrustOnboardingServiceTest {
         assertThat(response.rejectionReason()).isNull();
         assertThat(response.declineReason()).isNull();
         assertThat(response.partnerNote()).isNull();
-        assertThat(response.correspondingLanguage()).isEqualTo(request.getContactPerson().correspondingLanguage());
+        assertThat(response.contactPerson().correspondingLanguage()).isEqualTo(
+            request.getContactPerson().correspondingLanguage()
+        );
         assertThat(response.initiatedAt()).isCloseTo(Instant.now(), within(500, ChronoUnit.MILLIS));
         assertThat(response.createdAt()).isNull();
         assertThat(response.submittedAt()).isNull();
@@ -196,7 +198,9 @@ class TrustOnboardingServiceTest {
         assertThat(response.rejectionReason()).isNull();
         assertThat(response.declineReason()).isNull();
         assertThat(response.partnerNote()).isNull();
-        assertThat(response.correspondingLanguage()).isEqualTo(request.getContactPerson().correspondingLanguage());
+        assertThat(response.contactPerson().correspondingLanguage()).isEqualTo(
+            request.getContactPerson().correspondingLanguage()
+        );
         assertThat(response.initiatedAt()).isCloseTo(Instant.now(), within(500, ChronoUnit.MILLIS));
         assertThat(response.createdAt()).isNull();
         assertThat(response.submittedAt()).isNull();

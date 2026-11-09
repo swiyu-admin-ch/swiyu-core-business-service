@@ -2,7 +2,7 @@ package ch.admin.bj.swiyu.core.business.modules.payment.service;
 
 import ch.admin.bit.jeap.domainevent.avro.AvroDomainEvent;
 import ch.admin.bit.jeap.messaging.idempotence.messagehandler.IdempotentMessageHandler;
-import ch.admin.bj.swiyu.messagetype.ti.TiPaymentNotificationReceivedEvent;
+import ch.admin.bj.swiyu.messagetype.ti.TiPaymentChangeNotificationReceivedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,13 +17,13 @@ public class PaymentChangeNotificationEventProcessor {
 
     @Transactional
     @IdempotentMessageHandler
-    public void process(TiPaymentNotificationReceivedEvent event) {
+    public void process(TiPaymentChangeNotificationReceivedEvent event) {
         if (isPayloadNull(event)) {
             return;
         }
         var payload = event.getPayload();
         var paymentId = java.util.UUID.fromString(payload.getPaymentId().toString());
-        log.info("Processing TiPaymentNotificationReceivedEvent for payment '{}'", paymentId);
+        log.info("Processing TiPaymentChangeNotificationReceivedEvent for payment '{}'", paymentId);
         paymentService.finalizePayment(paymentId);
     }
 

@@ -230,7 +230,6 @@ package "Trust" #E0F7FA {
         + entityEmail : String
         + uid : String
         + isRegisteredInCommercialRegister : Boolean
-        + correspondingLanguage : Language
         + status : TrustOnboardingSubmissionStatus
         + type : TrustOnboardingSubmissionType
         + rejectReason : TrustOnboardingRejectReason
@@ -314,7 +313,6 @@ package "Trust" #E0F7FA {
     ProtectedVerificationSubmission --> ProtectedVerificationSubmissionStatus : status
     TrustOnboardingSubmission --> TrustOnboardingRejectReason : rejectReason
     TrustOnboardingSubmission --> TrustOnboardingDeclineReason : declineReason
-    TrustOnboardingSubmission --> Language : correspondingLanguage
     TrustOnboardingSubmission --> SigningRule : signingRule
     TrustAdditionalDidsSubmission --> TrustAdditionalDidsSubmissionStatus : status
     TrustAdditionalDidsSubmission --> TrustAdditionalDidsRejectReason : rejectReason

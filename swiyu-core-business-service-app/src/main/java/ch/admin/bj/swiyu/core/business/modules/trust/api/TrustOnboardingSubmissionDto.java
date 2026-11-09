@@ -32,7 +32,6 @@ public record TrustOnboardingSubmissionDto(
     String rejectionReason,
     String declineReason,
     String partnerNote,
-    LanguageDto correspondingLanguage,
     @Schema(example = "2024-10-29T09:35:16.809924Z") Instant submittedAt,
     @Schema(example = "2024-10-29T09:35:16.809924Z") Instant initiatedAt,
     @Schema(

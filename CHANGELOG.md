@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.12.1
+
+### Fixed
+
+- `ContactDto`: the deprecated `address` field is no longer written when mapping a business partner's contact. It was
+  always `null` and stays `null` in the response
+- Resolve Sonar code smells in the business partner mapping and its tests
+
+## 4.12.0
+
+### Added
+
+- Publish `TiBusinessPartner` change notifications through the transactional outbox: `TiBusinessPartnerUpdatedEvent`
+  on partner registration, portal and management updates, `hardDeleteAllowed` changes and on the DevOps sync triggers
+  (single partner and sync all), and `TiBusinessPartnerHardDeletedEvent` when a partner is hard deleted. Identity
+  changes originating from TMS are never echoed back
+
+### Changed
+
+- `BusinessPartnerDto`: remove the deprecated fields `contactEmailAddress` and `contactPhone`. Use `contact.email` and
+  `contact.phone` instead. The deprecated `trustVerificationStatus` and `maxDateForTrustVerificationStatus` fields stay
+  until EID-7245
+- `TrustOnboardingSubmissionDto`: remove `correspondingLanguage`. The `corresponding_language` column is dropped from
+  `trust_onboarding_submission` (Flyway migration `V4_12_0`)
+
+### Removed
+
+- Legacy API types `BusinessEntityDto`, `CreateBusinessEntityDto` and `UpdateBusinessEntityDto`, and the obsolete
+  `BusinessPartnerService` read/update methods `getAllEntities`, `getBusinessEntity` and `updateBusinessEntity`
+- The deprecated `BusinessEntity` contact convenience getters `getContactEmail`/`getContactPhone` and the unused
+  `BusinessEntity.setName` setter
+
+## 4.11.5
+
+### Changed
+
+- Moved from TiPaymentNoficationReceivedEvent to TiPaymentChangeNotificationReceivedEvent
+
 ## 4.11.4
 
 ### Changed

@@ -130,7 +130,6 @@ public class ArchitectureTest {
             GeneralCodingRules.NO_CLASSES_SHOULD_USE_JAVA_UTIL_LOGGING;
     }
 
-    @SuppressWarnings("java:S1135") // remove with EID-6624
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class ArchitectureRules {
 
@@ -205,14 +204,8 @@ public class ArchitectureTest {
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service.."),
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.identifier.api..")
             )
-            // management -> trust (TrustOnboardingSubmissionRepository used to compute verification progress)
-            // TODO EID-6624: remove once deprecated trustVerificationStatus field is removed from BusinessPartnerDto
-            .ignoreDependency(
-                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service.."),
-                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.trust.domain..")
-            )
             // management -> trust.config (TrustOnboardingSubmissionLimitProperties used to compute maxDateForTrustVerificationStatus)
-            // TODO EID-6624: remove once deprecated maxDateForTrustVerificationStatus field is removed from BusinessPartnerDto
+            // to remove EID-7245: remove once deprecated maxDateForTrustVerificationStatus field is removed from BusinessPartnerDto
             .ignoreDependency(
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service.."),
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.trust.config..")
@@ -392,7 +385,6 @@ public class ArchitectureTest {
         return matcher.matches() ? matcher.group(1) : null;
     }
 
-    @SuppressWarnings("java:S1135") // remove with EID-6624
     private static @NonNull ArchCondition<JavaClass> notAccessDomainPackageOfOtherModules() {
         return new ArchCondition<>("not access the domain package of another module") {
             @Override
@@ -414,7 +406,7 @@ public class ArchitectureTest {
                             var targetModule = domainMatcher.group(1);
                             // management -> trust.domain: temporary until the deprecated trustVerificationStatus
                             // field is removed from BusinessPartnerDto.
-                            // TODO EID-6624: remove this exception
+                            // to remove in EID-7245: remove this exception
                             if ("management".equals(originModule) && "trust".equals(targetModule)) {
                                 return;
                             }

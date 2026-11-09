@@ -147,7 +147,10 @@ class TrustOnboardingServiceIT {
         assertEquals(request.entityEmail(), resultDto.entityEmail());
         assertEquals(request.getContactPerson(), resultDto.contactPerson());
         assertEquals(request.getRegistryIds().get("UID"), resultDto.registryIds().get("UID"));
-        assertEquals(request.getContactPerson().correspondingLanguage(), resultDto.correspondingLanguage());
+        assertEquals(
+            request.getContactPerson().correspondingLanguage(),
+            resultDto.contactPerson().correspondingLanguage()
+        );
         assertEquals(request.dids(), resultDto.proofOfPossessions().stream().map(ProofOfPossessionDto::did).toList());
         assertEquals(TrustOnboardingSubmissionStatus.UNSUBMITTED.name(), resultDto.status().name());
 
@@ -237,7 +240,10 @@ class TrustOnboardingServiceIT {
         assertEquals(updateDto.entityEmail(), submission.entityEmail());
         assertEquals(updateDto.getContactPerson(), submission.contactPerson());
         assertEquals(updateDto.getRegistryIds().get("UID"), submission.registryIds().get("UID"));
-        assertEquals(updateDto.getContactPerson().correspondingLanguage(), submission.correspondingLanguage());
+        assertEquals(
+            updateDto.getContactPerson().correspondingLanguage(),
+            submission.contactPerson().correspondingLanguage()
+        );
         assertEquals(
             updateDto.dids(),
             submission.proofOfPossessions().stream().map(ProofOfPossessionDto::did).toList()
@@ -646,7 +652,6 @@ class TrustOnboardingServiceIT {
         verify(emailCommandPublisher).trustRegistrationSucceeded(businessEntity.id());
     }
 
-    @SuppressWarnings("java:S1874") // remove with EID-6624
     @Test
     void markAsSucceeded_updatesBusinessPartnerWithSubmissionDetails() {
         // GIVEN
@@ -689,9 +694,10 @@ class TrustOnboardingServiceIT {
         assertNull(updatedPartner.entityName().get("it-CH"));
         assertNull(updatedPartner.entityName().get("en-CH"));
         assertNull(updatedPartner.entityName().get("rm-CH"));
-        assertEquals(newEmail, updatedPartner.contactEmailAddress());
+        assertThat(updatedPartner.contact()).isNotNull();
+        assertThat(updatedPartner.contact().email()).isEqualTo(newEmail);
+        assertThat(updatedPartner.contact().phone()).isEqualTo(newPhone);
         assertEquals(newUid, updatedPartner.uid());
-        assertEquals(newPhone, updatedPartner.contactPhone());
         assertEquals(newAddress.getStreet(), updatedPartner.address().street());
         assertEquals(ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto.BUSINESS, updatedPartner.type());
     }

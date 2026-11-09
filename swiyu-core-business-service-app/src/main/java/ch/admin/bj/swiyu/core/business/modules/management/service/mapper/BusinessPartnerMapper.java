@@ -9,7 +9,6 @@ import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
-import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper;
 import ch.admin.bj.swiyu.core.business.modules.management.api.*;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
@@ -42,32 +41,11 @@ public class BusinessPartnerMapper {
         );
     }
 
-    @SuppressWarnings("java:S1874") // Remove with EID-6624
-    public static BusinessEntityDto toBusinessEntityDto(BusinessEntity source) {
-        BusinessPartnerTypeDto type = toBusinessPartnerTypeDto(source.getType());
-        return new BusinessEntityDto(
-            source.getId(),
-            LocalizedMapUtil.getDefaultValue(source.getEntityName()),
-            source.getContactEmail(),
-            type,
-            source.isBusinessPartnerIdentityActive(),
-            source.isPayedForTrustVerification(),
-            source.getPayedForDidSlots(),
-            source.getAuditMetadata().getCreatedAt(),
-            source.getAuditMetadata().getLastModifiedAt()
-        );
-    }
-
     /**
      * Maps a BusinessEntity to a BusinessPartnerDto.
      *
      * @param source      the entity to map
-     * @param trustStatus the computed trust verification status — must be passed in by the caller
-     *                    (computed on-the-fly by BusinessPartnerService, never persisted)
-     * @param maxDateForTrustVerificationStatus the computed deadline for the current trust verification
-     *                    state, or {@code null} if not applicable
      */
-    @SuppressWarnings("java:S1874") // Remove with EID-6624
     public static BusinessPartnerDto toBusinessPartnerDto(
         BusinessEntity source,
         BusinessPartnerTrustStatusDto trustStatus,
@@ -77,8 +55,6 @@ public class BusinessPartnerMapper {
         return new BusinessPartnerDto(
             source.getId(),
             source.getEntityName(),
-            // deprecated: derive from contact.email
-            source.getContactEmail(),
             type,
             source.isPayedForTrustVerification(),
             source.getPayedForDidSlots(),
@@ -86,8 +62,6 @@ public class BusinessPartnerMapper {
             source.getAuditMetadata().getLastModifiedAt(),
             source.getUid(),
             AddressMapper.toAddressDto(source.getAddress()),
-            // deprecated: derive from contact.phone
-            source.getContactPhone(),
             // deprecated: computed on-the-fly from BPI + submission history (never persisted)
             trustStatus,
             maxDateForTrustVerificationStatus,
@@ -101,10 +75,6 @@ public class BusinessPartnerMapper {
      * Maps a BusinessEntity to a BusinessPartnerListItemDto.
      *
      * @param source      the entity to map
-     * @param trustStatus the computed trust verification status — must be passed in by the caller
-     *                    (computed on-the-fly by BusinessPartnerService, never persisted)
-     * @param maxDateForTrustVerificationStatus the computed deadline for the current trust verification
-     *                    state, or {@code null} if not applicable
      */
     public static BusinessPartnerListItemDto toBusinessPartnerListItemDto(
         BusinessEntity source,
@@ -146,7 +116,6 @@ public class BusinessPartnerMapper {
     // Private helpers
     // ---------------------------------------------------------------------------
 
-    @SuppressWarnings({ "java:S1874" }) // Remove with EID-6624
     private static ContactDto toContactDto(Contact source) {
         if (source == null) {
             return null;
@@ -157,7 +126,6 @@ public class BusinessPartnerMapper {
             .email(source.getEmail())
             .phone(source.getPhone())
             .correspondingLanguage(toLanguageDto(source.getCorrespondingLanguage()))
-            .address(null) // deprecated field — not stored on BusinessEntity
             .build();
     }
 

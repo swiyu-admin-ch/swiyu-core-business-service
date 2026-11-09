@@ -20,11 +20,6 @@ public record BusinessPartnerDto(
     @ValidLocalizedMap
     Map<String, String> entityName,
 
-    @SuppressWarnings("java:S1133") // remove with EID-6624
-    @Deprecated(since = "3.42.5")
-    @Schema(description = "Contact email address. Deprecated: use contact.email.", deprecated = true)
-    String contactEmailAddress,
-
     @Schema(description = "Type of the partner") @NotNull BusinessPartnerTypeDto type,
     @Schema(description = "User paid for trust onboarding") boolean payedForTrustVerification,
     @Schema(description = "Number of DID slots the user paid for already") int payedForDIDSlots,
@@ -32,13 +27,7 @@ public record BusinessPartnerDto(
     @Schema(example = "2024-10-29T09:35:16.809924Z") Instant updatedAt,
     @Schema(description = "Enterprise identification number of the partner") String uid,
     @Schema(description = "Address of the partner") AddressDto address,
-
-    @SuppressWarnings("java:S1133") // remove with EID-6624
-    @Deprecated(since = "3.42.5")
-    @Schema(description = "Contact phone number. Deprecated: use contact.phone.", deprecated = true)
-    String contactPhone,
-
-    @SuppressWarnings("java:S1133") // remove with EID-6624
+    @SuppressWarnings("java:S1133") // remove with EID-7245
     @Deprecated(since = "3.42.5")
     @Schema(
         description = "Aggregated state of the trust process. Deprecated: use businessPartnerIdentity.status.",

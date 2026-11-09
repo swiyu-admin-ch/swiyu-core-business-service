@@ -22,6 +22,8 @@ import ch.admin.bj.swiyu.core.business.modules.trust.domain.vcschema.VcSchemaSub
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.vcschema.VcTypeMetadataValidator;
 import ch.admin.bj.swiyu.core.business.modules.trust.exceptions.VcSchemaSubmissionNotFoundException;
 import ch.admin.bj.swiyu.core.business.modules.trust.exceptions.VcTypeMetadataValidationFailedException;
+import ch.admin.bj.swiyu.core.business.modules.trust.service.DefaultBusinessPartnerEventPublisher;
+import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.DefaultIdentityVerificationProgressProvider;
 import ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData;
 import ch.admin.bj.swiyu.core.business.test.DataJpaTestConfiguration;
 import ch.admin.bj.swiyu.core.business.test.TestRepositories;
@@ -64,6 +66,8 @@ import org.springframework.test.context.jdbc.Sql;
         TrustRegistryProperties.class,
         BusinessPartnerService.class,
         BusinessPartnerIdentityService.class,
+        DefaultBusinessPartnerEventPublisher.class,
+        DefaultIdentityVerificationProgressProvider.class,
         VCTypeMetadataTestData.class,
         DomainEventPublisher.class,
     }

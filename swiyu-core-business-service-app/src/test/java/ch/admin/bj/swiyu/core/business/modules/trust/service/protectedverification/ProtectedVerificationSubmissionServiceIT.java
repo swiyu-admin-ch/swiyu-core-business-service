@@ -18,6 +18,8 @@ import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartne
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.protectedverification.ProtectedVerificationSubmissionDomainService;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.protectedverification.ProtectedVerificationSubmissionStatus;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.publisher.DomainEventPublisher;
+import ch.admin.bj.swiyu.core.business.modules.trust.service.DefaultBusinessPartnerEventPublisher;
+import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.DefaultIdentityVerificationProgressProvider;
 import ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData;
 import ch.admin.bj.swiyu.core.business.test.DataJpaTestConfiguration;
 import ch.admin.bj.swiyu.core.business.test.ProtectedVerificationSubmissionTestData;
@@ -45,6 +47,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
         ProtectedVerificationSubmissionDomainService.class,
         BusinessPartnerService.class,
         BusinessPartnerIdentityService.class,
+        DefaultBusinessPartnerEventPublisher.class,
+        DefaultIdentityVerificationProgressProvider.class,
     }
 )
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)

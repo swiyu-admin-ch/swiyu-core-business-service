@@ -57,9 +57,6 @@ public class TrustOnboardingMapper {
             source.getRejectReason() == null ? null : String.valueOf(source.getRejectReason()),
             source.getDeclineReason() == null ? null : String.valueOf(source.getDeclineReason()),
             source.getPartnerNote(),
-            source.getContactPerson() == null
-                ? null
-                : toLanguageDto(source.getContactPerson().getCorrespondingLanguage()),
             truncateInstantToMicroseconds(source.getSubmittedAt()),
             truncateInstantToMicroseconds(source.getInitiatedAt()),
             truncateInstantToMicroseconds(source.getResubmitRequiredUntil()),

@@ -309,7 +309,6 @@ public class TrustOnboardingService {
         }
 
         var validPops = submission.getProofOfPossessions().stream().map(ProofOfPossession::toValid).toList();
-
         submission.submitProofOfPossessions(validPops);
         return toTrustOnboardingsSubmissionDto(submission);
     }

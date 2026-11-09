@@ -260,35 +260,6 @@ public class BusinessEntity {
         applyGovernmentalHardDeleteGuard();
     }
 
-    public void setName(Map<String, String> entityName) {
-        this.entityName = entityName;
-    }
-
-    // ---------------------------------------------------------------------------
-    // Convenience accessors kept for backward compatibility with existing callers
-    // that read contactEmail / contactPhone directly from BusinessEntity.
-    // These delegate to the embedded Contact.
-    // Remove with EID-6624.
-    // ---------------------------------------------------------------------------
-
-    /**
-     * @deprecated
-     */
-    @Deprecated(since = "3.42.5")
-    @SuppressWarnings({ "java:S1874", "java:S1133" }) // Remove with EID-6624
-    public String getContactEmail() {
-        return contact != null ? contact.getEmail() : null;
-    }
-
-    /**
-     * @deprecated
-     */
-    @Deprecated(since = "3.42.5")
-    @SuppressWarnings({ "java:S1874", "java:S1133" }) // Remove with EID-6624
-    public String getContactPhone() {
-        return contact != null ? contact.getPhone() : null;
-    }
-
     private void applyGovernmentalHardDeleteGuard() {
         if (type == BusinessPartnerType.GOVERNMENTAL_INSTITUTION) {
             this.hardDeleteAllowed = false;

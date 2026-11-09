@@ -1,6 +1,6 @@
-package ch.admin.bj.swiyu.core.business.modules.management.service;
+package ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding;
 
-import static ch.admin.bj.swiyu.core.business.modules.management.api.IdentityVerificationProgressStatusDto.*;
+import static ch.admin.bj.swiyu.core.business.common.trust.IdentityVerificationProgressStatusDto.*;
 import static ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionStatus.*;
 import static ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionType.*;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.*;
@@ -9,19 +9,15 @@ import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
-import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
-import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerTrustStatusDto;
+import ch.admin.bj.swiyu.core.business.common.trust.BusinessPartnerIdentitySnapshot;
+import ch.admin.bj.swiyu.core.business.common.trust.IdentityVerificationProgress;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
-import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityRepository;
-import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerRepository;
-import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
 import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionLimitProperties;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionStatus;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionType;
-import ch.admin.bj.swiyu.core.business.modules.trust.domain.publisher.DomainEventPublisher;
 import ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -33,19 +29,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class BusinessPartnerServiceComputeVerificationProgressTest {
+class DefaultIdentityVerificationProgressProviderTest {
 
-    private BusinessPartnerService businessPartnerService = new BusinessPartnerService(
-        mock(BusinessPartnerRepository.class),
-        mock(BusinessPartnerIdentityService.class),
-        mock(BusinessPartnerIdentityRepository.class),
-        mock(TrustOnboardingSubmissionRepository.class),
-        mock(TrustOnboardingSubmissionLimitProperties.class),
-        mock(PamsClient.class),
-        mock(IdentifierEntryService.class),
-        mock(AuditPublisher.class),
-        mock(DomainEventPublisher.class)
-    );
+    private final DefaultIdentityVerificationProgressProvider provider =
+        new DefaultIdentityVerificationProgressProvider(
+            mock(TrustOnboardingSubmissionRepository.class),
+            mock(TrustOnboardingSubmissionLimitProperties.class)
+        );
 
     // -------------------------------------------------------------------------
     // No BPI — first-time verification
@@ -56,7 +46,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = businessPartnerA();
         List<TrustOnboardingSubmission> noSubmissions = emptyList();
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, noSubmissions);
+        var progress = computeVerificationProgress(partner, noSubmissions);
         // Then
         assertThat(progress).isNotNull();
         assertThat(progress.status()).isEqualTo(VERIFICATION_NOT_STARTED);
@@ -69,7 +59,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = businessPartnerA();
         var submissions = List.of(submission(REGISTRATION, UNSUBMITTED_TIMEOUT));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_NOT_STARTED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -81,7 +71,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = businessPartnerA();
         var submissions = List.of(submission(REGISTRATION, REJECTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_REJECTED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -93,7 +83,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = businessPartnerA();
         var submissions = List.of(submission(REGISTRATION, UNSUBMITTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_STARTED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -105,7 +95,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = businessPartnerA();
         var submissions = List.of(submissionUnsubmittedWithSubmittedAt());
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_INFORMATION_REQUESTED_STARTED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -117,7 +107,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = businessPartnerA();
         var submissions = List.of(submission(REGISTRATION, SUBMITTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_IN_PROGRESS);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -129,7 +119,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = businessPartnerA();
         var submissions = List.of(submission(REGISTRATION, RESUBMITTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_IN_PROGRESS);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -141,7 +131,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = businessPartnerA();
         var submissions = List.of(submission(REGISTRATION, INFORMATION_REQUESTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_INFORMATION_REQUESTED_REQUIRED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -149,14 +139,14 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
 
     // Migration window (no BPI yet, TMS event not received): a terminal SUCCEEDED with no ongoing
     // submission is still treated as verified. Not part of the DTO derivation table, but documented
-    // behavior in BusinessPartnerService.computeVerificationProgress.
+    // behavior in DefaultIdentityVerificationProgressProvider.computeVerificationProgress.
     @Test
     void noBpi_succeededSubmission_returnsVerificationSucceeded() {
         // Given
         var partner = businessPartnerA();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_SUCCEEDED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -172,7 +162,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         List<TrustOnboardingSubmission> submissions = emptyList();
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_SUCCEEDED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -184,7 +174,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(REGISTRATION, UNSUBMITTED_TIMEOUT));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_SUCCEEDED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -196,7 +186,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(REGISTRATION, UNSUBMITTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_STARTED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -208,7 +198,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submissionUnsubmittedCloseToLimit());
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_STARTED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -223,7 +213,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
             submission(PROFILE_CHANGE_MANDATORY, UNSUBMITTED)
         );
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_STARTED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -238,7 +228,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
             submission(PROFILE_CHANGE_VOLUNTARY, UNSUBMITTED)
         );
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_STARTED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -250,7 +240,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(RENEWAL, UNSUBMITTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_STARTED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -262,7 +252,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submissionUnsubmittedWithSubmittedAt());
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_INFORMATION_REQUESTED_STARTED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -274,7 +264,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(REGISTRATION, SUBMITTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_IN_PROGRESS);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -286,7 +276,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(REGISTRATION, INFORMATION_REQUESTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_INFORMATION_REQUESTED_REQUIRED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -298,7 +288,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(REGISTRATION, RESUBMITTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_IN_PROGRESS);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -313,7 +303,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
             submission(PROFILE_CHANGE_MANDATORY, RESUBMITTED)
         );
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_IN_PROGRESS);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -328,7 +318,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
             submission(PROFILE_CHANGE_VOLUNTARY, RESUBMITTED)
         );
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_IN_PROGRESS);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -340,7 +330,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(RENEWAL, RESUBMITTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_IN_PROGRESS);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -352,7 +342,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(REGISTRATION, REJECTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_REJECTED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -364,7 +354,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(PROFILE_CHANGE_MANDATORY, REJECTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_REJECTED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -376,7 +366,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(PROFILE_CHANGE_VOLUNTARY, REJECTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_REJECTED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -388,7 +378,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_SUCCEEDED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -400,7 +390,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(PROFILE_CHANGE_MANDATORY, SUCCEEDED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_SUCCEEDED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -412,7 +402,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(PROFILE_CHANGE_VOLUNTARY, SUCCEEDED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_SUCCEEDED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -424,7 +414,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(RENEWAL, SUCCEEDED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_SUCCEEDED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -440,7 +430,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithActiveBpiExpiringSoon();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_REQUIRED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -456,7 +446,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithDeactivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_NOT_STARTED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -468,7 +458,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithDeactivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(REGISTRATION, UNSUBMITTED_TIMEOUT));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_NOT_STARTED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -480,7 +470,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithDeactivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(REGISTRATION, REJECTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_REJECTED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -492,7 +482,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithDeactivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(PROFILE_CHANGE_MANDATORY, REJECTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_REJECTED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -504,7 +494,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithDeactivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(PROFILE_CHANGE_VOLUNTARY, REJECTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_REJECTED);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -516,7 +506,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithDeactivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(REGISTRATION, UNSUBMITTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_STARTED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -528,7 +518,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithDeactivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submissionUnsubmittedCloseToLimit());
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_STARTED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -543,7 +533,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
             submission(PROFILE_CHANGE_MANDATORY, UNSUBMITTED)
         );
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_STARTED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -558,7 +548,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
             submission(PROFILE_CHANGE_VOLUNTARY, UNSUBMITTED)
         );
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_STARTED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -570,7 +560,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithDeactivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(RENEWAL, UNSUBMITTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_STARTED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -582,7 +572,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithDeactivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submissionUnsubmittedWithSubmittedAt());
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_INFORMATION_REQUESTED_STARTED);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -594,7 +584,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithDeactivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(REGISTRATION, SUBMITTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_IN_PROGRESS);
         assertThat(progress.maxDateForStatus()).isNull();
@@ -609,7 +599,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
             submission(PROFILE_CHANGE_MANDATORY, RESUBMITTED)
         );
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_IN_PROGRESS);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -624,7 +614,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
             submission(PROFILE_CHANGE_VOLUNTARY, RESUBMITTED)
         );
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_IN_PROGRESS);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -636,7 +626,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithDeactivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(RENEWAL, RESUBMITTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_IN_PROGRESS);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -648,7 +638,7 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithDeactivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(REGISTRATION, RESUBMITTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(RE_VERIFICATION_IN_PROGRESS);
         assertThat(progress.maxDateForStatus()).isNotNull();
@@ -660,43 +650,30 @@ class BusinessPartnerServiceComputeVerificationProgressTest {
         var partner = partnerWithDeactivatedIdentity();
         var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(REGISTRATION, INFORMATION_REQUESTED));
         // When
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
+        var progress = computeVerificationProgress(partner, submissions);
         // Then
         assertThat(progress.status()).isEqualTo(VERIFICATION_INFORMATION_REQUESTED_REQUIRED);
         assertThat(progress.maxDateForStatus()).isNotNull();
     }
 
     // -------------------------------------------------------------------------
-    // Legacy trust status
-    // -------------------------------------------------------------------------
-
-    @Test
-    void activeBpi_lastSubmissionProfileChangeVoluntaryRejected_legacyTrustStatusIsVerified() {
-        // Given
-        var partner = partnerWithActivatedIdentity();
-        var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(PROFILE_CHANGE_VOLUNTARY, REJECTED));
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
-        // When
-        var trustStatus = BusinessPartnerService.toLegacyTrustStatus(progress, partner.getBusinessPartnerIdentity());
-        // Then
-        assertThat(trustStatus).isEqualTo(BusinessPartnerTrustStatusDto.VERIFIED);
-    }
-
-    @Test
-    void deactivatedBpi_lastSubmissionProfileChangeMandatoryRejected_legacyTrustStatusIsNotVerified() {
-        // Given
-        var partner = partnerWithDeactivatedIdentity();
-        var submissions = List.of(submission(REGISTRATION, SUCCEEDED), submission(PROFILE_CHANGE_MANDATORY, REJECTED));
-        var progress = businessPartnerService.computeVerificationProgress(partner, submissions);
-        // When
-        var trustStatus = BusinessPartnerService.toLegacyTrustStatus(progress, partner.getBusinessPartnerIdentity());
-        // Then
-        assertThat(trustStatus).isEqualTo(BusinessPartnerTrustStatusDto.NOT_VERIFIED);
-    }
-
-    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private IdentityVerificationProgress computeVerificationProgress(
+        BusinessEntity partner,
+        List<TrustOnboardingSubmission> submissions
+    ) {
+        var identity = partner.getBusinessPartnerIdentity();
+        var snapshot =
+            identity == null
+                ? null
+                : new BusinessPartnerIdentitySnapshot(
+                      identity.getStatus() == BusinessPartnerIdentityStatus.ACTIVE,
+                      identity.getValidUntil()
+                  );
+        return provider.computeVerificationProgress(snapshot, submissions);
+    }
 
     private static TrustOnboardingSubmission submission(
         TrustOnboardingSubmissionType type,

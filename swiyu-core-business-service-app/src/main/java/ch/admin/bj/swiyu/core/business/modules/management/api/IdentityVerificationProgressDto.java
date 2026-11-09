@@ -1,5 +1,6 @@
 package ch.admin.bj.swiyu.core.business.modules.management.api;
 
+import ch.admin.bj.swiyu.core.business.common.trust.IdentityVerificationProgressStatusDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 

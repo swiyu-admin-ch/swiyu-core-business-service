@@ -20,7 +20,7 @@ import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentRepository;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentReturnUrlValidator;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentStatus;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.QPayment;
-import ch.admin.bj.swiyu.core.business.modules.payment.domain.event.TiPaymentNotificationReceivedEventBuilder;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.event.TiPaymentChangeNotificationReceivedEventBuilder;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.event.TiPaymentSucceededEventBuilder;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayAssertCommand;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayAssertResult;
@@ -35,7 +35,7 @@ import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.model.Saf
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.model.SaferpayTransactionReference;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentFinalizationFailedException;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentInitializationFailedException;
-import ch.admin.bj.swiyu.messagetype.ti.TiPaymentNotificationReceivedEvent;
+import ch.admin.bj.swiyu.messagetype.ti.TiPaymentChangeNotificationReceivedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiPaymentSucceededEvent;
 import com.querydsl.core.BooleanBuilder;
 import jakarta.persistence.EntityManager;
@@ -291,7 +291,7 @@ public class PaymentService {
 
     /**
      * Handles a payment notification from Saferpay (B2B callback).
-     * Publishes a TiPaymentNotificationReceivedEvent if the payment exists.
+     * Publishes a TiPaymentChangeNotificationReceivedEvent if the payment exists.
      * Returns 200 even if payment is not found (idempotency - Saferpay may retry).
      *
      * @param referenceId the payment referenceId from Saferpay
@@ -304,12 +304,12 @@ public class PaymentService {
         }
         var payment = paymentOpt.get();
 
-        var event = TiPaymentNotificationReceivedEventBuilder.create().paymentId(payment.getId()).build();
+        var event = TiPaymentChangeNotificationReceivedEventBuilder.create().paymentId(payment.getId()).build();
 
         transactionalOutbox.sendMessage(
             event,
             payment.getId().toString(),
-            TiPaymentNotificationReceivedEvent.TypeRef.DEFAULT_TOPIC
+            TiPaymentChangeNotificationReceivedEvent.TypeRef.DEFAULT_TOPIC
         );
     }
 

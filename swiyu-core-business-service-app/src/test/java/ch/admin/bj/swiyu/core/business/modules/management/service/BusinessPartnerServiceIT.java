@@ -19,10 +19,11 @@ import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundExcepti
 import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
 import ch.admin.bj.swiyu.core.business.modules.management.api.CreatePartnerDto;
-import ch.admin.bj.swiyu.core.business.modules.management.api.UpdateBusinessEntityDto;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.status.service.StatusListEntryService;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.publisher.DomainEventPublisher;
+import ch.admin.bj.swiyu.core.business.modules.trust.service.DefaultBusinessPartnerEventPublisher;
+import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.DefaultIdentityVerificationProgressProvider;
 import ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData;
 import ch.admin.bj.swiyu.core.business.test.DataJpaTestConfiguration;
 import ch.admin.bj.swiyu.core.business.test.DataJpaTestKafkaConfiguration;
@@ -63,6 +64,8 @@ import org.springframework.test.context.jdbc.Sql;
         DataJpaTestKafkaConfiguration.class,
         BusinessPartnerService.class,
         BusinessPartnerIdentityService.class,
+        DefaultBusinessPartnerEventPublisher.class,
+        DefaultIdentityVerificationProgressProvider.class,
     }
 )
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -116,21 +119,6 @@ class BusinessPartnerServiceIT {
     }
 
     @Test
-    void getBusinessEntities() {
-        // GIVEN
-        var partner = repos.businessPartner.save(businessPartnerOfTypeBusiness(UUID.randomUUID()));
-        repos.commit();
-        // WHEN
-        var readEntity = businessPartnerService.getBusinessEntity(partner.getId());
-        // THEN
-        assertThat(partner.getId()).isNotNull();
-        assertThat(readEntity).isPresent();
-        assertThat(readEntity.get().name()).isEqualTo(LocalizedMapUtil.getDefaultValue(partner.getEntityName()));
-        assertThat(readEntity.get().id()).isEqualTo(partner.getId());
-    }
-
-    @SuppressWarnings("java:S1874") // remove with EID-6624
-    @Test
     void getBusinessPartners() {
         // GIVEN
         var partner = repos.businessPartner.save(businessPartnerOfTypeBusiness(UUID.randomUUID()));
@@ -141,16 +129,6 @@ class BusinessPartnerServiceIT {
         assertThat(partner.getId()).isNotNull();
         assertThat(readEntity.entityName()).isEqualTo(partner.getEntityName());
         assertThat(readEntity.id()).isEqualTo(partner.getId());
-    }
-
-    @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "/insert_test_business_entities.sql")
-    @Test
-    void getBusinessEntity_db_inserted() {
-        var readEntity = businessPartnerService.getBusinessEntity(
-            UUID.fromString("deadbeef-deaf-0000-0000-000000000000")
-        );
-        // THEN
-        assertThat(readEntity).isPresent();
     }
 
     @Test
@@ -200,59 +178,6 @@ class BusinessPartnerServiceIT {
     }
 
     @Test
-    void updateBusinessEntity() {
-        // GIVEN
-        var oldBusinessEntity = businessPartnerService.createBusinessPartnerV2(
-            BusinessEntityTestData.createPartnerDto(),
-            lookupPamsAdminUserUid()
-        );
-        var updateBusinessEntityDto = new UpdateBusinessEntityDto("example name", "hello.brave.new.world@example.com");
-        // WHEN
-        var businessEntity = businessPartnerService.updateBusinessEntity(
-            oldBusinessEntity.id(),
-            updateBusinessEntityDto
-        );
-        // THEN
-        verify(pamsClient).updateBusinessPartnerName(any());
-        assertThat(businessEntity).isNotNull();
-        assertThat(businessEntity.contactEmailAddress()).isEqualTo("hello.brave.new.world@example.com");
-        assertThat(businessEntity.id()).isEqualTo(oldBusinessEntity.id());
-        assertThat(businessEntity.name()).isEqualTo("example name");
-
-        var updatedPartner = businessPartnerService.getBusinessPartner(oldBusinessEntity.id());
-        assertThat(LocalizedMapUtil.getDefaultValue(updatedPartner.entityName())).isEqualTo("example name");
-
-        var updatedEntity = repos.businessPartner.findById(oldBusinessEntity.id()).orElseThrow();
-        assertThat(LocalizedMapUtil.getDefaultValue(updatedEntity.getEntityName())).isEqualTo("example name");
-
-        // one change notification for the create, one for the update
-        verify(domainEventPublisher, times(2)).publishTiBusinessPartnerUpdatedEvent(
-            argThat(event -> event.getPayload().getBusinessPartnerId().equals(oldBusinessEntity.id()))
-        );
-    }
-
-    @Test
-    void updateBusinessEntity_NoNameChange() {
-        // GIVEN
-        var oldBusinessEntity = businessPartnerService.createBusinessPartnerV2(
-            BusinessEntityTestData.createPartnerDto(),
-            lookupPamsAdminUserUid()
-        );
-        var updateBusinessEntityDto = new UpdateBusinessEntityDto("Hallo Welt AG", "hello.brave.new.world@example.com");
-        reset(pamsClient);
-
-        // WHEN
-        var businessEntity = businessPartnerService.updateBusinessEntity(
-            oldBusinessEntity.id(),
-            updateBusinessEntityDto
-        );
-        // THEN
-        verifyNoInteractions(pamsClient);
-        assertThat(businessEntity).isNotNull();
-    }
-
-    @SuppressWarnings("java:S1874") // remove with EID-6624
-    @Test
     void updateBusinessPartner() {
         // GIVEN
         var businessEntity = businessPartnerOfTypeBusiness(UUID.randomUUID());
@@ -280,9 +205,10 @@ class BusinessPartnerServiceIT {
         // THEN
         var updatedEntity = repos.businessPartner.findById(businessEntity.getId()).orElseThrow();
         assertThat(LocalizedMapUtil.getDefaultValue(updatedEntity.getEntityName())).isEqualTo(newName);
-        assertThat(updatedEntity.getContactEmail()).isEqualTo(newEmail);
+        assertThat(updatedEntity.getContact()).isNotNull();
+        assertThat(updatedEntity.getContact().getEmail()).isEqualTo(newEmail);
+        assertThat(updatedEntity.getContact().getPhone()).isEqualTo(newPhone);
         assertThat(updatedEntity.getUid()).isEqualTo(newUid);
-        assertThat(updatedEntity.getContactPhone()).isEqualTo(newPhone);
         assertThat(updatedEntity.getAddress().getStreet()).isEqualTo(newAddress.getStreet());
         assertThat(updatedEntity.getType()).isEqualTo(newType);
         verify(domainEventPublisher).publishTiBusinessPartnerUpdatedEvent(
@@ -291,13 +217,61 @@ class BusinessPartnerServiceIT {
     }
 
     @Test
-    void updateBusinessEntity_thenNotFound() {
+    void updateBusinessPartner_noNameChange() {
+        // GIVEN
+        var businessEntity = businessPartnerOfTypeBusiness(UUID.randomUUID());
+        repos.businessPartner.save(businessEntity);
+        repos.commit();
+
+        var newEmail = "hello.brave.new.world@example.com";
+
+        // WHEN
+        businessPartnerService.updateBusinessPartner(
+            businessEntity.getId(),
+            businessEntity.getEntityName(),
+            businessEntity.getAddress(),
+            newEmail,
+            businessEntity.getUid(),
+            businessEntity.getContact().getPhone(),
+            businessEntity.getType()
+        );
+
+        // THEN
+        var updatedEntity = repos.businessPartner.findById(businessEntity.getId()).orElseThrow();
+        assertThat(LocalizedMapUtil.getDefaultValue(updatedEntity.getEntityName())).isEqualTo(
+            LocalizedMapUtil.getDefaultValue(businessEntity.getEntityName())
+        );
+        assertThat(updatedEntity.getContact()).isNotNull();
+        assertThat(updatedEntity.getContact().getEmail()).isEqualTo(newEmail);
+        assertThat(updatedEntity.getContact().getPhone()).isEqualTo(businessEntity.getContact().getPhone());
+        assertThat(updatedEntity.getUid()).isEqualTo(businessEntity.getUid());
+        assertThat(updatedEntity.getAddress().getStreet()).isEqualTo(businessEntity.getAddress().getStreet());
+        assertThat(updatedEntity.getType()).isEqualTo(businessEntity.getType());
+        // the name did not change, so PAMS must not be notified
+        verify(pamsClient, never()).updateBusinessPartnerName(any());
+        verify(domainEventPublisher).publishTiBusinessPartnerUpdatedEvent(
+            argThat(event -> event.getPayload().getBusinessPartnerId().equals(businessEntity.getId()))
+        );
+    }
+
+    @Test
+    void updateUnknownBusinessPartner() {
         // GIVEN
         var inexistantId = UUID.fromString("deadbeef-0000-0000-0000-000000000000");
-        var businessEntityDto = new UpdateBusinessEntityDto("example name", "hello.brave.new.world@example.com");
-        // WHEN / THEN
+        var entityName = LocalizedMapUtil.fromSingleName("Some name");
+        var address = new Address("New Street", "New City", "1234", "CH");
+
+        // WHEN THEN
         Assertions.assertThatThrownBy(() ->
-            businessPartnerService.updateBusinessEntity(inexistantId, businessEntityDto)
+            businessPartnerService.updateBusinessPartner(
+                inexistantId,
+                entityName,
+                address,
+                "new@example.com",
+                "CHE-123.456.789",
+                "+41 79 123 45 67",
+                BusinessPartnerType.BUSINESS
+            )
         ).isInstanceOf(ResourceNotFoundException.class);
     }
 

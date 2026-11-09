@@ -3,7 +3,7 @@ package ch.admin.bj.swiyu.core.business.modules.management.service;
 import static ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType.GOVERNMENTAL_INSTITUTION;
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerType;
 import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerTypeDto;
-import static ch.admin.bj.swiyu.core.business.modules.management.api.IdentityVerificationProgressStatusDto.*;
+import static ch.admin.bj.swiyu.core.business.common.trust.IdentityVerificationProgressStatusDto.*;
 import static ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper.toAddress;
 import static ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper.toContact;
 import static org.springframework.util.StringUtils.hasText;
@@ -23,6 +23,10 @@ import ch.admin.bj.swiyu.core.business.common.exceptions.ExternalSystemException
 import ch.admin.bj.swiyu.core.business.common.exceptions.HardDeleteNotAllowedException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.service.LocalizedMapUtil;
+import ch.admin.bj.swiyu.core.business.common.trust.BusinessPartnerEventPublisher;
+import ch.admin.bj.swiyu.core.business.common.trust.BusinessPartnerIdentitySnapshot;
+import ch.admin.bj.swiyu.core.business.common.trust.IdentityVerificationProgressProvider;
+import ch.admin.bj.swiyu.core.business.common.trust.IdentityVerificationProgressStatusDto;
 import ch.admin.bj.swiyu.core.business.modules.identifier.api.IdentifierEntryFilterDto;
 import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
 import ch.admin.bj.swiyu.core.business.modules.management.api.*;
@@ -30,12 +34,10 @@ import ch.admin.bj.swiyu.core.business.modules.management.domain.*;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.management.service.mapper.BusinessPartnerMapper;
 import ch.admin.bj.swiyu.core.business.modules.trust.config.TrustOnboardingSubmissionLimitProperties;
-import ch.admin.bj.swiyu.core.business.modules.trust.domain.event.TiBusinessPartnerHardDeletedEventBuilder;
-import ch.admin.bj.swiyu.core.business.modules.trust.domain.event.TiBusinessPartnerUpdatedEventBuilder;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionRepository;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionType;
-import ch.admin.bj.swiyu.core.business.modules.trust.domain.publisher.DomainEventPublisher;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.*;
@@ -60,14 +62,14 @@ public class BusinessPartnerService {
     private static final Map<String, String> BUSINESS_PARTNER_SORT_FIELDS = Map.of("entityName", "defaultEntityName");
 
     private final BusinessPartnerRepository businessPartnerRepository;
-    private final BusinessPartnerIdentityService businessPartnerIdentityService;
     private final BusinessPartnerIdentityRepository businessPartnerIdentityRepository;
     private final TrustOnboardingSubmissionRepository trustOnboardingSubmissionRepository;
     private final TrustOnboardingSubmissionLimitProperties trustOnboardingSubmissionLimitProperties;
     private final PamsClient pamsClient;
     private final IdentifierEntryService identifierEntryService;
     private final AuditPublisher auditPublisher;
-    private final DomainEventPublisher domainEventPublisher;
+    private final IdentityVerificationProgressProvider identityVerificationProgressProvider;
+    private final BusinessPartnerEventPublisher businessPartnerEventPublisher;
 
     private static @NonNull Supplier<ResourceNotFoundException> throwNotFoundException(UUID id) {
         return () -> new ResourceNotFoundException(String.format(BUSINESS_PARTNER_WITH_ID_S_NOT_FOUND, id));
@@ -91,26 +93,10 @@ public class BusinessPartnerService {
             : IdentityVerificationProgressStatusDto.VERIFICATION_STARTED;
     }
 
-    private static String contactEmailOf(BusinessEntity businessPartner) {
-        return businessPartner.getContact() == null ? null : businessPartner.getContact().getEmail();
-    }
-
     private static void validateHardDeleteAllowed(BusinessEntity businessPartner) {
         if (!businessPartner.isHardDeleteAllowed()) {
             throw new HardDeleteNotAllowedException(businessPartner.getId());
         }
-    }
-
-    @Transactional(readOnly = true)
-    public Page<BusinessEntityDto> getAllEntities(List<UUID> businessEntityIds, Pageable pageable) {
-        return businessPartnerRepository
-            .findAllByIdIn(businessEntityIds, toBusinessPartnerPageable(BusinessEntityDto.class, pageable))
-            .map(this::toBusinessEntityDto);
-    }
-
-    @Transactional(readOnly = true)
-    public Optional<BusinessEntityDto> getBusinessEntity(UUID id) {
-        return businessPartnerRepository.findById(id).map(this::toBusinessEntityDto);
     }
 
     @Transactional
@@ -145,43 +131,6 @@ public class BusinessPartnerService {
         publishBusinessPartnerUpdatedEventFor(businessPartner.getId());
         pamsClient.createBusinessPartner(businessPartner, pamsUserAdminDirUid);
         return toBusinessPartnerDto(businessPartner);
-    }
-
-    @SuppressWarnings("java:S1874")
-    // Remove with EID-6624: uses deprecated UpdateBusinessEntityDto fields and getContactPhone()
-    @Transactional
-    public BusinessEntityDto updateBusinessEntity(
-        UUID businessEntityId,
-        UpdateBusinessEntityDto updateBusinessEntityDto
-    ) {
-        log.info("Updating business partner with id '{}'", businessEntityId);
-
-        BusinessEntity businessPartner = businessPartnerRepository
-            .findById(businessEntityId)
-            .orElseThrow(throwNotFoundException(businessEntityId));
-        businessPartner.update(
-            businessPartner.getEntityName(),
-            updateBusinessEntityDto.contactEmailAddress(),
-            businessPartner.getAddress(),
-            businessPartner.getUid(),
-            businessPartner.getContactPhone()
-        );
-
-        // Only update PAMS if relevant data changed
-        var previousDefaultName = LocalizedMapUtil.getDefaultValue(businessPartner.getEntityName());
-        var newDefaultName = updateBusinessEntityDto.name();
-        if (!previousDefaultName.equals(newDefaultName)) {
-            businessPartner.setName(LocalizedMapUtil.fromSingleName(updateBusinessEntityDto.name()));
-            pamsClient.updateBusinessPartnerName(businessPartner);
-        }
-        businessPartner = businessPartnerRepository.saveAndFlush(businessPartner);
-        auditPublisher.businessPartnerUpdated(
-            businessPartner.getId().toString(),
-            String.valueOf(businessPartner.getVersion()),
-            AuditMapper.toAuditJson(businessPartner)
-        );
-        publishBusinessPartnerUpdatedEventFor(businessPartner.getId());
-        return toBusinessEntityDto(businessPartner);
     }
 
     /**
@@ -226,9 +175,10 @@ public class BusinessPartnerService {
     /**
      * Returns the identity verification progress for a business partner.
      *
-     * <p>Delegates to {@link #computeVerificationProgress(BusinessEntity, List)} and additionally
-     * enforces the rule that VERIFICATION_NOT_STARTED is returned instead of VERIFICATION_STARTED
-     * when no active DID document exists yet (verification cannot be started without a DID).
+     * <p>Delegates the derivation to the {@link IdentityVerificationProgressProvider} (the trust module
+     * owns the submission history) and additionally enforces the rule that VERIFICATION_NOT_STARTED is
+     * returned instead of VERIFICATION_STARTED when no active DID document exists yet (verification
+     * cannot be started without a DID).
      */
     @Transactional(readOnly = true)
     public IdentityVerificationProgressDto getVerificationProgress(UUID businessPartnerId) {
@@ -236,15 +186,14 @@ public class BusinessPartnerService {
             .findById(businessPartnerId)
             .orElseThrow(throwNotFoundException(businessPartnerId));
 
-        var submissions = trustOnboardingSubmissionRepository.findAllByPartnerIdOrderByInitiatedAtAsc(
-            businessPartnerId
+        var progress = identityVerificationProgressProvider.verificationProgress(
+            businessPartnerId,
+            toIdentitySnapshot(businessPartner)
         );
-
-        var progress = computeVerificationProgress(businessPartner, submissions);
 
         // If the computed state would be VERIFICATION_STARTED but no active DID exists yet,
         // keep it as VERIFICATION_NOT_STARTED — the portal cannot start verification without a DID.
-        if (progress.status() == IdentityVerificationProgressStatusDto.VERIFICATION_STARTED) {
+        if (progress.status() == VERIFICATION_STARTED) {
             boolean hasActiveDid = identifierEntryService
                 .searchIdentifierEntries(
                     IdentifierEntryFilterDto.builder().businessPartnerId(businessPartnerId).activeOnly(true).build(),
@@ -256,7 +205,7 @@ public class BusinessPartnerService {
             }
         }
 
-        return progress;
+        return new IdentityVerificationProgressDto(progress.status(), progress.maxDateForStatus());
     }
 
     /**
@@ -331,6 +280,17 @@ public class BusinessPartnerService {
         // received) counts as verified.
         return IdentityVerificationProgressDto.of(
             hasPreviouslySucceeded ? VERIFICATION_SUCCEEDED : VERIFICATION_NOT_STARTED
+        );
+    }
+
+    private static @Nullable BusinessPartnerIdentitySnapshot toIdentitySnapshot(BusinessEntity partner) {
+        var identity = partner.getBusinessPartnerIdentity();
+        if (identity == null) {
+            return null;
+        }
+        return new BusinessPartnerIdentitySnapshot(
+            identity.getStatus() == BusinessPartnerIdentityStatus.ACTIVE,
+            identity.getValidUntil()
         );
     }
 
@@ -461,7 +421,7 @@ public class BusinessPartnerService {
         var businessPartner = businessPartnerRepository
             .findById(partnerId)
             .orElseThrow(throwNotFoundException(partnerId));
-        return contactEmailOf(businessPartner);
+        return businessPartner.getContact() == null ? null : businessPartner.getContact().getEmail();
     }
 
     /**
@@ -601,9 +561,7 @@ public class BusinessPartnerService {
 
         businessPartnerIdentityRepository.deleteById(businessPartnerId);
         businessPartnerRepository.delete(businessPartner);
-        domainEventPublisher.publishTiBusinessPartnerHardDeletedEvent(
-            TiBusinessPartnerHardDeletedEventBuilder.create().businessPartnerId(businessPartnerId).build()
-        );
+        businessPartnerEventPublisher.businessPartnerHardDeleted(businessPartnerId);
     }
 
     /**
@@ -712,9 +670,7 @@ public class BusinessPartnerService {
      * BusinessPartnerIdentity changes, which originate from TMS and would be echoed back.
      */
     private void publishBusinessPartnerUpdatedEventFor(UUID businessPartnerId) {
-        domainEventPublisher.publishTiBusinessPartnerUpdatedEvent(
-            TiBusinessPartnerUpdatedEventBuilder.create().businessPartnerId(businessPartnerId).build()
-        );
+        businessPartnerEventPublisher.businessPartnerUpdated(businessPartnerId);
     }
 
     private @NonNull BusinessPartnerType lookupBusinessPartnerType(UUID partnerId) {
@@ -732,10 +688,6 @@ public class BusinessPartnerService {
             toLegacyTrustStatus(progress, entity.getBusinessPartnerIdentity()),
             progress.maxDateForStatus()
         );
-    }
-
-    private BusinessEntityDto toBusinessEntityDto(BusinessEntity businessPartner) {
-        return BusinessPartnerMapper.toBusinessEntityDto(businessPartner);
     }
 
     private BusinessPartnerListItemDto getBusinessPartnerListItemDto(BusinessEntity entity) {

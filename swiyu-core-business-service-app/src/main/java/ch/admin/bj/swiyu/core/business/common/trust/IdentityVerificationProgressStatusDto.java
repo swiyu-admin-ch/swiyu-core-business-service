@@ -1,4 +1,4 @@
-package ch.admin.bj.swiyu.core.business.modules.management.api;
+package ch.admin.bj.swiyu.core.business.common.trust;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

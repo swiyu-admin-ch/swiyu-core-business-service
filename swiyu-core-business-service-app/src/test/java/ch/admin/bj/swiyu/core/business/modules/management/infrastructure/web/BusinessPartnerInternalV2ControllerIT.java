@@ -299,7 +299,6 @@ class BusinessPartnerInternalV2ControllerIT {
         );
     }
 
-    @SuppressWarnings("java:S1874") // remove with EID-6624
     @Test
     @WithJeapAuthenticationToken(bpRoles = "deadbeef-0000-0000-0000-000000000000 = ti_@businesspartner_#read")
     void testGetBusinessPartners_thenSuccess() throws Exception {
@@ -407,7 +406,6 @@ class BusinessPartnerInternalV2ControllerIT {
             .andExpect(status().isForbidden());
     }
 
-    @SuppressWarnings("java:S1874") // remove with EID-6624
     @Test
     @WithJeapAuthenticationToken(bpRoles = BusinessEntityTestData.ENTITY_A_S + " = ti_@businesspartner_#read")
     void testGetBusinessPartner_byId_thenSuccess() throws Exception {

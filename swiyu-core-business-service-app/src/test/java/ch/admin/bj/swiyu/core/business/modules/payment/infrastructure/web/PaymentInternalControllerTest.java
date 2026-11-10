@@ -9,6 +9,7 @@ import ch.admin.bj.swiyu.core.business.common.features.FeaturesProperties;
 import ch.admin.bj.swiyu.core.business.common.security.AuthSupport;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentFilterDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentInitializationRequestDto;
+import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentRetryRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentDisabledException;
 import ch.admin.bj.swiyu.core.business.modules.payment.service.PaymentService;
 import java.net.MalformedURLException;
@@ -41,7 +42,10 @@ class PaymentInternalControllerTest {
 
         assertThatThrownBy(() -> controller.getPayments(filter, pageable)).isInstanceOf(PaymentDisabledException.class);
         assertThatThrownBy(() -> controller.getPayment(paymentId)).isInstanceOf(PaymentDisabledException.class);
+        var retryRequest = new PaymentRetryRequestDto(paymentId, UUID.randomUUID());
+
         assertThatThrownBy(() -> controller.initiatePayment(request)).isInstanceOf(PaymentDisabledException.class);
+        assertThatThrownBy(() -> controller.retryPayment(retryRequest)).isInstanceOf(PaymentDisabledException.class);
         verifyNoInteractions(paymentService);
     }
 }

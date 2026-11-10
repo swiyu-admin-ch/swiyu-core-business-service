@@ -16,6 +16,7 @@ import ch.admin.bit.jeap.messaging.transactionaloutbox.outbox.TransactionalOutbo
 import ch.admin.bj.swiyu.core.business.common.api.ProductTypeDto;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessExceptionErrorCode;
+import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentInitializationRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.config.PaymentProperties;
@@ -30,6 +31,7 @@ import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayC
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayInitializePaymentCommand;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayInitializeResult;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentInitializationFailedException;
+import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentRetryNotAllowedException;
 import jakarta.persistence.EntityManager;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -46,6 +48,7 @@ import org.mockito.ArgumentMatchers;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 class PaymentServiceTest {
 
@@ -72,6 +75,7 @@ class PaymentServiceTest {
                 "terminal-1",
                 "customer-1",
                 URI.create("https://test.saferpay.com/api"),
+                null,
                 null
             ),
             List.of(new PaymentProperties.Product("BASE_REGISTRATION", "swiyu Base Registry", 15_000))
@@ -269,6 +273,211 @@ class PaymentServiceTest {
             Amount.chf(15_000),
             "https://portal.example.local/callback"
         );
+    }
+
+    /** A stored payment, i.e. one whose returnUrl already ends with its own id. */
+    private Payment storedPayment(String referenceId) {
+        var paymentId = UUID.randomUUID();
+        return new Payment(
+            paymentId,
+            BUSINESS_PARTNER_ID,
+            referenceId,
+            ProductType.BASE_REGISTRATION,
+            Amount.chf(15_000),
+            "https://portal.example.local/callback/" + paymentId
+        );
+    }
+
+    private void givenPreviousPayment(Payment previous) {
+        when(paymentRepository.findByIdAndBusinessPartnerId(previous.getId(), BUSINESS_PARTNER_ID)).thenReturn(
+            Optional.of(previous)
+        );
+    }
+
+    private ArgumentCaptor<Payment> givenSaferpayInitializeSucceeds() {
+        when(saferpayClient.initialize(any())).thenReturn(
+            new SaferpayInitializeResult(
+                "token-new",
+                "https://saferpay.example/redirect/new",
+                Instant.now().plusSeconds(600)
+            )
+        );
+        var savedPaymentCaptor = ArgumentCaptor.forClass(Payment.class);
+        when(paymentRepository.saveAndFlush(savedPaymentCaptor.capture())).thenAnswer(invocation ->
+            invocation.getArgument(0)
+        );
+        when(paymentRepository.findById(any())).thenAnswer(invocation -> Optional.of(savedPaymentCaptor.getValue()));
+        return savedPaymentCaptor;
+    }
+
+    @Test
+    void retryPayment_failedPayment_createsNewPendingPaymentAndReturnsNewRedirectUrl() {
+        var previous = storedPayment("P-00000001");
+        previous.markAsFailed();
+        givenPreviousPayment(previous);
+        var savedPaymentCaptor = givenSaferpayInitializeSucceeds();
+
+        var response = paymentService.retryPayment(previous.getId(), BUSINESS_PARTNER_ID);
+
+        var created = savedPaymentCaptor.getValue();
+        assertThat(created.getId()).isNotEqualTo(previous.getId());
+        assertThat(created.getBusinessPartnerId()).isEqualTo(BUSINESS_PARTNER_ID);
+        assertThat(created.getProduct()).isEqualTo(previous.getProduct());
+        assertThat(created.getStatus()).isEqualTo(PaymentStatus.PENDING);
+        assertThat(created.getAmount().getValue()).isEqualTo(15_000L);
+        assertThat(created.getAmount().getCurrency()).isEqualTo("CHF");
+        assertThat(created.getReferenceId()).matches("^P-[0-9A-F]{8}$").isNotEqualTo(previous.getReferenceId());
+        assertThat(response.paymentId()).isEqualTo(created.getId());
+        assertThat(response.businessPartnerId()).isEqualTo(BUSINESS_PARTNER_ID);
+        assertThat(response.redirectUrl()).hasToString("https://saferpay.example/redirect/new");
+    }
+
+    @Test
+    void retryPayment_cancelledPayment_proceeds() {
+        var previous = storedPayment("P-00000002");
+        previous.markAsCancelled();
+        givenPreviousPayment(previous);
+        givenSaferpayInitializeSucceeds();
+
+        paymentService.retryPayment(previous.getId(), BUSINESS_PARTNER_ID);
+
+        verify(paymentRepository).saveAndFlush(any());
+    }
+
+    @Test
+    void retryPayment_replacesPreviousPaymentIdInReturnUrlWithNewOne() {
+        var previous = storedPayment("P-00000003");
+        previous.markAsFailed();
+        givenPreviousPayment(previous);
+        var savedPaymentCaptor = givenSaferpayInitializeSucceeds();
+
+        paymentService.retryPayment(previous.getId(), BUSINESS_PARTNER_ID);
+
+        var created = savedPaymentCaptor.getValue();
+        assertThat(created.getReturnUrl()).isEqualTo("https://portal.example.local/callback/" + created.getId());
+        var commandCaptor = ArgumentCaptor.forClass(SaferpayInitializePaymentCommand.class);
+        verify(saferpayClient).initialize(commandCaptor.capture());
+        assertThat(commandCaptor.getValue().orderId()).isEqualTo(created.getReferenceId());
+        assertThat(commandCaptor.getValue().returnUrl()).isEqualTo(created.getReturnUrl());
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        {
+            "https://portal.example.local/callback, https://portal.example.local/callback/%s",
+            "https://portal.example.local/callback/, https://portal.example.local/callback/%s",
+            "https://portal.example.local/callback?lang=de, https://portal.example.local/callback/%s?lang=de",
+            "https://portal.example.local/callback#top, https://portal.example.local/callback/%s#top",
+        }
+    )
+    void retryPayment_keepsQueryStringAndFragmentOfStoredReturnUrl(String returnUrl, String expectedPattern) {
+        var previousPaymentId = UUID.randomUUID();
+        var storedReturnUrl = UriComponentsBuilder.fromUriString(returnUrl)
+            .pathSegment(previousPaymentId.toString())
+            .build()
+            .toUriString();
+        var previous = new Payment(
+            previousPaymentId,
+            BUSINESS_PARTNER_ID,
+            "P-00000010",
+            ProductType.BASE_REGISTRATION,
+            Amount.chf(15_000),
+            storedReturnUrl
+        );
+        previous.markAsFailed();
+        givenPreviousPayment(previous);
+        var savedPaymentCaptor = givenSaferpayInitializeSucceeds();
+
+        paymentService.retryPayment(previous.getId(), BUSINESS_PARTNER_ID);
+
+        var created = savedPaymentCaptor.getValue();
+        assertThat(created.getReturnUrl()).isEqualTo(expectedPattern.formatted(created.getId()));
+    }
+
+    @Test
+    void retryPayment_pendingPayment_throwsConflictAndNeverCallsSaferpay() {
+        var previous = storedPayment("P-00000004");
+        givenPreviousPayment(previous);
+
+        var previousPaymentId = previous.getId();
+        assertThatThrownBy(() -> paymentService.retryPayment(previousPaymentId, BUSINESS_PARTNER_ID)).isInstanceOf(
+            PaymentRetryNotAllowedException.class
+        );
+
+        verify(paymentRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(saferpayClient);
+    }
+
+    @Test
+    void retryPayment_succeededPayment_throwsConflictAndNeverCallsSaferpay() {
+        var previous = storedPayment("P-00000005");
+        previous.markAsSucceeded("txn-123", Instant.now(), "VISA", "Cardholder", true);
+        givenPreviousPayment(previous);
+
+        var previousPaymentId = previous.getId();
+        assertThatThrownBy(() -> paymentService.retryPayment(previousPaymentId, BUSINESS_PARTNER_ID)).isInstanceOf(
+            PaymentRetryNotAllowedException.class
+        );
+
+        verify(paymentRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(saferpayClient);
+    }
+
+    @Test
+    void retryPayment_unknownPayment_throwsResourceNotFound() {
+        var unknownPaymentId = UUID.randomUUID();
+        when(paymentRepository.findByIdAndBusinessPartnerId(unknownPaymentId, BUSINESS_PARTNER_ID)).thenReturn(
+            Optional.empty()
+        );
+
+        assertThatThrownBy(() -> paymentService.retryPayment(unknownPaymentId, BUSINESS_PARTNER_ID)).isInstanceOf(
+            ResourceNotFoundException.class
+        );
+
+        verify(paymentRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(saferpayClient);
+    }
+
+    @Test
+    void retryPayment_pendingPaymentForSameProductExists_throwsAlreadyPending() {
+        var previous = storedPayment("P-00000006");
+        previous.markAsFailed();
+        givenPreviousPayment(previous);
+        when(
+            paymentRepository.existsByBusinessPartnerIdAndProductAndStatus(
+                BUSINESS_PARTNER_ID,
+                ProductType.BASE_REGISTRATION,
+                PaymentStatus.PENDING
+            )
+        ).thenReturn(true);
+
+        var previousPaymentId = previous.getId();
+        assertThatThrownBy(() -> paymentService.retryPayment(previousPaymentId, BUSINESS_PARTNER_ID))
+            .isInstanceOf(PaymentInitializationFailedException.class)
+            .hasFieldOrPropertyWithValue("errorCode", BusinessExceptionErrorCode.PAYMENT_ALREADY_PENDING);
+
+        verify(paymentRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(saferpayClient);
+    }
+
+    @Test
+    void retryPayment_saferpayInitializeFails_marksNewPaymentFailedAndRethrows() {
+        var previous = storedPayment("P-00000007");
+        previous.markAsFailed();
+        givenPreviousPayment(previous);
+        var failure = new IllegalStateException("saferpay down");
+        when(saferpayClient.initialize(any())).thenThrow(failure);
+        var savedPaymentCaptor = ArgumentCaptor.forClass(Payment.class);
+        when(paymentRepository.saveAndFlush(savedPaymentCaptor.capture())).thenAnswer(invocation ->
+            invocation.getArgument(0)
+        );
+        when(paymentRepository.findById(any())).thenAnswer(invocation -> Optional.of(savedPaymentCaptor.getValue()));
+
+        var previousPaymentId = previous.getId();
+        assertThatThrownBy(() -> paymentService.retryPayment(previousPaymentId, BUSINESS_PARTNER_ID)).isSameAs(failure);
+
+        assertThat(savedPaymentCaptor.getValue().getStatus()).isEqualTo(PaymentStatus.FAILED);
+        assertThat(previous.getStatus()).isEqualTo(PaymentStatus.FAILED);
     }
 
     private PaymentInitializationRequestDto request() {

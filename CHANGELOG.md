@@ -5,6 +5,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.14.3
+
+### Fixed
+
+- Saferpay calls no longer fail with "PKIX path building failed": the `saferpay` SSL bundle now trusts the SwissSign
+  RSA TLS Root CA 2022 - 1, which is missing in the Java truststore of the image
+
+## 4.14.2
+
+### Fixed
+
+- Saferpay is reachable from the stages: its calls can now go through an outgoing HTTP proxy
+  (`payment.saferpay.proxy` / `PAYMENT_SAFERPAY_PROXY`, e.g. `http://prxp01.admin.ch:8080`)
+
+## 4.14.1
+
+### Fixed
+
+- Resolved the Sonar findings in the re-verification code: `currentlyTrustedDids` returns an `Optional` instead of
+  `null`, and the integration test lost two unused leftover helpers
+
+## 4.14.0
+
+### Fixed
+
+- A re-verification keeps the commercial register entry: the derived submission inherits it from the latest succeeded
+  submission, and an update resolves "requested value or keep the stored one" instead of reading a missing field as
+  `false`
+- Business partner identity events that arrive out of order are ignored when they are older than the stored state
+- A renewal or profile change has to prove exactly the currently trusted DIDs, compared as sets: a missing DID, an
+  additional one and one without a valid proof are rejected. Another DID is onboarded through the add-DID flow
+  (`EIDARTFE-1301`)
+- Editing a draft re-aligns its proofs with the current trusted set, so a draft whose trusted set moved in the meantime
+  can still be submitted
+- The proof-of-possession check of a re-verification no longer depends on the registration feature toggle
+- Applying an approved submission no longer branches on a null contact: every creation path supplies one and
+  `contact_email` is NOT NULL, so the branch was unreachable
+- Changing the commercial register entry discards a signed Declaration of Intent only for an `INDIVIDUAL`, where it
+  selects the template. For `BUSINESS` and `GOVERNMENTAL_INSTITUTION` the signature is kept
+
+## 4.13.1
+
+### Fixed
+
+- Tests only: resolve Sonar findings in the payment retry tests (one throwing call per `assertThatThrownBy` lambda) and fix the flaky `TrustOnboardingServiceIT.markAsInformationRequested_succeeds`, which failed when the clock crossed a second between two `Instant.now()` calls
+
+## 4.13.0
+
+### Added
+
+- `POST /api/v2/internal/payment/retry` starts a new payment for a payment that failed or was cancelled, so the user can pay again. The previous payment is left unchanged: every attempt needs its own referenceId and Saferpay token, so a retry creates a new payment with the same product, amount and currency and sends the browser back to the same frontend page with the new payment id. A payment that is still pending or already succeeded is answered with `409 Conflict` and the new error code `payment_not_retryable`.
+
+## 4.12.2
+
+### Changed
+
+- Upgrade the jEAP Spring Boot parent from 41.33.0 to 41.34.0
+
 ## 4.12.1
 
 ### Fixed

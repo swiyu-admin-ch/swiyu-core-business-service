@@ -41,7 +41,8 @@ class DefaultSaferpayClientTest {
                     "terminal-1",
                     "customer-1",
                     URI.create("https://test.saferpay.com/api"),
-                    configSet
+                    configSet,
+                    null
                 ),
                 List.of()
             )

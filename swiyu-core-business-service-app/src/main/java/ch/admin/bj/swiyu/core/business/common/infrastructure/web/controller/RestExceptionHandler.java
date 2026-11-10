@@ -52,6 +52,12 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(toApiErrorDto(DATA_INVALID, e.getMessage()), HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(ResourceStateConflictException.class)
+    public ResponseEntity<ApiErrorDto> handleConflict(final BusinessException e) {
+        log.info("Business conflict.", e);
+        return new ResponseEntity<>(toApiErrorDto(e.getErrorCode(), e.getMessage()), HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(PropertyReferenceException.class)
     public ResponseEntity<ApiErrorDto> handlePropertyReferenceException(final PropertyReferenceException e) {
         return new ResponseEntity<>(toApiErrorDto(DATA_INVALID, e.getMessage()), HttpStatus.BAD_REQUEST);
@@ -112,7 +118,6 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(BusinessException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ApiErrorDto> handleGenericBusinessException(final BusinessException e) {
         log.info("GenericBusinessException occurred.", e);
         var messagesOfExceptionTree = new ArrayList<>(e.getAdditionalDetails());

@@ -62,7 +62,8 @@ public class Payment {
      * The page of our frontend (portal) where the user should land after paying on Saferpay. The frontend
      * sends this URL when it starts the payment, e.g. "https://portal.../payment".
      *
-     * Stored as received. The URL actually given to Saferpay is this one plus "/{paymentId}".
+     * Stored with the payment id as last path segment (the frontend route pattern is "payment/:paymentId"),
+     * because that is the URL given to Saferpay and the page the browser returns to.
      *
      * Why we store it: if the user closes the browser on the Saferpay page and comes back later, we still
      * know which page to send them to.

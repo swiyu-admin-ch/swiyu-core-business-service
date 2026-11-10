@@ -79,9 +79,11 @@ public class BusinessPartnerIdentity {
     }
 
     /**
-     * Overwrites all identity data with the data of a TMS BPI activated or updated event.
+     * Overwrites all identity data with an activated or updated event, unless the event is older than what is stored.
+     *
+     * @return true if the data was applied, false if the event was stale and therefore ignored
      */
-    public void apply(
+    public boolean apply(
         Instant validUntil,
         List<String> trustedIdentifier,
         BusinessPartnerIdentityStatus status,
@@ -90,6 +92,9 @@ public class BusinessPartnerIdentity {
         Map<String, String> entityName,
         Long tmsVersion
     ) {
+        if (isStale(tmsVersion)) {
+            return false;
+        }
         this.validUntil = validUntil;
         this.trustedIdentifier = trustedIdentifier;
         this.status = status;
@@ -97,15 +102,32 @@ public class BusinessPartnerIdentity {
         this.uid = uid;
         this.entityName = entityName;
         this.tmsVersion = tmsVersion;
+        return true;
     }
 
     /**
-     * Sets the status to DEACTIVATED and updates the TMS version, preserving all other data.
+     * Sets the status to DEACTIVATED and updates the TMS version, preserving all other data, unless the
+     * event is older than what is already stored.
      * Used when processing a TiBusinessPartnerIdentityDeactivatedEvent.
+     *
+     * @return true if the identity was deactivated, false if the event was stale and therefore ignored
      */
-    public void deactivate(long tmsVersion) {
+    public boolean deactivate(long tmsVersion) {
+        if (isStale(tmsVersion)) {
+            return false;
+        }
         this.status = BusinessPartnerIdentityStatus.DEACTIVATED;
         this.tmsVersion = tmsVersion;
+        return true;
+    }
+
+    /**
+     * Activation, update and deactivation travel on three Kafka topics without an ordering guarantee, so events can
+     * overtake each other. Only strictly older ones are dropped: the same version is a redelivery and idempotent, and
+     * a missing stored version predates the tracking.
+     */
+    private boolean isStale(Long incomingTmsVersion) {
+        return this.tmsVersion != null && incomingTmsVersion != null && incomingTmsVersion < this.tmsVersion;
     }
 
     public boolean isActive() {

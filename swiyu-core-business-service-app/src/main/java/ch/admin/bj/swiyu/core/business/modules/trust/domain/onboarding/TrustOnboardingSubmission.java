@@ -301,7 +301,7 @@ public class TrustOnboardingSubmission {
         BusinessPartnerType requestedPartnerType,
         SigningRule signingRule,
         List<Signatory> signatories,
-        boolean isRegisteredInCommercialRegister
+        Boolean isRegisteredInCommercialRegister
     ) {
         validateCanUpdate(PROFILE_CHANGE_VOLUNTARY, PROFILE_CHANGE_MANDATORY);
         this.entityName = entityName;
@@ -312,6 +312,7 @@ public class TrustOnboardingSubmission {
         this.requestedPartnerType = requestedPartnerType;
         this.signingRule = signingRule;
         this.signatories = signatories;
+        // The caller resolved "requested or keep stored" already, so this is a plain assignment.
         this.isRegisteredInCommercialRegister = isRegisteredInCommercialRegister;
     }
 

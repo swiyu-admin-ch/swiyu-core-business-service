@@ -15,9 +15,10 @@ class PaymentConfigTest {
         "terminal-1",
         "customer-1",
         URI.create("https://test.saferpay.com/api"),
+        null,
         null
     );
-    private static final SaferpayProperties EMPTY = new SaferpayProperties("", "", null, null);
+    private static final SaferpayProperties EMPTY = new SaferpayProperties("", "", null, null, null);
 
     @Test
     void validate_featureDisabledAndNothingConfigured_doesNotThrow() {

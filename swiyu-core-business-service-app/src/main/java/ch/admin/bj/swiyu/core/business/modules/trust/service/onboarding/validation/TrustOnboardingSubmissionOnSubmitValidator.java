@@ -81,7 +81,15 @@ public class TrustOnboardingSubmissionOnSubmitValidator {
         validateSigningRule(submission, errors);
         validateSignatories(submission, errors);
         validateContactPerson(submission, errors);
-        if (Boolean.TRUE.equals(featuresProperties.getEidartfe1220ProofOfPossession())) {
+        // Proving possession of every trusted DID is what a re-verification *is* - "the user only proves
+        // possession of all trusted DIDs" (6.3 Registries - Trust Re-Verification Flows). It therefore must
+        // not depend on the proof-of-possession feature toggle, which governs the registration flow: with
+        // the toggle off, a renewal could be submitted with DIDs nobody proved, and the trust management
+        // service would then extend the identity without a single valid proof.
+        if (
+            Boolean.TRUE.equals(featuresProperties.getEidartfe1220ProofOfPossession()) ||
+            submission.getType().isProfileChangeOrRenewal()
+        ) {
             validateProofs(submission, errors);
         }
         validateEmailFormat(submission, errors);

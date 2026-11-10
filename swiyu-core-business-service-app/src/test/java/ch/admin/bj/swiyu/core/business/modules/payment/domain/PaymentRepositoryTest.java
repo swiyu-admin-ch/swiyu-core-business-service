@@ -1,6 +1,7 @@
 package ch.admin.bj.swiyu.core.business.modules.payment.domain;
 
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.ENTITY_A;
+import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.ENTITY_B;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.insertTestBusinessPartners;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,6 +44,27 @@ class PaymentRepositoryTest {
     @Test
     void findByReferenceId_notExisting_returnsEmpty() {
         var found = repos.payment.findByReferenceId("P-NOTEXIST");
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void findByIdAndBusinessPartnerId_matchingPartner_returnsPayment() {
+        var payment = createTestPayment("P-ABC12345");
+        repos.payment.saveAndFlush(payment);
+
+        var found = repos.payment.findByIdAndBusinessPartnerId(payment.getId(), ENTITY_A);
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getId()).isEqualTo(payment.getId());
+    }
+
+    @Test
+    void findByIdAndBusinessPartnerId_otherPartner_returnsEmpty() {
+        var payment = createTestPayment("P-ABC12345");
+        repos.payment.saveAndFlush(payment);
+
+        var found = repos.payment.findByIdAndBusinessPartnerId(payment.getId(), ENTITY_B);
 
         assertThat(found).isEmpty();
     }

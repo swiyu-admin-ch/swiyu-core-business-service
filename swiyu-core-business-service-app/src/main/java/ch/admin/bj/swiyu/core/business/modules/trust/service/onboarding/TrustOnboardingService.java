@@ -13,6 +13,7 @@ import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
 import ch.admin.bj.swiyu.core.business.common.api.utils.PageableUtils;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditMapper;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
+import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.common.domain.Contact;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
 import ch.admin.bj.swiyu.core.business.common.email.EmailCommandPublisher;
@@ -41,7 +42,11 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockAssert;
@@ -239,7 +244,24 @@ public class TrustOnboardingService {
         boolean discardDoi = hasDoiRelevantChanges(submission, request, uid);
 
         var popList = submission.getProofOfPossessions();
-        if (!proofOfPossessionValidator.isDidSelectionEqual(popList, request.dids())) {
+        if (submission.getType().isProfileChangeOrRenewal()) {
+            // The trusted set may have moved while the draft sat there - the add-DID flow adds, an offboarding of a
+            // single DID removes. Re-aligning here is the recovery path for such a draft: it follows the authoritative
+            // trusted set instead of leaving the partner with a submission that can never be handed in. It is a system
+            // action, not a change by the partner, so the block below still rejects a selection the partner changed.
+            popList = realignProofsWithTrustedDids(submission, popList);
+            if (!proofOfPossessionValidator.isDidSelectionEqual(popList, request.dids())) {
+                // A re-verification covers exactly the DIDs the partner is already trusted for, and EIDARTFE-1301
+                // lists the DID selection as not changeable for RENEWAL and PROFILE_CHANGE alike. Letting a changed
+                // selection through would decide over trusted identifiers outside the add-DID flow.
+                throw new BusinessDataIntegrityViolationException(
+                    "Can't change the DID selection of a submission of type '%s'. A re-verification covers the currently trusted DIDs (%s); use the add-DID flow to onboard another DID.".formatted(
+                        submission.getType(),
+                        popList.stream().map(ProofOfPossession::getDid).sorted().toList()
+                    )
+                );
+            }
+        } else if (!proofOfPossessionValidator.isDidSelectionEqual(popList, request.dids())) {
             popList = TrustOnboardingMapper.toProofOfPossession(request.dids());
         }
 
@@ -265,7 +287,8 @@ public class TrustOnboardingService {
                 toBusinessPartnerType(request.requestedPartnerType()),
                 toSigningRule(request.signingRule()),
                 toSignatories(request.signatories()),
-                Boolean.TRUE.equals(request.isRegisteredInCommercialRegister())
+                // decided here, where both the stored and the requested value are at hand
+                resolveIsRegisteredInCommercialRegister(submission, request)
             );
             case RENEWAL -> submission.updateForTypeRenewal(
                 toAddressEntity(request.entityAddress()),
@@ -291,6 +314,20 @@ public class TrustOnboardingService {
         }
 
         return toTrustOnboardingsSubmissionDto(result);
+    }
+
+    /**
+     * The commercial register entry a profile change updates to: the requested value when the partner sent one, the
+     * stored value otherwise. A PROFILE_CHANGE may change the entry (EIDARTFE-1301), but the partner only sends the
+     * field when it edits it, so a missing field must not read as false.
+     */
+    private Boolean resolveIsRegisteredInCommercialRegister(
+        TrustOnboardingSubmission submission,
+        TrustOnboardingSubmissionRequestDto request
+    ) {
+        return request.isRegisteredInCommercialRegister() != null
+            ? request.isRegisteredInCommercialRegister()
+            : submission.getIsRegisteredInCommercialRegister();
     }
 
     @Transactional
@@ -353,6 +390,7 @@ public class TrustOnboardingService {
         var businessPartnerType = businessPartnerService.getBusinessPartnerType(submission.getPartnerId());
 
         validator.validateCanSubmit(submission, businessPartnerType);
+        validateReVerificationCoversEveryTrustedDid(submission);
 
         submission.markAsSubmitted();
         submission = trustOnboardingSubmissionRepository.saveAndFlush(submission);
@@ -553,6 +591,12 @@ public class TrustOnboardingService {
         var signingRule = latest.getSigningRule();
         var signatories = latest.getSignatories();
 
+        // The commercial register entry is carried over from the latest succeeded submission instead of
+        // being reset. A PROFILE_CHANGE may change it (EIDARTFE-1301), but the partner only sends the
+        // field when it actually edits it - starting the derived submission at false would drop the entry
+        // of a partner that is in fact registered. A RENEWAL must not change it at all.
+        var isRegisteredInCommercialRegister = latest.getIsRegisteredInCommercialRegister();
+
         // Create the submission with type set in constructor via updateType before first save
         var submission = new TrustOnboardingSubmission(
             toTrustOnboardingSubmissionType(submissionType),
@@ -563,7 +607,7 @@ public class TrustOnboardingService {
             contact != null ? contact.email() : null,
             contactPerson,
             bpi.uid(),
-            false, // isRegisteredInCommercialRegister not applicable for profile change/renewal
+            isRegisteredInCommercialRegister,
             pops,
             toBusinessPartnerType(businessPartner.type()),
             signingRule,
@@ -659,8 +703,128 @@ public class TrustOnboardingService {
     }
 
     /**
+     * Re-aligns the proofs of a draft with the currently trusted DIDs: a still trusted DID keeps its proof, an
+     * untrusted one loses it, a newly trusted one gets NOT_SUPPLIED. The selection always equals the trusted set and
+     * every entry still needs its own proof, so it is never silently widened or shortened.
+     */
+    private List<ProofOfPossession> realignProofsWithTrustedDids(
+        TrustOnboardingSubmission submission,
+        List<ProofOfPossession> currentProofs
+    ) {
+        var currentlyTrusted = currentlyTrustedDids(submission.getPartnerId());
+        if (currentlyTrusted.isEmpty()) {
+            return currentProofs;
+        }
+        var trustedDids = currentlyTrusted.get();
+        var proofsByDid = (currentProofs == null ? List.<ProofOfPossession>of() : currentProofs).stream().collect(
+            Collectors.toMap(ProofOfPossession::getDid, pop -> pop, (first, second) -> first)
+        );
+        if (proofsByDid.keySet().equals(trustedDids)) {
+            return currentProofs;
+        }
+        log.info(
+            "Re-aligning the proofs of trust onboarding submission '{}' with the currently trusted DIDs: was {}, is {}",
+            submission.getId(),
+            new TreeSet<>(proofsByDid.keySet()),
+            trustedDids
+        );
+        return trustedDids
+            .stream()
+            .map(did ->
+                proofsByDid.containsKey(did)
+                    ? proofsByDid.get(did)
+                    : new ProofOfPossession(did, UUID.randomUUID().toString()).toNotSupplied()
+            )
+            .toList();
+    }
+
+    /**
+     * A re-verification has to cover exactly the currently trusted DIDs, each with a VALID proof. Rejected are a
+     * missing DID, one that is no longer trusted (the TMS rebuilds the trusted identifiers from the valid proofs) and
+     * one that is not proven. Compared as sets, at submit time, because only then is the trusted set final.
+     */
+    private void validateReVerificationCoversEveryTrustedDid(TrustOnboardingSubmission submission) {
+        if (!submission.getType().isProfileChangeOrRenewal()) {
+            return;
+        }
+        var currentlyTrusted = currentlyTrustedDids(submission.getPartnerId());
+        if (currentlyTrusted.isEmpty()) {
+            return;
+        }
+        var trustedDids = currentlyTrusted.get();
+        var proofs =
+            submission.getProofOfPossessions() == null
+                ? List.<ProofOfPossession>of()
+                : submission.getProofOfPossessions();
+        var submittedDids = proofs
+            .stream()
+            .map(ProofOfPossession::getDid)
+            .collect(Collectors.toCollection(TreeSet::new));
+
+        var missing = new TreeSet<>(trustedDids);
+        missing.removeAll(submittedDids);
+        var noLongerTrusted = new TreeSet<>(submittedDids);
+        noLongerTrusted.removeAll(trustedDids);
+        var notProven = proofs
+            .stream()
+            .filter(pop -> pop.getStatus() != ProofOfPossessionStatus.VALID)
+            .map(ProofOfPossession::getDid)
+            .collect(Collectors.toCollection(TreeSet::new));
+
+        if (missing.isEmpty() && noLongerTrusted.isEmpty() && notProven.isEmpty()) {
+            return;
+        }
+        throw new BusinessDataIntegrityViolationException(
+            (
+                "Can't submit a submission of type '%s': it has to prove exactly the currently trusted DIDs. " +
+                "Missing: %s. No longer trusted: %s. Without a valid proof: %s."
+            ).formatted(submission.getType(), missing, noLongerTrusted, notProven)
+        );
+    }
+
+    /**
+     * The DIDs the partner is trusted for right now, empty when there is no identity to compare against - a partner
+     * without an identity cannot be re-verified anyway, and the create path already refuses that. Deliberately an
+     * Optional and not an empty Set: "nothing to compare against" has to stay distinguishable from "trusted for no
+     * DID", which would make every re-verification fail.
+     */
+    private Optional<Set<String>> currentlyTrustedDids(UUID partnerId) {
+        var bpi = businessPartnerService.getBusinessPartner(partnerId).businessPartnerIdentity();
+        if (bpi == null || bpi.trustedIdentifier() == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new TreeSet<>(bpi.trustedIdentifier()));
+    }
+
+    /**
+     * A changed commercial register entry only reaches the DOI for an INDIVIDUAL, where it picks the template and
+     * decides whether UID and organisation name appear at all. For BUSINESS and GOVERNMENTAL_INSTITUTION it changes
+     * neither, and null means untouched.
+     */
+    private boolean changesDeclarationOfIntentThroughCommercialRegister(
+        TrustOnboardingSubmission submission,
+        TrustOnboardingSubmissionRequestDto request
+    ) {
+        if (request.isRegisteredInCommercialRegister() == null) {
+            return false;
+        }
+        var partnerTypeAfterUpdate =
+            request.requestedPartnerType() != null
+                ? toBusinessPartnerType(request.requestedPartnerType())
+                : submission.getRequestedPartnerType();
+        return (
+            partnerTypeAfterUpdate == BusinessPartnerType.INDIVIDUAL &&
+            !Objects.equals(
+                submission.getIsRegisteredInCommercialRegister(),
+                request.isRegisteredInCommercialRegister()
+            )
+        );
+    }
+
+    /**
      * Returns true if any field that is reflected in the Declaration of Intent has changed.
-     * Affected fields: UID, organisation name, address, DIDs (proof of possessions), signing rule, signatories.
+     * Affected fields: UID, organisation name, address, DIDs (proof of possessions), signing rule, signatories,
+     * and - for an INDIVIDUAL - the commercial register entry.
      *
      * <p>Internally collects the keys of all changed fields into a list, which is logged for traceability.
      * If the list is empty no DOI-relevant field changed, so {@code false} is returned.
@@ -694,6 +858,9 @@ public class TrustOnboardingService {
         if (!Objects.equals(submission.getSignatories(), toSignatories(request.signatories()))) {
             changedFields.add("signatories");
         }
+        if (changesDeclarationOfIntentThroughCommercialRegister(submission, request)) {
+            changedFields.add("isRegisteredInCommercialRegister");
+        }
         if (changedFields.isEmpty()) {
             return false;
         }
@@ -708,11 +875,14 @@ public class TrustOnboardingService {
         return true;
     }
 
+    /**
+     * An approved submission is the reviewed state, so it writes the partner data for every type alike - a
+     * registration as the only source, a re-verification as the version a trust officer decided on.
+     */
     private void updateBusinessPartnerWithSubmissionDetails(TrustOnboardingSubmission trustOnboardingSubmission) {
-        var entityName = trustOnboardingSubmission.getEntityName();
         businessPartnerService.updateBusinessPartner(
             trustOnboardingSubmission.getPartnerId(),
-            entityName,
+            trustOnboardingSubmission.getEntityName(),
             trustOnboardingSubmission.getEntityAddress(),
             trustOnboardingSubmission.getEntityEmail(),
             trustOnboardingSubmission.getUid(),

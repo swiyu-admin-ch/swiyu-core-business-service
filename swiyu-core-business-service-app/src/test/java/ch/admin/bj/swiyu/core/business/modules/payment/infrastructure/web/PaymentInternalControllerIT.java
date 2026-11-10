@@ -7,6 +7,8 @@ import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.ENTITY
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.insertTestBusinessPartners;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -15,10 +17,13 @@ import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.common.api.ProductTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentInitializationRequestDto;
+import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentRetryRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.Amount;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.Payment;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentStatus;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.ProductType;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayClient;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayInitializePaymentCommand;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayInitializeResult;
 import ch.admin.bj.swiyu.core.business.test.RestResponsePage;
 import ch.admin.bj.swiyu.core.business.test.TestRepositories;
@@ -32,6 +37,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -52,6 +58,7 @@ class PaymentInternalControllerIT {
 
     private static final String INITIATE_URL = "/api/v2/internal/payment/initiate";
     private static final String PAYMENT_URL = "/api/v2/internal/payment";
+    private static final String RETRY_URL = "/api/v2/internal/payment/retry";
     private static final String WRITE_ROLE = "ti_@payment_#write";
     private static final String READ_ROLE = "ti_@payment_#read";
 
@@ -343,6 +350,186 @@ class PaymentInternalControllerIT {
                 "https://portal.example.local/callback/" + id
             )
         );
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = WRITE_ROLE)
+    void retryPayment_failedPayment_thenCreatedAndNewPaymentStored() throws Exception {
+        var previous = failedPayment(ENTITY_A, "P-00000001");
+
+        var response = mockMvc
+            .perform(
+                MockMvcRequestBuilders.post(RETRY_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(retryRequest(previous.getId(), ENTITY_A)))
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.businessPartnerId").value(ENTITY_A.toString()))
+            .andExpect(jsonPath("$.redirectUrl").value("https://saferpay.example/redirect/abc"))
+            .andReturn();
+
+        var newPaymentId = UUID.fromString(
+            objectMapper.readTree(response.getResponse().getContentAsString()).get("paymentId").asString()
+        );
+        assertThat(newPaymentId).isNotEqualTo(previous.getId());
+        var created = repos.payment.findById(newPaymentId).orElseThrow();
+        assertThat(created.getStatus()).isEqualTo(PaymentStatus.PENDING);
+        assertThat(created.getBusinessPartnerId()).isEqualTo(ENTITY_A);
+        assertThat(created.getProduct()).isEqualTo(ProductType.BASE_REGISTRATION);
+        assertThat(created.getAmount().getValue()).isEqualTo(previous.getAmount().getValue());
+        assertThat(created.getReferenceId()).matches("^P-[0-9A-F]{8}$").isNotEqualTo(previous.getReferenceId());
+        assertThat(created.getReturnUrl()).isEqualTo("https://portal.example.local/callback/" + newPaymentId);
+        assertThat(created.getSaferpayToken()).isEqualTo("mock-token");
+        assertThat(repos.payment.findAll()).hasSize(2);
+
+        var commandCaptor = ArgumentCaptor.forClass(SaferpayInitializePaymentCommand.class);
+        verify(saferpayClient).initialize(commandCaptor.capture());
+        assertThat(commandCaptor.getValue().orderId()).isEqualTo(created.getReferenceId());
+        assertThat(commandCaptor.getValue().returnUrl()).isEqualTo(created.getReturnUrl());
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = WRITE_ROLE)
+    void retryPayment_cancelledPayment_thenCreated() throws Exception {
+        var previous = savePayment(ENTITY_A, "P-00000002");
+        previous.markAsCancelled();
+        repos.payment.saveAndFlush(previous);
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.post(RETRY_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(retryRequest(previous.getId(), ENTITY_A)))
+            )
+            .andExpect(status().isCreated());
+
+        assertThat(repos.payment.findAll()).hasSize(2);
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = WRITE_ROLE)
+    void retryPayment_pendingPayment_thenConflict() throws Exception {
+        var previous = savePayment(ENTITY_A, "P-00000003");
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.post(RETRY_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(retryRequest(previous.getId(), ENTITY_A)))
+            )
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.errorCode").value("payment_not_retryable"));
+
+        assertThat(repos.payment.findAll()).hasSize(1);
+        verify(saferpayClient, never()).initialize(any());
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = WRITE_ROLE)
+    void retryPayment_succeededPayment_thenConflict() throws Exception {
+        var previous = savePayment(ENTITY_A, "P-00000004");
+        previous.markAsSucceeded("txn-123", Instant.now(), "VISA", "Cardholder", true);
+        repos.payment.saveAndFlush(previous);
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.post(RETRY_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(retryRequest(previous.getId(), ENTITY_A)))
+            )
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.errorCode").value("payment_not_retryable"));
+
+        assertThat(repos.payment.findAll()).hasSize(1);
+        verify(saferpayClient, never()).initialize(any());
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = WRITE_ROLE)
+    void retryPayment_unknownPayment_thenNotFound() throws Exception {
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.post(RETRY_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(retryRequest(UUID.randomUUID(), ENTITY_A)))
+            )
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.errorCode").value("resource_not_found"));
+    }
+
+    @Test
+    @WithExtendedJeapAuthenticationToken(bpRoles = ENTITY_B_S + "=" + WRITE_ROLE)
+    void retryPayment_paymentOfOtherPartner_thenNotFound() throws Exception {
+        var previous = failedPayment(ENTITY_A, "P-00000005");
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.post(RETRY_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(retryRequest(previous.getId(), ENTITY_B)))
+            )
+            .andExpect(status().isNotFound());
+
+        assertThat(repos.payment.findAll()).hasSize(1);
+    }
+
+    @Test
+    @WithExtendedJeapAuthenticationToken(bpRoles = ENTITY_B_S + "=" + WRITE_ROLE)
+    void retryPayment_roleForOtherPartner_thenForbidden() throws Exception {
+        var previous = failedPayment(ENTITY_A, "P-00000006");
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.post(RETRY_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(retryRequest(previous.getId(), ENTITY_A)))
+            )
+            .andExpect(status().isForbidden());
+
+        assertThat(repos.payment.findAll()).hasSize(1);
+    }
+
+    @Test
+    @WithJeapAuthenticationToken
+    void retryPayment_missingRole_thenForbidden() throws Exception {
+        var previous = failedPayment(ENTITY_A, "P-00000007");
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.post(RETRY_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(retryRequest(previous.getId(), ENTITY_A)))
+            )
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = WRITE_ROLE)
+    void retryPayment_pendingPaymentForProductExists_thenBadRequest() throws Exception {
+        // the previous payment failed, but the user already started a new one for the same product
+        var previous = failedPayment(ENTITY_A, "P-00000008");
+        savePayment(ENTITY_A, "P-00000009");
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.post(RETRY_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(retryRequest(previous.getId(), ENTITY_A)))
+            )
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.errorCode").value("payment_already_pending"));
+
+        verify(saferpayClient, never()).initialize(any());
+    }
+
+    private Payment failedPayment(UUID businessPartnerId, String referenceId) {
+        var previous = savePayment(businessPartnerId, referenceId);
+        previous.markAsFailed();
+        return repos.payment.saveAndFlush(previous);
+    }
+
+    private PaymentRetryRequestDto retryRequest(UUID previousPaymentId, UUID businessPartnerId) {
+        return new PaymentRetryRequestDto(previousPaymentId, businessPartnerId);
     }
 
     private PaymentInitializationRequestDto request(UUID businessPartnerId, String returnUrl)

@@ -13,8 +13,9 @@ public enum TrustOnboardingSubmissionType {
 
     /**
      * Mandatory Profile update, allowed only <em>within</em> 3 years of trust-identity expiry; UID fixed. When the
-     * submission gets rejected, all trust statements get deactivated since BusinessPartnerIdentity in TMS is getting
-     * deactivated.
+     * submission gets rejected, the partner loses the trust status at the <em>original</em> expiry date rather than on
+     * the day of the decision: the TMS leaves the BusinessPartnerIdentity untouched and its scheduled job deactivates
+     * it once validUntil has passed (OB_FR_12.8, MUT_23).
      */
     PROFILE_CHANGE_MANDATORY,
 
@@ -32,5 +33,14 @@ public enum TrustOnboardingSubmissionType {
 
     public boolean isRenewal() {
         return this == RENEWAL;
+    }
+
+    /**
+     * True for the three re-verification types, which are derived from verified partner data instead of user input.
+     * They share the restrictions that follow from that - above all that the DID selection is fixed to the already
+     * trusted identifiers.
+     */
+    public boolean isProfileChangeOrRenewal() {
+        return this == PROFILE_CHANGE_MANDATORY || this == PROFILE_CHANGE_VOLUNTARY || this == RENEWAL;
     }
 }

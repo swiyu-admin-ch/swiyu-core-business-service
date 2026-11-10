@@ -18,7 +18,7 @@ class PaymentReturnUrlValidatorTest {
     private final PaymentReturnUrlValidator validator = new PaymentReturnUrlValidator(
         new PaymentProperties(
             List.of("https://portal.example.local", "https://portal.example.local:8443"),
-            new PaymentProperties.SaferpayProperties("t", "c", URI.create("https://test.saferpay.com/api"), null),
+            new PaymentProperties.SaferpayProperties("t", "c", URI.create("https://test.saferpay.com/api"), null, null),
             List.of(new PaymentProperties.Product("BASE_REGISTRATION", "Base", 15_000))
         )
     );
@@ -59,7 +59,13 @@ class PaymentReturnUrlValidatorTest {
         var validatorWithNoOrigins = new PaymentReturnUrlValidator(
             new PaymentProperties(
                 List.of(),
-                new PaymentProperties.SaferpayProperties("t", "c", URI.create("https://test.saferpay.com/api"), null),
+                new PaymentProperties.SaferpayProperties(
+                    "t",
+                    "c",
+                    URI.create("https://test.saferpay.com/api"),
+                    null,
+                    null
+                ),
                 List.of(new PaymentProperties.Product("BASE_REGISTRATION", "Base", 15_000))
             )
         );

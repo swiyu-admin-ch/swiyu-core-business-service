@@ -19,6 +19,7 @@ import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentReferenceId
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentRepository;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentReturnUrlValidator;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentStatus;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.ProductType;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.QPayment;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.event.TiPaymentChangeNotificationReceivedEventBuilder;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.event.TiPaymentSucceededEventBuilder;
@@ -35,6 +36,7 @@ import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.model.Saf
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.model.SaferpayTransactionReference;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentFinalizationFailedException;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentInitializationFailedException;
+import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentRetryNotAllowedException;
 import ch.admin.bj.swiyu.messagetype.ti.TiPaymentChangeNotificationReceivedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiPaymentSucceededEvent;
 import com.querydsl.core.BooleanBuilder;
@@ -103,36 +105,46 @@ public class PaymentService {
     }
 
     /**
-     * Initiates a payment in three steps:
-     * 1. Save the payment in our database with status PENDING, and finish (commit) that database work.
-     *    The stored returnUrl is the caller's returnUrl with the paymentId appended as path segment.
-     * 2. Then call Saferpay to open the payment page for it. The browser comes back to that returnUrl.
-     * 3. Finally store Saferpay's answer (token, redirect URL, expiration) on the payment, in a second
-     *    short transaction.
-     *
-     * Saferpay is called with no database transaction open on purpose: a slow or hanging Saferpay must
-     * not keep a database connection occupied.
+     * Initiates a payment for the requested product at its current catalog price, see startPayment.
      */
     public PaymentInitializationResponseDto initiatePayment(PaymentInitializationRequestDto request) {
         // the returnUrl is supplied by the caller - only accept it if it points to one of our own frontends
         paymentReturnUrlValidator.validate(request.returnUrl());
         businessPartnerService.validateBusinessPartnerExists(request.businessPartnerId());
 
-        var pending = createPendingPaymentInTransaction(request);
-
-        var result = initializeSaferpayPayment(
-            pending.getId(),
-            new SaferpayInitializePaymentCommand(
-                pending.getReferenceId(),
-                pending.getAmount().getValue(),
-                pending.getAmount().getCurrency(),
-                paymentProductCatalog.descriptionFor(pending.getProduct()),
-                pending.getReturnUrl()
-            )
+        var product = PaymentMapper.toProductType(request.product());
+        return startPayment(
+            request.businessPartnerId(),
+            product,
+            Amount.chf(paymentProductCatalog.priceFor(product)),
+            request.returnUrl().toString()
         );
+    }
 
-        var updated = transactionTemplate.execute(status -> applySaferpayResult(pending.getId(), result));
-        return PaymentMapper.toResponseDto(updated);
+    /**
+     * Starts a new payment for a payment that failed or was cancelled, so the user can pay again.
+     *
+     * The previous payment is not changed: a retry always creates a new payment, because every attempt
+     * needs its own referenceId (Saferpay orderId) and its own Saferpay token. Product, amount and
+     * currency are copied from the previous payment, and the browser is sent back to the same frontend
+     * page, now with the id of the new payment as last path segment.
+     *
+     * A PENDING payment is refused, because paying it is still possible via its own redirectUrl, and a
+     * SUCCEEDED payment is refused, because it must not be paid twice (409 Conflict).
+     */
+    public PaymentInitializationResponseDto retryPayment(UUID previousPaymentId, UUID businessPartnerId) {
+        // fetch by both ids, so a caller cannot retry a payment of another business partner
+        var previous = paymentRepository
+            .findByIdAndBusinessPartnerId(previousPaymentId, businessPartnerId)
+            .orElseThrow(() -> paymentNotFound(previousPaymentId));
+        ensureRetryable(previous);
+
+        return startPayment(
+            previous.getBusinessPartnerId(),
+            previous.getProduct(),
+            new Amount(previous.getAmount().getValue(), previous.getAmount().getCurrency()),
+            returnUrlWithoutPaymentId(previous)
+        );
     }
 
     @Transactional(readOnly = true)
@@ -197,12 +209,19 @@ public class PaymentService {
      * So the unique index is the real guarantee; the check in the code only gives the normal case (first
      * payment already saved) a clean error without relying on a database exception.
      */
-    private Payment createPendingPaymentInTransaction(PaymentInitializationRequestDto request) {
+    private Payment createPendingPaymentInTransaction(
+        UUID businessPartnerId,
+        ProductType product,
+        Amount amount,
+        String baseReturnUrl
+    ) {
         try {
-            return transactionTemplate.execute(status -> createPendingPayment(request));
+            return transactionTemplate.execute(status ->
+                createPendingPayment(businessPartnerId, product, amount, baseReturnUrl)
+            );
         } catch (DataIntegrityViolationException e) {
             if (isPendingPaymentIndexViolation(e)) {
-                throw alreadyPending(request);
+                throw alreadyPending(businessPartnerId, product);
             }
             // Anything else is unexpected, e.g. the (very unlikely) collision of the random referenceId.
             throw e;
@@ -214,38 +233,113 @@ public class PaymentService {
         return message != null && message.contains(PENDING_PAYMENT_UNIQUE_INDEX);
     }
 
-    private static PaymentInitializationFailedException alreadyPending(PaymentInitializationRequestDto request) {
+    private static PaymentInitializationFailedException alreadyPending(UUID businessPartnerId, ProductType product) {
         return new PaymentInitializationFailedException(
             BusinessExceptionErrorCode.PAYMENT_ALREADY_PENDING,
             "A pending payment for product '%s' already exists for business partner '%s'.".formatted(
-                request.product(),
-                request.businessPartnerId()
+                PaymentMapper.toProductTypeDto(product),
+                businessPartnerId
             )
         );
     }
 
-    private Payment createPendingPayment(PaymentInitializationRequestDto request) {
-        var product = PaymentMapper.toProductType(request.product());
+    private Payment createPendingPayment(
+        UUID businessPartnerId,
+        ProductType product,
+        Amount amount,
+        String baseReturnUrl
+    ) {
         if (
             paymentRepository.existsByBusinessPartnerIdAndProductAndStatus(
-                request.businessPartnerId(),
+                businessPartnerId,
                 product,
                 PaymentStatus.PENDING
             )
         ) {
-            throw alreadyPending(request);
+            throw alreadyPending(businessPartnerId, product);
         }
-        var amount = Amount.chf(paymentProductCatalog.priceFor(product));
         var paymentId = UUID.randomUUID();
         var payment = new Payment(
             paymentId,
-            request.businessPartnerId(),
+            businessPartnerId,
             PaymentReferenceIdGenerator.generate(),
             product,
             amount,
-            appendPaymentIdPathSegment(request.returnUrl().toString(), paymentId)
+            appendPaymentIdPathSegment(baseReturnUrl, paymentId)
         );
         return paymentRepository.saveAndFlush(payment);
+    }
+
+    /**
+     * Starts a new payment in three steps. Shared by the initial payment and the retry, which only differ
+     * in how product, amount and returnUrl are derived.
+     * 1. Save the payment in our database with status PENDING, and finish (commit) that database work.
+     *    The stored returnUrl is the given baseReturnUrl with the paymentId appended as path segment.
+     * 2. Then call Saferpay to open the payment page for it. The browser comes back to that returnUrl.
+     * 3. Finally store Saferpay's answer (token, redirect URL, expiration) on the payment, in a second
+     *    short transaction.
+     *
+     * Saferpay is called with no database transaction open on purpose: a slow or hanging Saferpay must
+     * not keep a database connection occupied.
+     */
+    private PaymentInitializationResponseDto startPayment(
+        UUID businessPartnerId,
+        ProductType product,
+        Amount amount,
+        String baseReturnUrl
+    ) {
+        var pending = createPendingPaymentInTransaction(businessPartnerId, product, amount, baseReturnUrl);
+
+        var result = initializeSaferpayPayment(
+            pending.getId(),
+            new SaferpayInitializePaymentCommand(
+                pending.getReferenceId(),
+                pending.getAmount().getValue(),
+                pending.getAmount().getCurrency(),
+                paymentProductCatalog.descriptionFor(pending.getProduct()),
+                pending.getReturnUrl()
+            )
+        );
+
+        var updated = transactionTemplate.execute(status -> applySaferpayResult(pending.getId(), result));
+        return PaymentMapper.toResponseDto(updated);
+    }
+
+    private static void ensureRetryable(Payment previous) {
+        if (previous.getStatus() != PaymentStatus.FAILED && previous.getStatus() != PaymentStatus.CANCELLED) {
+            throw new PaymentRetryNotAllowedException(
+                "Payment '%s' is in status %s and cannot be retried. Only FAILED or CANCELLED payments can be retried.".formatted(
+                    previous.getId(),
+                    previous.getStatus()
+                )
+            );
+        }
+    }
+
+    /**
+     * The stored returnUrl of a payment already ends with the id of that payment (see
+     * appendPaymentIdPathSegment). A retry has to end with the id of the new payment instead, so the old
+     * segment is removed before the new one is appended. Query string and fragment are kept, e.g.
+     * ".../payment/{id}?lang=de" becomes ".../payment?lang=de".
+     */
+    private static String returnUrlWithoutPaymentId(Payment previous) {
+        var stored = previous.getReturnUrl();
+        var previousSegment = "/" + previous.getId();
+        var queryStart = stored.indexOf('?');
+        var fragmentStart = stored.indexOf('#');
+        var pathEnd = Math.min(
+            queryStart < 0 ? stored.length() : queryStart,
+            fragmentStart < 0 ? stored.length() : fragmentStart
+        );
+        if (!stored.startsWith(previousSegment, pathEnd - previousSegment.length())) {
+            throw new IllegalStateException(
+                "Return URL '%s' of payment '%s' does not end with the id of that payment.".formatted(
+                    stored,
+                    previous.getId()
+                )
+            );
+        }
+        return stored.substring(0, pathEnd - previousSegment.length()) + stored.substring(pathEnd);
     }
 
     private Payment applySaferpayResult(UUID paymentId, SaferpayInitializeResult result) {

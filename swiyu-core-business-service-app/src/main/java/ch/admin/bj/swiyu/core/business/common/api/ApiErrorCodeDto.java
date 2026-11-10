@@ -51,6 +51,7 @@ public enum ApiErrorCodeDto {
     OBJECT_COUNT_LIMIT_REACHED("object_count_limit_reached"),
     PAYMENT_ALREADY_PENDING("payment_already_pending"),
     PAYMENT_DISABLED("payment_disabled"),
+    PAYMENT_NOT_RETRYABLE("payment_not_retryable"),
     PAYMENT_RETURN_URL_NOT_ALLOWED("payment_return_url_not_allowed"),
     STATUS_LIST_VALIDATION_FAILED("status_list_validation_failed"),
     TRUST_ONBOARDING_DOCUMENT_VALIDATION_FAILED("trust_onboarding_document_validation_failed"),

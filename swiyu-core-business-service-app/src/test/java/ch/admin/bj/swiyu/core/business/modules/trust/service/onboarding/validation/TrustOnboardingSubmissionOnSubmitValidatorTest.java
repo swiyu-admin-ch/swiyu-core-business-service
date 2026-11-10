@@ -17,6 +17,7 @@ import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.ProofOfPo
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.Signatory;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.SigningRule;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
+import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionType;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import java.util.LinkedHashMap;
@@ -26,6 +27,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.validation.FieldError;
@@ -52,6 +55,78 @@ class TrustOnboardingSubmissionOnSubmitValidatorTest {
             trustOnboardingSubmissionValidator
         );
         when(featuresProperties.getEidartfe1220ProofOfPossession()).thenReturn(true);
+    }
+
+    /**
+     * Proving possession of every trusted DID is what a re-verification is, so the check must not hang on the
+     * registration feature toggle. Stubbed off here on purpose.
+     */
+    @ParameterizedTest
+    @EnumSource(
+        value = TrustOnboardingSubmissionType.class,
+        names = { "RENEWAL", "PROFILE_CHANGE_MANDATORY", "PROFILE_CHANGE_VOLUNTARY" }
+    )
+    void fails_when_proofOfPossessionIsMissing_evenWithTheFeatureToggleOff(TrustOnboardingSubmissionType type) {
+        when(featuresProperties.getEidartfe1220ProofOfPossession()).thenReturn(false);
+        var submission = reVerificationWithProofs(
+            type,
+            List.of(
+                new ProofOfPossession("did:one", UUID.randomUUID().toString()).toValid(),
+                new ProofOfPossession("did:two", UUID.randomUUID().toString()) // never proven
+            )
+        );
+
+        var violations = validator.validate(submission, BusinessPartnerTypeDto.BUSINESS);
+
+        assertTrue(violations.hasFieldErrors("proofOfPossessions"));
+    }
+
+    /**
+     * The counterpart: with every proof valid the submission passes, so the test above fails for the missing proof and
+     * not for some unrelated field.
+     */
+    @ParameterizedTest
+    @EnumSource(
+        value = TrustOnboardingSubmissionType.class,
+        names = { "RENEWAL", "PROFILE_CHANGE_MANDATORY", "PROFILE_CHANGE_VOLUNTARY" }
+    )
+    void succeeds_whenEveryProofIsValid_withTheFeatureToggleOff(TrustOnboardingSubmissionType type) {
+        when(featuresProperties.getEidartfe1220ProofOfPossession()).thenReturn(false);
+        var submission = reVerificationWithProofs(
+            type,
+            List.of(
+                new ProofOfPossession("did:one", UUID.randomUUID().toString()).toValid(),
+                new ProofOfPossession("did:two", UUID.randomUUID().toString()).toValid()
+            )
+        );
+
+        var violations = validator.validate(submission, BusinessPartnerTypeDto.BUSINESS);
+
+        assertFalse(violations.hasFieldErrors("proofOfPossessions"));
+    }
+
+    /** A complete re-verification submission of the given type, carrying the given proofs and a signed DOI. */
+    private TrustOnboardingSubmission reVerificationWithProofs(
+        TrustOnboardingSubmissionType type,
+        List<ProofOfPossession> proofs
+    ) {
+        var submission = new TrustOnboardingSubmission(
+            type,
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            validEntityName(),
+            new Address(),
+            "valid@example.org",
+            validContact(),
+            "uid",
+            true,
+            proofs,
+            BusinessPartnerType.BUSINESS,
+            SigningRule.SINGLE_SIGNATURE,
+            List.of(new Signatory("John", "Doe", "+41 79 123 45 67", "john@example.org"))
+        );
+        submission.updateDeclarationOfIntent(new DeclarationOfIntent(UUID.randomUUID(), null));
+        return submission;
     }
 
     @Test

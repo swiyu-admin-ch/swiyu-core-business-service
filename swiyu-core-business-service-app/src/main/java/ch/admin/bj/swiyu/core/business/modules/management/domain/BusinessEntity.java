@@ -173,8 +173,13 @@ public class BusinessEntity {
     }
 
     /**
-     * Kept for callers that still use the old update path from TrustOnboardingService.
-     * Will be cleaned up in the same sprint once all callers are migrated.
+     * Applies an approved trust onboarding submission - a registration as well as a re-verification. The submission is
+     * the state a trust officer decided on, so it wins over the current partner data. First name, last name and
+     * correspondence language of the contact are kept: a submission carries them but must not apply them (EID-6620).
+     *
+     * <p>{@code contact} is never null here: every creation path supplies one - the create DTO has it as
+     * {@code @NotNull}, the demo import falls back to {@link Contact#of} - and {@code contact_email} is NOT NULL since
+     * the initial schema, so a stored row never materialises the embeddable as null either.
      */
     public BusinessEntity update(
         Map<String, String> entityName,
@@ -185,17 +190,13 @@ public class BusinessEntity {
     ) {
         this.entityName = entityName;
         // EID-6624 - clarify with Business what the expected behavior should be. Why are we just taking the email/phone from submission?
-        if (this.contact == null) {
-            this.contact = Contact.of(contactEmail, contactPhone);
-        } else {
-            this.contact = new Contact(
-                this.contact.getFirstName(),
-                this.contact.getLastName(),
-                contactEmail,
-                contactPhone,
-                this.contact.getCorrespondingLanguage()
-            );
-        }
+        this.contact = new Contact(
+            this.contact.getFirstName(),
+            this.contact.getLastName(),
+            contactEmail,
+            contactPhone,
+            this.contact.getCorrespondingLanguage()
+        );
         this.address = address;
         this.uid = uid;
         return this;

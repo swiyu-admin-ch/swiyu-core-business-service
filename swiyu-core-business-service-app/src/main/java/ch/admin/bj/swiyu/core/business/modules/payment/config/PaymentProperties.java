@@ -35,8 +35,12 @@ public record PaymentProperties(
      * @param configSet  name of the Payment Page configuration in the Saferpay Backoffice. It defines the
      *                   look (branding) of the payment page. Optional: when empty, Saferpay uses the
      *                   configuration marked as default.
+     * @param proxy      outgoing HTTP proxy for the calls to Saferpay, e.g. http://prxp01.admin.ch:8080.
+     *                   Saferpay is on the internet, which the stages only reach through this proxy.
+     *                   Optional: when empty, Saferpay is called directly (e.g. locally). Only the
+     *                   Saferpay client uses it, all internal calls stay direct.
      */
-    public record SaferpayProperties(String terminalId, String customerId, URI baseUrl, String configSet) {}
+    public record SaferpayProperties(String terminalId, String customerId, URI baseUrl, String configSet, URI proxy) {}
 
     /**
      * A product that can be paid.

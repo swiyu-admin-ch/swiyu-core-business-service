@@ -7,6 +7,7 @@ import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentFilterDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentInitializationRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentInitializationResponseDto;
+import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentRetryRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentDisabledException;
 import ch.admin.bj.swiyu.core.business.modules.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -119,6 +120,39 @@ class PaymentInternalController {
     ) {
         ensurePaymentEnabled();
         return paymentService.initiatePayment(request);
+    }
+
+    @PostMapping("/retry")
+    @PreAuthorize("hasRoleForPartner('payment','write', #request.businessPartnerId().toString())")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(
+        summary = "Retry a failed or cancelled payment.",
+        description = "Creates a new payment with the same product and amount as the previous one and returns the URL of a new Saferpay payment page."
+    )
+    @ApiResponse(responseCode = "201", description = "Retry started, a new payment has been created.")
+    @ApiResponse(
+        responseCode = "400",
+        description = "Business validation failed. Possible error codes: DATA_INVALID, PAYMENT_ALREADY_PENDING, PAYMENT_DISABLED, BUSINESS_DATA_INTEGRITY_VIOLATION.",
+        content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorDto.class))
+    )
+    @ApiResponse(
+        responseCode = "403",
+        description = "Not authorized.",
+        content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorDto.class))
+    )
+    @ApiResponse(
+        responseCode = "404",
+        description = "No payment with this id exists for the business partner. Possible error codes: RESOURCE_NOT_FOUND.",
+        content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorDto.class))
+    )
+    @ApiResponse(
+        responseCode = "409",
+        description = "The payment is neither FAILED nor CANCELLED, so it cannot be retried. Possible error codes: PAYMENT_NOT_RETRYABLE.",
+        content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorDto.class))
+    )
+    public PaymentInitializationResponseDto retryPayment(@Valid @RequestBody PaymentRetryRequestDto request) {
+        ensurePaymentEnabled();
+        return paymentService.retryPayment(request.previousPaymentId(), request.businessPartnerId());
     }
 
     private void ensurePaymentEnabled() {

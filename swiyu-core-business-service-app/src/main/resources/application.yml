@@ -96,6 +96,9 @@ payment:
     # Payment Page configuration (branding) as shown in the Saferpay Backoffice, e.g. cbs-payment-test /
     # cbs-payment-prod. Optional: when empty, Saferpay uses the configuration marked as default.
     config-set: ${PAYMENT_SAFERPAY_CONFIG_SET:}
+    # Outgoing proxy for the calls to Saferpay only, e.g. http://prxp01.admin.ch:8080 (scheme, host and port).
+    # The stages reach the internet only through it. Empty = direct connection, e.g. locally.
+    proxy: ${PAYMENT_SAFERPAY_PROXY:}
   product-catalog:
     - type: BASE_REGISTRATION
       description: "swiyu Base Registry"
@@ -179,6 +182,11 @@ spring:
           keystore:
             certificate: ${SAFERPAY_CLIENT_CERT:}
             private-key: ${SAFERPAY_CLIENT_KEY:}
+          # Root CA of the Saferpay server certificate (TEST and PROD). The Java truststore of the image trusts
+          # neither it nor the old SwissSign Gold CA - G2 it is cross-signed by, so without it the handshake fails
+          # with "PKIX path building failed". Replaces the default truststore for this bundle only.
+          truststore:
+            certificate: classpath:saferpay/swisssign-rsa-tls-root-ca-2022-1.pem
 
 jeap:
   vault:

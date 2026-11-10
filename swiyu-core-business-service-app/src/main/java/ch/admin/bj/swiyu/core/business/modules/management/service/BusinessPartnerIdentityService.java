@@ -75,9 +75,10 @@ public class BusinessPartnerIdentityService {
     /**
      * Sets the BPI status to DEACTIVATED, preserving all other BPI data.
      *
-     * @return true if an identity existed and was deactivated, false if there was nothing to deactivate.
-     *         The caller decides how to react - whether to log, to notify the partner, or to ignore it -
-     *         because that depends on where the call comes from.
+     * @return true if an identity existed and was deactivated, false if there was nothing to deactivate
+     *         or the event was older than the stored state. The caller decides how to react - whether to
+     *         log, to notify the partner, or to ignore it - because that depends on where the call comes
+     *         from.
      */
     @Transactional
     public boolean deactivateBusinessPartnerIdentity(UUID partnerId, long tmsVersion) {
@@ -87,7 +88,14 @@ public class BusinessPartnerIdentityService {
             assertBusinessPartnerExists(partnerId);
             return false;
         }
-        currentBpi.get().deactivate(tmsVersion);
+        if (!currentBpi.get().deactivate(tmsVersion)) {
+            log.warn(
+                "Ignored a stale deactivation of BusinessPartnerIdentity '{}': the event carries TMS version {}, the stored state is newer",
+                partnerId,
+                tmsVersion
+            );
+            return false;
+        }
         return true;
     }
 
@@ -125,7 +133,16 @@ public class BusinessPartnerIdentityService {
         var bpi = businessPartnerIdentityRepository.findById(partnerId);
         if (bpi.isPresent()) {
             // an existing identity implies an existing partner (FK)
-            bpi.get().apply(validUntil, trustedIdentifier, status, lastActivated, uid, entityName, tmsVersion);
+            var applied = bpi
+                .get()
+                .apply(validUntil, trustedIdentifier, status, lastActivated, uid, entityName, tmsVersion);
+            if (!applied) {
+                log.warn(
+                    "Ignored a stale update of BusinessPartnerIdentity '{}': the event carries TMS version {}, the stored state is newer",
+                    partnerId,
+                    tmsVersion
+                );
+            }
         } else {
             assertBusinessPartnerExists(partnerId);
             businessPartnerIdentityRepository.save(

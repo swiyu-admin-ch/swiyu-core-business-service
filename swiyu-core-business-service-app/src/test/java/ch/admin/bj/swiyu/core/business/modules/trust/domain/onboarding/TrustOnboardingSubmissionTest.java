@@ -27,7 +27,56 @@ class TrustOnboardingSubmissionTest {
         assertThat(submission.getType()).isEqualTo(PROFILE_CHANGE_VOLUNTARY);
     }
 
+    @Test
+    void updateForTypeProfileChange_isRegisteredInCommercialRegister_isAssignedAsGiven() {
+        // Given a submission of a partner that is registered in the commercial register
+        var submission = buildSubmission(PROFILE_CHANGE_VOLUNTARY, true);
+
+        // When the caller hands in the resolved value - the service decides "requested or keep stored",
+        // see TrustOnboardingService.resolveIsRegisteredInCommercialRegister
+        updateProfileChange(submission, false);
+
+        // Then the submission assigns it, without a rule of its own
+        assertThat(submission.getIsRegisteredInCommercialRegister()).isFalse();
+    }
+
+    @Test
+    void updateForTypeProfileChange_isRegisteredInCommercialRegisterSet_overwritesCurrentValue() {
+        // Given a submission of a partner that is not registered
+        var submission = buildSubmission(PROFILE_CHANGE_VOLUNTARY, false);
+
+        // When the partner corrects the field, which a profile change may do (EIDARTFE-1301)
+        updateProfileChange(submission, true);
+
+        // Then
+        assertThat(submission.getIsRegisteredInCommercialRegister()).isTrue();
+    }
+
+    private static void updateProfileChange(
+        TrustOnboardingSubmission submission,
+        Boolean isRegisteredInCommercialRegister
+    ) {
+        submission.updateForTypeProfileChange(
+            Map.of("default", "Entity"),
+            new Address(),
+            "valid@example.com",
+            new Contact("John", "Doe", "john@example.com", "+41 79 123 45 67", Language.DE),
+            List.of(new ProofOfPossession("did:example:123", UUID.randomUUID().toString())),
+            BusinessPartnerType.BUSINESS,
+            SigningRule.SINGLE_SIGNATURE,
+            List.of(new Signatory("John", "Doe", "+41 79 123 45 67", "john@example.com")),
+            isRegisteredInCommercialRegister
+        );
+    }
+
     private static TrustOnboardingSubmission buildSubmission(TrustOnboardingSubmissionType type) {
+        return buildSubmission(type, false);
+    }
+
+    private static TrustOnboardingSubmission buildSubmission(
+        TrustOnboardingSubmissionType type,
+        boolean isRegisteredInCommercialRegister
+    ) {
         return new TrustOnboardingSubmission(
             type,
             UUID.randomUUID(),
@@ -37,7 +86,7 @@ class TrustOnboardingSubmissionTest {
             "valid@example.com",
             new Contact("John", "Doe", "john@example.com", "+41 79 123 45 67", Language.DE),
             null,
-            false,
+            isRegisteredInCommercialRegister,
             List.of(new ProofOfPossession("did:example:123", UUID.randomUUID().toString())),
             BusinessPartnerType.BUSINESS,
             SigningRule.SINGLE_SIGNATURE,

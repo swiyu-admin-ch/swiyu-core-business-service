@@ -19,6 +19,7 @@ import ch.admin.bj.swiyu.antivirus.client.model.ScanResult;
 import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
 import ch.admin.bj.swiyu.core.business.common.api.ContactDto;
+import ch.admin.bj.swiyu.core.business.common.api.LanguageDto;
 import ch.admin.bj.swiyu.core.business.common.audit.AuditPublisher;
 import ch.admin.bj.swiyu.core.business.common.did.DidPublicKeyLoader;
 import ch.admin.bj.swiyu.core.business.common.domain.Address;
@@ -30,6 +31,7 @@ import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessDataIntegrityVi
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
+import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerUpdateDto;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessPartnerIdentityStatus;
 import ch.admin.bj.swiyu.core.business.modules.management.domain.pams.PamsClient;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
@@ -52,10 +54,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -561,7 +568,8 @@ class TrustOnboardingServiceIT {
 
         TrustOnboardingSubmission finalS = s;
         var request = new TrustOnboardingSubmitRequestDto(finalS.getVersion());
-        assertDoesNotThrow(() -> service.submit(finalS.getId(), request));
+        var submissionId = finalS.getId();
+        assertDoesNotThrow(() -> service.submit(submissionId, request));
 
         var refreshed = repos.trustOnboardingSubmission.findById(s.getId()).orElseThrow();
         // assert status transitioned to SUBMITTED, submittedAt set, etc.
@@ -608,17 +616,15 @@ class TrustOnboardingServiceIT {
     @Test
     void markAsInformationRequested_succeeds() {
         var submission = repos.trustOnboardingSubmission.save(trustOnboardingSubmission());
+        var resubmitRequiredUntil = Instant.now().plusSeconds(3600);
 
-        service.markAsInformationRequested(submission.getId(), Instant.now().plusSeconds(3600), "partnerNote");
+        service.markAsInformationRequested(submission.getId(), resubmitRequiredUntil, "partnerNote");
 
         var refreshed = repos.trustOnboardingSubmission.findById(submission.getId()).orElseThrow();
         assertEquals(TrustOnboardingSubmissionStatus.INFORMATION_REQUESTED, refreshed.getStatus());
         assertNull(refreshed.getDeclineReason());
         assertEquals("partnerNote", refreshed.getPartnerNote());
-        assertEquals(
-            Instant.now().plusSeconds(3600).getEpochSecond(),
-            refreshed.getResubmitRequiredUntil().getEpochSecond()
-        );
+        assertEquals(resubmitRequiredUntil.getEpochSecond(), refreshed.getResubmitRequiredUntil().getEpochSecond());
         verify(emailCommandPublisher).trustRegistrationInformationRequested(submission.getPartnerId());
     }
 
@@ -1354,15 +1360,39 @@ class TrustOnboardingServiceIT {
         repos.businessPartner.saveAndFlush(partner);
     }
 
+    /**
+     * Adds a DID to the trusted set of an already trusted partner, the way a completed add-DID flow would: through a
+     * TMS identity event with a higher version.
+     */
+    private void addTrustedDid(UUID partnerId, String did) {
+        var bpi = repos.businessPartnerIdentity.findById(partnerId).orElseThrow();
+        var grown = new ArrayList<>(bpi.getTrustedIdentifier());
+        grown.add(did);
+        bpi.apply(
+            bpi.getValidUntil(),
+            grown,
+            bpi.getStatus(),
+            bpi.getLastActivated(),
+            bpi.getUid(),
+            bpi.getEntityName(),
+            bpi.getTmsVersion() == null ? 1L : bpi.getTmsVersion() + 1
+        );
+        repos.businessPartnerIdentity.saveAndFlush(bpi);
+    }
+
     private static Contact germanContact() {
         return new Contact("Hans", "Müller", "hans.mueller@example.com", "+41 79 123 45 67", Language.DE);
     }
 
     private static TrustOnboardingSubmissionRequestDto renewalRequest(UUID partnerId) {
-        return TrustOnboardingSubmissionRequestDto.builder()
-            .partnerId(partnerId)
-            .submissionType(TrustOnboardingSubmissionTypeDto.RENEWAL)
-            .build();
+        return reVerificationRequest(partnerId, TrustOnboardingSubmissionTypeDto.RENEWAL);
+    }
+
+    private static TrustOnboardingSubmissionRequestDto reVerificationRequest(
+        UUID partnerId,
+        TrustOnboardingSubmissionTypeDto type
+    ) {
+        return TrustOnboardingSubmissionRequestDto.builder().partnerId(partnerId).submissionType(type).build();
     }
 
     /**
@@ -1383,6 +1413,456 @@ class TrustOnboardingServiceIT {
         );
         saved.updateDeclarationOfIntent(declarationOfIntent(doiDocument.id()));
         return repos.trustOnboardingSubmission.saveAndFlush(saved);
+    }
+
+    /**
+     * A re-verification covers exactly the already trusted DIDs; another DID is onboarded through the add-DID flow
+     * (EIDARTFE-1301). Checked for all three types, because the rule does not depend on the type.
+     */
+    @ParameterizedTest
+    @EnumSource(
+        value = TrustOnboardingSubmissionTypeDto.class,
+        names = { "RENEWAL", "PROFILE_CHANGE_MANDATORY", "PROFILE_CHANGE_VOLUNTARY" }
+    )
+    void updateTrustOnboardingSubmission_reVerification_rejectsAChangedDidSelection(
+        TrustOnboardingSubmissionTypeDto type
+    ) {
+        // GIVEN a re-verification derived from a trusted partner with two trusted DIDs
+        UUID partnerId = BusinessEntityTestData.ENTITY_A;
+        activateTrustedPartner(partnerId);
+        setPartnerContact(partnerId, germanContact());
+        savePreviousSuccessfulSubmissionWithDoi(trustOnboardingSubmission());
+        var renewal = service.createTrustOnboardingSubmission(reVerificationRequest(partnerId, type));
+
+        // AND an update that drops one of them
+        var updateDto = TrustOnboardingSubmissionRequestDto.builder()
+            .partnerId(partnerId)
+            .dids(List.of("did:example:partner1"))
+            .build();
+
+        // WHEN / THEN
+        var renewalId = renewal.id();
+        assertThrows(BusinessDataIntegrityViolationException.class, () ->
+            service.updateTrustOnboardingSubmission(renewalId, updateDto)
+        );
+
+        // AND both trusted DIDs are still on the submission
+        var refreshed = repos.trustOnboardingSubmission.findById(renewalId).orElseThrow();
+        assertEquals(2, refreshed.getProofOfPossessions().size());
+    }
+
+    /**
+     * A changed commercial register entry only invalidates a signed DOI for an INDIVIDUAL, where it picks the
+     * template. Covers both flag directions, an unchanged value and null, plus the two other partner types.
+     */
+    @ParameterizedTest(name = "{0}, {1} -> {2}: DOI discarded = {3}")
+    @MethodSource("commercialRegisterDoiCases")
+    void updateTrustOnboardingSubmission_doiInvalidationOnCommercialRegisterChange(
+        BusinessPartnerTypeDto partnerType,
+        boolean initialValue,
+        Boolean requestedValue,
+        boolean expectDoiDiscarded
+    ) {
+        var submission = initProfileChangeWithDeclarationOfIntent(initialValue);
+
+        service.updateTrustOnboardingSubmission(
+            submission.getId(),
+            doiNeutralRequestWith(submission, partnerType, requestedValue)
+        );
+
+        var refreshed = repos.trustOnboardingSubmission.findById(submission.getId()).orElseThrow();
+        if (expectDoiDiscarded) {
+            assertNull(refreshed.getDeclarationOfIntent(), "signed DOI no longer matches the submission");
+        } else {
+            assertNotNull(refreshed.getDeclarationOfIntent(), "signed DOI still matches the submission");
+        }
+    }
+
+    /**
+     * The service resolves "requested value or keep the stored one" before handing it to the submission, so a
+     * profile change that does not carry the field keeps the entry of a partner that is in fact registered.
+     */
+    @ParameterizedTest(name = "stored {0}, requested {1} -> {2}")
+    @MethodSource("commercialRegisterResolutionCases")
+    void updateTrustOnboardingSubmission_resolvesIsRegisteredInCommercialRegister(
+        boolean storedValue,
+        Boolean requestedValue,
+        boolean expected
+    ) {
+        var submission = initProfileChangeWithDeclarationOfIntent(storedValue);
+
+        service.updateTrustOnboardingSubmission(
+            submission.getId(),
+            doiNeutralRequestWith(submission, BusinessPartnerTypeDto.BUSINESS, requestedValue)
+        );
+
+        var refreshed = repos.trustOnboardingSubmission.findById(submission.getId()).orElseThrow();
+        assertEquals(expected, refreshed.getIsRegisteredInCommercialRegister(), "commercial register entry");
+    }
+
+    private static Stream<Arguments> commercialRegisterResolutionCases() {
+        return Stream.of(
+            // the field is not sent: the stored value survives in both directions
+            Arguments.of(true, null, true),
+            Arguments.of(false, null, false),
+            // a sent value wins, which a profile change may do (EIDARTFE-1301)
+            Arguments.of(false, Boolean.TRUE, true),
+            Arguments.of(true, Boolean.FALSE, false)
+        );
+    }
+
+    private static Stream<Arguments> commercialRegisterDoiCases() {
+        return Stream.of(
+            // both switch directions reach the document of an INDIVIDUAL
+            Arguments.of(BusinessPartnerTypeDto.INDIVIDUAL, true, Boolean.FALSE, true),
+            Arguments.of(BusinessPartnerTypeDto.INDIVIDUAL, false, Boolean.TRUE, true),
+            // the same value is not a change
+            Arguments.of(BusinessPartnerTypeDto.INDIVIDUAL, true, Boolean.TRUE, false),
+            Arguments.of(BusinessPartnerTypeDto.INDIVIDUAL, false, Boolean.FALSE, false),
+            // null means the partner never touched the field
+            Arguments.of(BusinessPartnerTypeDto.INDIVIDUAL, true, null, false),
+            // for the other partner types the entry reaches neither template nor content
+            Arguments.of(BusinessPartnerTypeDto.BUSINESS, true, Boolean.FALSE, false),
+            Arguments.of(BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION, true, Boolean.FALSE, false)
+        );
+    }
+
+    private TrustOnboardingSubmission initProfileChangeWithDeclarationOfIntent(
+        boolean isRegisteredInCommercialRegister
+    ) {
+        var submission = TrustOnboardingSubmissionTestData.trustOnboardingSubmission(
+            UUID.randomUUID(),
+            BusinessEntityTestData.ENTITY_A,
+            TrustOnboardingSubmissionType.PROFILE_CHANGE_VOLUNTARY
+        );
+        submission.updateForTypeProfileChange(
+            submission.getEntityName(),
+            submission.getEntityAddress(),
+            submission.getEntityEmail(),
+            submission.getContactPerson(),
+            submission.getProofOfPossessions(),
+            submission.getRequestedPartnerType(),
+            submission.getSigningRule(),
+            submission.getSignatories(),
+            isRegisteredInCommercialRegister
+        );
+        submission = repos.trustOnboardingSubmission.save(submission);
+        var document = partnerDocumentService.createTrustOnboardingSubmissionDocument(
+            submission.getPartnerId(),
+            submission.getId(),
+            TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+            multipartFile()
+        );
+        submission.updateDeclarationOfIntent(new DeclarationOfIntent(document.id(), null));
+        return repos.trustOnboardingSubmission.saveAndFlush(submission);
+    }
+
+    /**
+     * The submitted DID set has to equal the trusted set: a missing DID, an additional one, a set that moved while the
+     * draft sat there and a DID that is no longer trusted are all rejected, over all three types.
+     */
+    @ParameterizedTest(name = "{0} / {1}")
+    @MethodSource("didSetMismatchCases")
+    void submit_reVerification_rejectsADidSetThatDoesNotMatchTheTrustedSet(
+        String name,
+        TrustOnboardingSubmissionTypeDto type,
+        BiConsumer<TrustOnboardingServiceIT, ReVerificationFixture> arrange,
+        Class<? extends RuntimeException> expectedException
+    ) {
+        var fixture = prepareReVerification(type);
+        arrange.accept(this, fixture);
+
+        var submission = repos.trustOnboardingSubmission.findById(fixture.submissionId()).orElseThrow();
+        var request = new TrustOnboardingSubmitRequestDto(submission.getVersion());
+        var submissionId = fixture.submissionId();
+
+        assertThrows(expectedException, () -> service.submit(submissionId, request));
+    }
+
+    private static Stream<Arguments> didSetMismatchCases() {
+        BiConsumer<TrustOnboardingServiceIT, ReVerificationFixture> missingDid = (it, f) ->
+            it.setProofs(f, List.of("did:example:partner1"), true);
+        BiConsumer<TrustOnboardingServiceIT, ReVerificationFixture> additionalDid = (it, f) ->
+            it.setProofs(f, List.of("did:example:partner1", "did:example:partner2", "did:example:stranger"), true);
+        BiConsumer<TrustOnboardingServiceIT, ReVerificationFixture> trustedSetGrew = (it, f) -> {
+            it.proveAllTrustedDids(f);
+            it.addTrustedDid(f.partnerId(), "did:example:added-later");
+        };
+        BiConsumer<TrustOnboardingServiceIT, ReVerificationFixture> trustedSetShrank = (it, f) -> {
+            it.proveAllTrustedDids(f);
+            it.removeTrustedDid(f.partnerId(), "did:example:partner2");
+        };
+        BiConsumer<TrustOnboardingServiceIT, ReVerificationFixture> proofNotValid = (it, f) ->
+            it.setProofs(f, List.of("did:example:partner1", "did:example:partner2"), false);
+
+        return Stream.of(
+            Arguments.of(
+                "a trusted DID is missing",
+                TrustOnboardingSubmissionTypeDto.RENEWAL,
+                missingDid,
+                BusinessDataIntegrityViolationException.class
+            ),
+            Arguments.of(
+                "an additional DID is proven",
+                TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_MANDATORY,
+                additionalDid,
+                BusinessDataIntegrityViolationException.class
+            ),
+            Arguments.of(
+                "the trusted set grew in the meantime",
+                TrustOnboardingSubmissionTypeDto.RENEWAL,
+                trustedSetGrew,
+                BusinessDataIntegrityViolationException.class
+            ),
+            Arguments.of(
+                "a DID is no longer trusted",
+                TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_VOLUNTARY,
+                trustedSetShrank,
+                BusinessDataIntegrityViolationException.class
+            ),
+            // Rejected one layer earlier, by validateProofs, which runs before the set comparison and reports a field
+            // error instead. Recorded here so the difference is visible rather than surprising.
+            Arguments.of(
+                "a proof is not valid",
+                TrustOnboardingSubmissionTypeDto.RENEWAL,
+                proofNotValid,
+                ValidationException.class
+            )
+        );
+    }
+
+    /**
+     * The counterpart: the exact trusted set, every proof valid, handed in in the reverse order. It has to pass - the
+     * comparison is on sets, so the order of the proofs must never matter.
+     */
+    @ParameterizedTest
+    @EnumSource(
+        value = TrustOnboardingSubmissionTypeDto.class,
+        names = { "RENEWAL", "PROFILE_CHANGE_MANDATORY", "PROFILE_CHANGE_VOLUNTARY" }
+    )
+    void submit_reVerification_acceptsTheTrustedSetInAnyOrder(TrustOnboardingSubmissionTypeDto type) {
+        var fixture = prepareReVerification(type);
+        // reverse order on purpose
+        setProofs(fixture, List.of("did:example:partner2", "did:example:partner1"), true);
+
+        var submission = repos.trustOnboardingSubmission.findById(fixture.submissionId()).orElseThrow();
+        var request = new TrustOnboardingSubmitRequestDto(submission.getVersion());
+        var submissionId = fixture.submissionId();
+
+        assertDoesNotThrow(() -> service.submit(submissionId, request));
+    }
+
+    /**
+     * An update in which every DOI-relevant field except the partner type and the commercial register entry is copied
+     * from the submission, so that nothing else counts as a change.
+     */
+    private static TrustOnboardingSubmissionRequestDto doiNeutralRequestWith(
+        TrustOnboardingSubmission submission,
+        BusinessPartnerTypeDto partnerType,
+        Boolean isRegisteredInCommercialRegister
+    ) {
+        return TrustOnboardingSubmissionRequestDto.builder()
+            .partnerId(submission.getPartnerId())
+            .entityName(submission.getEntityName())
+            .entityAddress(
+                ch.admin.bj.swiyu.core.business.common.service.mapper.AddressMapper.toAddressDto(
+                    submission.getEntityAddress()
+                )
+            )
+            .entityEmail(submission.getEntityEmail())
+            .contactPerson(trustOnboardingSubmissionRequestDto().getContactPerson())
+            .registryIds(Map.of("UID", submission.getUid()))
+            .dids(submission.getProofOfPossessions().stream().map(ProofOfPossession::getDid).toList())
+            .requestedPartnerType(partnerType)
+            .signingRule(trustOnboardingSubmissionRequestDto().signingRule())
+            .signatories(trustOnboardingSubmissionRequestDto().signatories())
+            .isRegisteredInCommercialRegister(isRegisteredInCommercialRegister)
+            .build();
+    }
+
+    private static final String SUBMISSION_STREET = "Submission Street 2";
+    private static final String SUBMISSION_EMAIL = "submission@example.com";
+    private static final String INLINE_STREET = "Inline Street 1";
+    private static final String INLINE_EMAIL = "inline@example.com";
+
+    /** A trusted partner with a derived, still unsubmitted re-verification of the given type. */
+    private record ReVerificationFixture(UUID partnerId, UUID submissionId) {}
+
+    private ReVerificationFixture prepareReVerification(TrustOnboardingSubmissionTypeDto type) {
+        UUID partnerId = BusinessEntityTestData.ENTITY_A;
+        activateTrustedPartner(partnerId);
+        setPartnerContact(partnerId, germanContact());
+        savePreviousSuccessfulSubmissionWithDoi(trustOnboardingSubmission());
+        var dto = service.createTrustOnboardingSubmission(reVerificationRequest(partnerId, type));
+        // A submission cannot be handed in without a signed Declaration of Intent, which validateCanSubmit checks
+        // before anything else. Attaching one here keeps these tests failing for the reason they are about.
+        var submission = repos.trustOnboardingSubmission.findById(dto.id()).orElseThrow();
+        var doiDocument = partnerDocumentService.createTrustOnboardingSubmissionDocument(
+            submission.getPartnerId(),
+            submission.getId(),
+            TRUST_ONBOARDING_DECLARATION_OF_INTENT,
+            multipartFile()
+        );
+        submission.updateDeclarationOfIntent(declarationOfIntent(doiDocument.id()));
+        repos.trustOnboardingSubmission.saveAndFlush(submission);
+        return new ReVerificationFixture(partnerId, dto.id());
+    }
+
+    /**
+     * The nested contact mapping as it stands: email (from entityEmail) and phone arrive from the submission, first
+     * name, last name and language keep the profile's values (EID-6620). Pins today's behaviour, an EID-6624 question.
+     */
+    @Test
+    void markAsSucceeded_reVerification_appliesEmailAndPhoneAndKeepsNameAndLanguage() {
+        var fixture = prepareReVerification(TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_VOLUNTARY);
+        changeInSubmission(fixture, null, SUBMISSION_EMAIL);
+        submit(fixture);
+
+        service.markAsSucceeded(fixture.submissionId());
+
+        var contact = businessPartnerService.getBusinessPartner(fixture.partnerId()).contact();
+        assertEquals(SUBMISSION_EMAIL, contact.email(), "contact email comes from the submission");
+        assertEquals("+41 79 888 88 88", contact.phone(), "contact phone comes from the submission");
+        assertEquals("Hans", contact.firstName(), "the contact person name stays the profile's");
+        assertEquals("Müller", contact.lastName(), "the contact person name stays the profile's");
+        assertEquals(
+            LanguageDto.DE,
+            contact.correspondingLanguage(),
+            "the correspondence language stays the profile's"
+        );
+    }
+
+    /**
+     * The approved submission wins over the current partner data, also for address and contact. An inline edit made
+     * while the submission waited for review is overwritten - the submission is the state a trust officer decided on,
+     * and correcting it inline afterwards is immediate and free.
+     */
+    @ParameterizedTest
+    @EnumSource(
+        value = TrustOnboardingSubmissionTypeDto.class,
+        names = { "RENEWAL", "PROFILE_CHANGE_MANDATORY", "PROFILE_CHANGE_VOLUNTARY" }
+    )
+    void markAsSucceeded_reVerification_theApprovalWinsOverAnInlineEdit(TrustOnboardingSubmissionTypeDto type) {
+        var fixture = prepareReVerification(type);
+        changeInSubmission(fixture, SUBMISSION_STREET, SUBMISSION_EMAIL);
+        submit(fixture);
+        editInline(fixture, INLINE_STREET, INLINE_EMAIL);
+
+        service.markAsSucceeded(fixture.submissionId());
+
+        var partner = businessPartnerService.getBusinessPartner(fixture.partnerId());
+        assertEquals(SUBMISSION_STREET, partner.address().street(), "the approved address wins");
+        assertEquals(SUBMISSION_EMAIL, partner.contact().email(), "the approved contact email wins");
+    }
+
+    /** The partner edits address and/or contact <em>in the submission</em>; null leaves that field as the copy. */
+    private void changeInSubmission(ReVerificationFixture fixture, String street, String email) {
+        var submission = repos.trustOnboardingSubmission.findById(fixture.submissionId()).orElseThrow();
+        var address =
+            street == null ? submission.getEntityAddress() : new Address(street, "Submission City", "8888", "CH");
+        var contactPerson =
+            email == null
+                ? submission.getContactPerson()
+                : new Contact("Sub", "Mitter", email, "+41 79 888 88 88", Language.DE);
+        var entityEmail = email == null ? submission.getEntityEmail() : email;
+        if (submission.getType() == TrustOnboardingSubmissionType.RENEWAL) {
+            submission.updateForTypeRenewal(address, entityEmail, contactPerson, submission.getProofOfPossessions());
+        } else {
+            submission.updateForTypeProfileChange(
+                submission.getEntityName(),
+                address,
+                entityEmail,
+                contactPerson,
+                submission.getProofOfPossessions(),
+                submission.getRequestedPartnerType(),
+                submission.getSigningRule(),
+                submission.getSignatories(),
+                submission.getIsRegisteredInCommercialRegister()
+            );
+        }
+        repos.trustOnboardingSubmission.saveAndFlush(submission);
+    }
+
+    /** The partner edits address and/or contact inline on the profile, where it applies immediately. */
+    private void editInline(ReVerificationFixture fixture, String street, String email) {
+        businessPartnerService.updateBusinessPartnerFromPortal(
+            fixture.partnerId(),
+            new BusinessPartnerUpdateDto(
+                null,
+                null,
+                street == null ? null : new AddressDto(street, "Inline City", "9999", "CH"),
+                email == null
+                    ? null
+                    : new ContactDto("Inline", "Person", email, "+41 79 999 99 99", LanguageDto.FR, null)
+            )
+        );
+    }
+
+    private void submit(ReVerificationFixture fixture) {
+        var submission = repos.trustOnboardingSubmission.findById(fixture.submissionId()).orElseThrow();
+        submission.markAsSubmitted();
+        repos.trustOnboardingSubmission.saveAndFlush(submission);
+    }
+
+    /** Replaces the proofs of the submission with exactly the given DIDs, valid or not supplied. */
+    private void setProofs(ReVerificationFixture fixture, List<String> dids, boolean valid) {
+        var submission = repos.trustOnboardingSubmission.findById(fixture.submissionId()).orElseThrow();
+        var proofs = dids
+            .stream()
+            .map(did -> {
+                var pop = new ProofOfPossession(did, UUID.randomUUID().toString());
+                return valid ? pop.toValid() : pop.toNotSupplied();
+            })
+            .toList();
+        replaceProofs(submission, proofs);
+        repos.trustOnboardingSubmission.saveAndFlush(submission);
+    }
+
+    /** Marks every proof the derived submission already carries as valid, leaving the selection alone. */
+    private void proveAllTrustedDids(ReVerificationFixture fixture) {
+        var submission = repos.trustOnboardingSubmission.findById(fixture.submissionId()).orElseThrow();
+        replaceProofs(submission, submission.getProofOfPossessions().stream().map(ProofOfPossession::toValid).toList());
+        repos.trustOnboardingSubmission.saveAndFlush(submission);
+    }
+
+    private static void replaceProofs(TrustOnboardingSubmission submission, List<ProofOfPossession> proofs) {
+        if (submission.getType() == TrustOnboardingSubmissionType.RENEWAL) {
+            submission.updateForTypeRenewal(
+                submission.getEntityAddress(),
+                submission.getEntityEmail(),
+                submission.getContactPerson(),
+                proofs
+            );
+        } else {
+            submission.updateForTypeProfileChange(
+                submission.getEntityName(),
+                submission.getEntityAddress(),
+                submission.getEntityEmail(),
+                submission.getContactPerson(),
+                proofs,
+                submission.getRequestedPartnerType(),
+                submission.getSigningRule(),
+                submission.getSignatories(),
+                submission.getIsRegisteredInCommercialRegister()
+            );
+        }
+    }
+
+    /** Removes a DID from the trusted set, the way offboarding a single DID would, through a TMS identity event. */
+    private void removeTrustedDid(UUID partnerId, String did) {
+        var bpi = repos.businessPartnerIdentity.findById(partnerId).orElseThrow();
+        var shrunk = new ArrayList<>(bpi.getTrustedIdentifier());
+        shrunk.remove(did);
+        bpi.apply(
+            bpi.getValidUntil(),
+            shrunk,
+            bpi.getStatus(),
+            bpi.getLastActivated(),
+            bpi.getUid(),
+            bpi.getEntityName(),
+            bpi.getTmsVersion() == null ? 1L : bpi.getTmsVersion() + 1
+        );
+        repos.businessPartnerIdentity.saveAndFlush(bpi);
     }
 
     private TrustOnboardingSubmission initSubmissionWithDeclarationOfIntent() {

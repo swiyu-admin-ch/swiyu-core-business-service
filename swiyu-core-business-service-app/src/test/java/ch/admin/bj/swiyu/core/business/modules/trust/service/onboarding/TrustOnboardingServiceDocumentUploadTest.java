@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -23,6 +24,8 @@ import ch.admin.bj.swiyu.core.business.common.exceptions.ValidationException;
 import ch.admin.bj.swiyu.core.business.modules.documents.api.PartnerDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.documents.domain.PartnerDocumentType;
 import ch.admin.bj.swiyu.core.business.modules.documents.service.PartnerDocumentService;
+import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerDto;
+import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.DeclarationOfIntentValidationResult;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentTypeDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDocumentUploadRequestDto;
@@ -69,6 +72,9 @@ class TrustOnboardingServiceDocumentUploadTest {
     @Mock
     private TrustOnboardingSubmissionDocumentValidator trustOnboardingSubmissionDocumentValidator;
 
+    @Mock
+    private BusinessPartnerService businessPartnerService;
+
     @InjectMocks
     private TrustOnboardingService trustOnboardingService;
 
@@ -76,6 +82,9 @@ class TrustOnboardingServiceDocumentUploadTest {
     void setUp() {
         // The service calls the void 2-arg validator overload, so default it to no-op.
         lenient().doNothing().when(trustOnboardingSubmissionDocumentValidator).validateCanUpload(any(), any());
+        // Updating a re-verification re-aligns its proofs with the currently trusted DIDs, which reads the partner.
+        // A partner without an identity leaves the proofs untouched, which keeps these tests about the DOI only.
+        lenient().when(businessPartnerService.getBusinessPartner(any())).thenReturn(mock(BusinessPartnerDto.class));
     }
 
     @Test

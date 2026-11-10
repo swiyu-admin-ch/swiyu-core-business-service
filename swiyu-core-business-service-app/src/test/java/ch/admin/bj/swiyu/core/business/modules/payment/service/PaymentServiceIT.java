@@ -27,6 +27,7 @@ import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.model.Saf
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.model.SaferpayTransaction;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.model.SaferpayTransactionReference;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentFinalizationFailedException;
+import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentRetryNotAllowedException;
 import ch.admin.bj.swiyu.core.business.test.TestRepositories;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
 import java.net.URI;
@@ -131,6 +132,61 @@ class PaymentServiceIT {
         assertThat(repos.payment.findAll())
             .extracting(Payment::getStatus)
             .containsExactlyInAnyOrder(PaymentStatus.FAILED, PaymentStatus.PENDING);
+    }
+
+    @Test
+    void retryPayment_failedPayment_createsNewPendingPaymentAndKeepsTheFailedOne() {
+        var previousId = UUID.randomUUID();
+        var previous = new Payment(
+            previousId,
+            testBusinessPartnerId,
+            "P-00000003",
+            ProductType.BASE_REGISTRATION,
+            Amount.chf(20_000),
+            "https://portal.example.local/callback/" + previousId
+        );
+        previous.markAsFailed();
+        repos.payment.saveAndFlush(previous);
+        when(saferpayClient.initialize(any())).thenReturn(
+            new SaferpayInitializeResult(
+                "token-retry",
+                "https://saferpay.example/redirect/retry",
+                Instant.now().plusSeconds(600)
+            )
+        );
+
+        var response = paymentService.retryPayment(previousId, testBusinessPartnerId);
+
+        var created = repos.payment.findById(response.paymentId()).orElseThrow();
+        assertThat(created.getId()).isNotEqualTo(previousId);
+        assertThat(created.getStatus()).isEqualTo(PaymentStatus.PENDING);
+        assertThat(created.getProduct()).isEqualTo(ProductType.BASE_REGISTRATION);
+        assertThat(created.getAmount().getValue()).isEqualTo(20_000L);
+        assertThat(created.getSaferpayToken()).isEqualTo("token-retry");
+        assertThat(created.getReturnUrl()).isEqualTo("https://portal.example.local/callback/" + created.getId());
+        assertThat(repos.payment.findById(previousId).orElseThrow().getStatus()).isEqualTo(PaymentStatus.FAILED);
+        assertThat(repos.payment.findAll()).hasSize(2);
+    }
+
+    @Test
+    void retryPayment_pendingPayment_isRejectedAndCreatesNoSecondPayment() {
+        var pendingId = UUID.randomUUID();
+        repos.payment.saveAndFlush(
+            new Payment(
+                pendingId,
+                testBusinessPartnerId,
+                "P-00000004",
+                ProductType.BASE_REGISTRATION,
+                Amount.chf(15_000),
+                "https://portal.example.local/callback/" + pendingId
+            )
+        );
+
+        assertThatThrownBy(() -> paymentService.retryPayment(pendingId, testBusinessPartnerId)).isInstanceOf(
+            PaymentRetryNotAllowedException.class
+        );
+
+        assertThat(repos.payment.findAll()).hasSize(1);
     }
 
     @Test

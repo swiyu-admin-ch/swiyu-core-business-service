@@ -11,6 +11,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Saferpay B2B payment notification callback endpoint.
+ * <p>
+ * This endpoint is intentionally left unsecured (no authentication required).
+ * It is designed to be called exclusively via the API Gateway without authentication.
+ * </p>
+ */
 @RequiredArgsConstructor
 @RestController
 @Tag(name = "Saferpay Notify B2B", description = "Saferpay payment notification callback")

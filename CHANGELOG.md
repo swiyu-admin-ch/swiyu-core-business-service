@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## 4.14.5
+
+### Fixed
+
+- Fixed saferpay callback endpoint being public
+
+## 4.14.4
+
+### Changed
+
+- The SwissSign root CA for Saferpay is no longer part of the repository: it is now provided per stage via the
+  GitOps helm values, like the other additional root CAs
+
 ## 4.14.3
 
 ### Fixed

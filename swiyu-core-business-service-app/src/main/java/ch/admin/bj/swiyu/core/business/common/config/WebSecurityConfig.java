@@ -33,11 +33,11 @@ public class WebSecurityConfig {
      */
     @Bean
     @Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
-    SecurityFilterChain saferpayNotifyFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain saferpayNotifyFilterChain(HttpSecurity http) {
         http
             .securityMatcher("/api/v1/saferpay/notify")
             .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-            .csrf(csrf -> csrf.disable());
+            .csrf(csrf -> csrf.disable()); // NOSONAR: Saferpay webhook endpoint - external caller (no session/CSRF token), protected by API Gateway IP allowlist
         return http.build();
     }
 

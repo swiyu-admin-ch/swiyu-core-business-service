@@ -4,62 +4,62 @@ version: v1.25.1
 ignore:
   SNYK-RHEL9-LIBCURLMINIMAL-17878844:
     - '*':
-        reason: No fix available in ubi9 JRE base image yet
-        expires: 2026-11-09T09:00:00.000Z
+        reason: "No fixed ubi9 base image available yet"
+        expires: 2026-11-25T09:00:00.000Z
         created: 2026-08-26T11:45:25.164Z
   SNYK-RHEL9-LIBCURLMINIMAL-17878854:
     - '*':
-        reason: No fix available in ubi9 JRE base image yet
-        expires: 2026-11-09T09:00:00.000Z
+        reason: "No fixed ubi9 base image available yet"
+        expires: 2026-11-25T09:00:00.000Z
         created: 2026-08-26T11:45:25.164Z
   SNYK-RHEL9-LIBCURLMINIMAL-17878878:
     - '*':
-        reason: No fix available in ubi9 JRE base image yet
-        expires: 2026-11-09T09:00:00.000Z
+        reason: "No fixed ubi9 base image available yet"
+        expires: 2026-11-25T09:00:00.000Z
         created: 2026-08-26T11:45:25.164Z
   SNYK-RHEL9-LIBCURLMINIMAL-17878902:
     - '*':
-        reason: No fix available in ubi9 JRE base image yet
-        expires: 2026-11-09T09:00:00.000Z
+        reason: "No fixed ubi9 base image available yet"
+        expires: 2026-11-25T09:00:00.000Z
         created: 2026-08-26T11:45:25.164Z
   SNYK-RHEL9-LIBCURLMINIMAL-17878931:
     - '*':
-        reason: No fix available in ubi9 JRE base image yet
-        expires: 2026-11-09T09:00:00.000Z
+        reason: "No fixed ubi9 base image available yet"
+        expires: 2026-11-25T09:00:00.000Z
         created: 2026-08-26T11:45:25.164Z
   SNYK-RHEL9-CURLMINIMAL-17878836:
     - '*':
-        reason: No fix available in ubi9 JRE base image yet
-        expires: 2026-11-09T09:00:00.000Z
+        reason: "No fixed ubi9 base image available yet"
+        expires: 2026-11-25T09:00:00.000Z
         created: 2026-08-26T11:45:25.164Z
   SNYK-RHEL9-CURLMINIMAL-17878850:
     - '*':
-        reason: No fix available in ubi9 JRE base image yet
-        expires: 2026-11-09T09:00:00.000Z
+        reason: "No fixed ubi9 base image available yet"
+        expires: 2026-11-25T09:00:00.000Z
         created: 2026-08-26T11:45:25.164Z
   SNYK-RHEL9-CURLMINIMAL-17878882:
     - '*':
-        reason: No fix available in ubi9 JRE base image yet
-        expires: 2026-11-09T09:00:00.000Z
+        reason: "No fixed ubi9 base image available yet"
+        expires: 2026-11-25T09:00:00.000Z
         created: 2026-08-26T11:45:25.164Z
   SNYK-RHEL9-CURLMINIMAL-17878900:
     - '*':
-        reason: No fix available in ubi9 JRE base image yet
-        expires: 2026-11-09T09:00:00.000Z
+        reason: "No fixed ubi9 base image available yet"
+        expires: 2026-11-25T09:00:00.000Z
         created: 2026-08-26T11:45:25.164Z
   SNYK-RHEL9-CURLMINIMAL-17878929:
     - '*':
-        reason: No fix available in ubi9 JRE base image yet
-        expires: 2026-11-09T09:00:00.000Z
+        reason: "No fixed ubi9 base image available yet"
+        expires: 2026-11-25T09:00:00.000Z
         created: 2026-08-26T11:45:25.164Z
   SNYK-RHEL9-LIBACL-17713920:
     - '*':
-        reason: No fix available in ubi9 JRE base image yet
-        expires: 2026-11-09T09:00:00.000Z
+        reason: "No fixed ubi9 base image available yet"
+        expires: 2026-11-25T09:00:00.000Z
         created: 2026-07-01T12:25:16.970Z
   SNYK-JAVA-ORGGLASSFISHJAXB-20883142:
     - '*':
-        reason: No fix published for CVE-2026-92877 (4.0.9 is the latest release); the service has no XML mapping files and no code that parses XML
+        reason: "No fix published for CVE-2026-92877 (4.0.9 is the latest release); the service has no XML mapping files and no code that parses XML"
         expires: 2027-01-16T09:00:00.000Z
         created: 2026-10-16T09:00:00.000Z
 patch:

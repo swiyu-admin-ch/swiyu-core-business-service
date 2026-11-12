@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.14.7
+
+### Fixed
+
+- add sonar exemption
+
+## 4.14.6
+
+### Changed
+
+- Upgrade the jEAP Spring Boot parent from 41.34.0 to 41.36.0
+
+### Fixed
+
+- Upgrade commons-codec from 1.22.1 to 1.23.0 in the discrete validator client, fixing the high severity
+  finding SNYK-JAVA-COMMONSCODEC-22391319 (improper neutralization of null byte or NUL character)
+- Renew the ubi9 base-image Snyk ignores for 14 days: no fixed base image is available yet
 
 ## 4.14.5
 

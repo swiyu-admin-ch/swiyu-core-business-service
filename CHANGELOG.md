@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.14.8
+
+### Changed
+
+- Re-verify the dependency tree with Snyk: no open high or critical findings. The jEAP Spring Boot parent 41.36.0
+  is already the latest release, so no dependency update or override was required
+- Drop the 11 ubi9 base-image curl and libacl Snyk ignores, which no longer match any finding in the container
+  scan after the base image was refreshed
+- The jaxb-core XXE finding SNYK-JAVA-ORGGLASSFISHJAXB-20883142 stays ignored until 2027-01-16: 4.0.9 is still
+  the latest jaxb-ri release
+
 ## 4.14.7
 
 ### Fixed

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.14.10
+
+### Changed
+
+- Upgrade the jEAP Spring Boot parent from 41.36.0 to 41.37.0
+- Re-run the Snyk Maven and container scans: no open high or critical findings. The jaxb-core XXE finding
+  SNYK-JAVA-ORGGLASSFISHJAXB-20883142 stays ignored until 2027-01-16: 4.0.9 is still the latest jaxb-ri
+  release
+
+## 4.14.9
+
+### Fixed
+
+- Upgrade the DID resolver library (`ch.admin.swiyu:didresolver`) from 2.9.0 to 2.10.1 for its security fixes
+
 ## 4.14.8
 
 ### Changed

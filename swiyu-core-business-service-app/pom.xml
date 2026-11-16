@@ -4,7 +4,7 @@
     <parent>
         <groupId>ch.admin.bj.swiyu</groupId>
         <artifactId>swiyu-core-business-service</artifactId>
-        <version>4.14.8-SNAPSHOT</version>
+        <version>4.14.10-SNAPSHOT</version>
     </parent>
     <artifactId>swiyu-core-business-service-app</artifactId>
     <packaging>jar</packaging>
@@ -25,7 +25,7 @@
         <jackson-databind-nullable.version>0.2.11</jackson-databind-nullable.version>
         <json-schema-validator.version>1.5.9</json-schema-validator.version>
         <openapi-generator-maven-plugin.version>7.25.0</openapi-generator-maven-plugin.version>
-        <didresolver.version>2.9.0</didresolver.version>
+        <didresolver.version>2.10.1</didresolver.version>
         <openfeign.querydsl.version>7.6</openfeign.querydsl.version>
     </properties>
 

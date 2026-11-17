@@ -7,7 +7,7 @@ WORKDIR /app
 
 ENV JAR_FILE=swiyu-core-business-service-app.jar
 
-ADD https://repo.bit.admin.ch/repository/raw-jeap-hosted/rhos/entrypoint/entrypoint-1.0.0.sh entrypoint.sh
+COPY scripts/entrypoint.sh entrypoint.sh
 
 # Update Java truststore
 RUN set -uxe && \

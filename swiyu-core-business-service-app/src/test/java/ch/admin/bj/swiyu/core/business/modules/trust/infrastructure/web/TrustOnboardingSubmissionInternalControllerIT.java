@@ -4,9 +4,11 @@ import static ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTest
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionListItemDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmission;
+import ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData;
 import ch.admin.bj.swiyu.core.business.test.RestResponsePage;
 import ch.admin.bj.swiyu.core.business.test.TestRepositories;
 import ch.admin.bj.swiyu.core.business.test.WithExtendedJeapAuthenticationToken;
@@ -153,6 +155,13 @@ class TrustOnboardingSubmissionInternalControllerIT {
     )
     void testUpdateTrustOnboardingSubmission() throws Exception {
         // Arrange
+        // The update confirms the partner type, so the submission's partner has to exist and be governmental - the type
+        // the update asks for. Another test class may have left its own version of the seeded partner behind.
+        var partner = testRepositories.businessPartner
+            .findById(BusinessEntityTestData.ENTITY_A)
+            .orElseGet(() -> testRepositories.businessPartner.save(BusinessEntityTestData.businessPartnerA()));
+        partner.changeType(BusinessPartnerType.GOVERNMENTAL_INSTITUTION);
+        testRepositories.businessPartner.saveAndFlush(partner);
         var testSubmission = trustOnboardingSubmission();
         TrustOnboardingSubmission submission = testRepositories.trustOnboardingSubmission.save(testSubmission);
         var trustOnboardingSubmissionId = submission.getId();

@@ -1,8 +1,14 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding;
 
+import static ch.admin.bj.swiyu.core.business.common.domain.BusinessPartnerType.GOVERNMENTAL_INSTITUTION;
+import static ch.admin.bj.swiyu.core.business.common.service.mapper.BusinessPartnerTypeMapper.toBusinessPartnerTypeDto;
 import static ch.admin.bj.swiyu.core.business.modules.documents.api.PartnerDocumentTypeDto.TRUST_ONBOARDING_DECLARATION_OF_INTENT;
 import static ch.admin.bj.swiyu.core.business.modules.trust.api.TrustOnboardingSubmissionTypeDto.PROFILE_CHANGE_MANDATORY;
+import static ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionStatus.*;
+import static ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.TrustOnboardingSubmissionType.*;
 import static ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.ProofOfPossessionKeyUtils.*;
+import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.ENTITY_A;
+import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.ENTITY_B;
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.businessPartnerIdentity;
 import static ch.admin.bj.swiyu.core.business.test.PartnerDocumentTestData.multipartFile;
 import static ch.admin.bj.swiyu.core.business.test.TrustOnboardingSubmissionTestData.*;
@@ -82,6 +88,15 @@ import org.springframework.web.client.RestClient;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @WithJeapAuthenticationToken(username = "test")
 class TrustOnboardingServiceIT {
+
+    /** The email the update attempts carry, so that "nothing was written" is visible in a field a test can read. */
+    private static final String MUTATED_EMAIL = "mutation@example.org";
+
+    /**
+     * The wire code the portal receives when an update asks for a partner type other than the one the partner
+     * has. The matching {@code TrustOnboardingSubmissionValidatorErrorCodeDto} constant is added with the rule.
+     */
+    private static final String PARTNER_TYPE_CHANGE_NOT_ALLOWED = "partner_type_change_not_allowed";
 
     @MockitoBean
     EmailCommandPublisher emailCommandPublisher;
@@ -265,6 +280,402 @@ class TrustOnboardingServiceIT {
         assertThrows(ResourceNotFoundException.class, () -> service.updateTrustOnboardingSubmission(uuid, updateDTO));
     }
 
+    /**
+     * A submission the partner already handed in is not editable. The guard answers with the state code the portal
+     * knows, not with the {@link IllegalStateException} the domain layer raises.
+     */
+    @Test
+    void updateTrustOnboardingSubmission_rejectsAnUpdateOfASubmittedSubmission() {
+        // GIVEN a submitted submission and an update that would change the email and the partner type
+        var submittedSubmission = savedSubmission(ENTITY_A, SUBMITTED, REGISTRATION, GOVERNMENTAL_INSTITUTION);
+        var updateRequest = updateRequestWith(submittedSubmission, BusinessPartnerTypeDto.BUSINESS, MUTATED_EMAIL);
+
+        // WHEN updating it
+        var ex = assertThrows(ValidationException.class, () ->
+            service.updateTrustOnboardingSubmission(submittedSubmission.getId(), updateRequest)
+        );
+
+        // THEN it is rejected with the editing-blocked code
+        assertThat(ex.getViolations())
+            .extracting(ValidationException.Violation::reason)
+            .contains(TrustOnboardingSubmissionValidatorErrorCodeDto.EDITING_BLOCKED.toString());
+
+        // AND no field of the update reached the database
+        var refreshed = repos.trustOnboardingSubmission.findById(submittedSubmission.getId()).orElseThrow();
+        assertEquals(SUBMITTED, refreshed.getStatus());
+        assertEquals(submittedSubmission.getEntityEmail(), refreshed.getEntityEmail());
+        assertEquals(GOVERNMENTAL_INSTITUTION, refreshed.getRequestedPartnerType());
+    }
+
+    /**
+     * A submission handed in again after an information request is locked the same way a submitted one is.
+     */
+    @Test
+    void updateTrustOnboardingSubmission_rejectsAnUpdateOfAResubmittedSubmission() {
+        // GIVEN a resubmitted submission and an update that would change the email and the partner type
+        var resubmittedSubmission = savedSubmission(ENTITY_A, RESUBMITTED, REGISTRATION, GOVERNMENTAL_INSTITUTION);
+        var updateRequest = updateRequestWith(resubmittedSubmission, BusinessPartnerTypeDto.BUSINESS, MUTATED_EMAIL);
+
+        // WHEN updating it
+        var ex = assertThrows(ValidationException.class, () ->
+            service.updateTrustOnboardingSubmission(resubmittedSubmission.getId(), updateRequest)
+        );
+
+        // THEN it is rejected with the editing-blocked code
+        assertThat(ex.getViolations())
+            .extracting(ValidationException.Violation::reason)
+            .contains(TrustOnboardingSubmissionValidatorErrorCodeDto.EDITING_BLOCKED.toString());
+
+        // AND no field of the update reached the database
+        var refreshed = repos.trustOnboardingSubmission.findById(resubmittedSubmission.getId()).orElseThrow();
+        assertEquals(RESUBMITTED, refreshed.getStatus());
+        assertEquals(resubmittedSubmission.getEntityEmail(), refreshed.getEntityEmail());
+        assertEquals(GOVERNMENTAL_INSTITUTION, refreshed.getRequestedPartnerType());
+    }
+
+    /**
+     * The guard leaves the state a submission is worked in untouched - this is the path every edit takes.
+     */
+    @Test
+    void updateTrustOnboardingSubmission_allowsAnUpdateOfAnUnsubmittedSubmission() {
+        // GIVEN an unsubmitted submission and an update that changes the email
+        var unsubmittedSubmission = savedSubmission(ENTITY_A, UNSUBMITTED, REGISTRATION, GOVERNMENTAL_INSTITUTION);
+        var updateRequest = updateRequestWith(
+            unsubmittedSubmission,
+            BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION,
+            MUTATED_EMAIL
+        );
+
+        // WHEN updating it
+        assertDoesNotThrow(() -> service.updateTrustOnboardingSubmission(unsubmittedSubmission.getId(), updateRequest));
+
+        // THEN the change is applied and the submission keeps its type
+        var refreshed = repos.trustOnboardingSubmission.findById(unsubmittedSubmission.getId()).orElseThrow();
+        assertEquals(MUTATED_EMAIL, refreshed.getEntityEmail());
+        assertEquals(GOVERNMENTAL_INSTITUTION, refreshed.getRequestedPartnerType());
+        assertEquals(UNSUBMITTED, refreshed.getStatus());
+    }
+
+    /**
+     * Answering an information request is an edit: it stays allowed and moves the submission back to UNSUBMITTED.
+     */
+    @Test
+    void updateTrustOnboardingSubmission_allowsAnUpdateAfterAnInformationRequest() {
+        // GIVEN a submission with an open information request and an update that changes the email
+        var informationRequestedSubmission = savedSubmission(
+            ENTITY_A,
+            INFORMATION_REQUESTED,
+            REGISTRATION,
+            GOVERNMENTAL_INSTITUTION
+        );
+        var updateRequest = updateRequestWith(
+            informationRequestedSubmission,
+            BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION,
+            MUTATED_EMAIL
+        );
+
+        // WHEN updating it
+        assertDoesNotThrow(() ->
+            service.updateTrustOnboardingSubmission(informationRequestedSubmission.getId(), updateRequest)
+        );
+
+        // THEN the change is applied and the submission is unsubmitted again
+        var refreshed = repos.trustOnboardingSubmission.findById(informationRequestedSubmission.getId()).orElseThrow();
+        assertEquals(MUTATED_EMAIL, refreshed.getEntityEmail());
+        assertEquals(GOVERNMENTAL_INSTITUTION, refreshed.getRequestedPartnerType());
+        assertEquals(UNSUBMITTED, refreshed.getStatus());
+    }
+
+    /**
+     * A submission may only ask for the partner type its partner already has, so a governmental partner cannot be
+     * re-registered as a business one.
+     */
+    @Test
+    void updateTrustOnboardingSubmission_rejectsBusinessForAGovernmentalRegistration() {
+        // GIVEN a registration of a governmental partner and an update that asks for BUSINESS
+        var governmentalRegistration = savedSubmission(ENTITY_A, UNSUBMITTED, REGISTRATION, GOVERNMENTAL_INSTITUTION);
+        var updateRequest = updateRequestWith(
+            governmentalRegistration,
+            BusinessPartnerTypeDto.BUSINESS,
+            governmentalRegistration.getEntityEmail()
+        );
+
+        // WHEN updating it
+        var ex = assertThrows(ValidationException.class, () ->
+            service.updateTrustOnboardingSubmission(governmentalRegistration.getId(), updateRequest)
+        );
+
+        // THEN it is rejected with the partner type code
+        assertThat(ex.getViolations())
+            .extracting(ValidationException.Violation::reason)
+            .contains(PARTNER_TYPE_CHANGE_NOT_ALLOWED);
+
+        // AND the submission still asks for its own type
+        var refreshed = repos.trustOnboardingSubmission.findById(governmentalRegistration.getId()).orElseThrow();
+        assertEquals(GOVERNMENTAL_INSTITUTION, refreshed.getRequestedPartnerType());
+    }
+
+    /** A registration of a governmental partner may ask for its own type. */
+    @Test
+    void updateTrustOnboardingSubmission_allowsTheGovernmentalTypeForAGovernmentalRegistration() {
+        // GIVEN a registration of a governmental partner and an update that asks for GOVERNMENTAL_INSTITUTION
+        var governmentalRegistration = savedSubmission(ENTITY_A, UNSUBMITTED, REGISTRATION, GOVERNMENTAL_INSTITUTION);
+        var updateRequest = updateRequestWith(
+            governmentalRegistration,
+            BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION,
+            governmentalRegistration.getEntityEmail()
+        );
+
+        // WHEN updating it
+        assertDoesNotThrow(() ->
+            service.updateTrustOnboardingSubmission(governmentalRegistration.getId(), updateRequest)
+        );
+
+        // THEN the submission still asks for its own type
+        var refreshed = repos.trustOnboardingSubmission.findById(governmentalRegistration.getId()).orElseThrow();
+        assertEquals(GOVERNMENTAL_INSTITUTION, refreshed.getRequestedPartnerType());
+    }
+
+    /**
+     * A business partner cannot be re-registered as a governmental one - the direction the submit validator, which
+     * only rejects a governmental request, misses.
+     */
+    @Test
+    void updateTrustOnboardingSubmission_rejectsTheGovernmentalTypeForABusinessRegistration() {
+        // GIVEN a registration of a business partner and an update that asks for GOVERNMENTAL_INSTITUTION
+        var businessRegistration = savedSubmission(ENTITY_B, UNSUBMITTED, REGISTRATION, BusinessPartnerType.BUSINESS);
+        var updateRequest = updateRequestWith(
+            businessRegistration,
+            BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION,
+            businessRegistration.getEntityEmail()
+        );
+
+        // WHEN updating it
+        var ex = assertThrows(ValidationException.class, () ->
+            service.updateTrustOnboardingSubmission(businessRegistration.getId(), updateRequest)
+        );
+
+        // THEN it is rejected with the partner type code
+        assertThat(ex.getViolations())
+            .extracting(ValidationException.Violation::reason)
+            .contains(PARTNER_TYPE_CHANGE_NOT_ALLOWED);
+
+        // AND the submission still asks for BUSINESS
+        var refreshed = repos.trustOnboardingSubmission.findById(businessRegistration.getId()).orElseThrow();
+        assertEquals(BusinessPartnerType.BUSINESS, refreshed.getRequestedPartnerType());
+    }
+
+    /** A registration of a business partner may ask for its own type. */
+    @Test
+    void updateTrustOnboardingSubmission_allowsBusinessForABusinessRegistration() {
+        // GIVEN a registration of a business partner and an update that asks for BUSINESS
+        var businessRegistration = savedSubmission(ENTITY_B, UNSUBMITTED, REGISTRATION, BusinessPartnerType.BUSINESS);
+        var updateRequest = updateRequestWith(
+            businessRegistration,
+            BusinessPartnerTypeDto.BUSINESS,
+            businessRegistration.getEntityEmail()
+        );
+
+        // WHEN updating it
+        assertDoesNotThrow(() -> service.updateTrustOnboardingSubmission(businessRegistration.getId(), updateRequest));
+
+        // THEN the submission still asks for BUSINESS
+        var refreshed = repos.trustOnboardingSubmission.findById(businessRegistration.getId()).orElseThrow();
+        assertEquals(BusinessPartnerType.BUSINESS, refreshed.getRequestedPartnerType());
+    }
+
+    /**
+     * The partner type rule holds for a profile change as well, which carries a partner type just like a
+     * registration.
+     */
+    @Test
+    void updateTrustOnboardingSubmission_rejectsBusinessForAGovernmentalProfileChange() {
+        // GIVEN a profile change of a governmental partner and an update that asks for BUSINESS
+        var governmentalProfileChange = savedSubmission(
+            ENTITY_A,
+            UNSUBMITTED,
+            PROFILE_CHANGE_VOLUNTARY,
+            GOVERNMENTAL_INSTITUTION
+        );
+        var updateRequest = updateRequestWith(
+            governmentalProfileChange,
+            BusinessPartnerTypeDto.BUSINESS,
+            governmentalProfileChange.getEntityEmail()
+        );
+
+        // WHEN updating it
+        var ex = assertThrows(ValidationException.class, () ->
+            service.updateTrustOnboardingSubmission(governmentalProfileChange.getId(), updateRequest)
+        );
+
+        // THEN it is rejected with the partner type code
+        assertThat(ex.getViolations())
+            .extracting(ValidationException.Violation::reason)
+            .contains(PARTNER_TYPE_CHANGE_NOT_ALLOWED);
+
+        // AND the submission still asks for its own type
+        var refreshed = repos.trustOnboardingSubmission.findById(governmentalProfileChange.getId()).orElseThrow();
+        assertEquals(GOVERNMENTAL_INSTITUTION, refreshed.getRequestedPartnerType());
+    }
+
+    /** A profile change of a governmental partner keeps its own type. */
+    @Test
+    void updateTrustOnboardingSubmission_allowsTheGovernmentalTypeForAGovernmentalProfileChange() {
+        // GIVEN a profile change of a governmental partner and an update that asks for GOVERNMENTAL_INSTITUTION
+        var governmentalProfileChange = savedSubmission(
+            ENTITY_A,
+            UNSUBMITTED,
+            PROFILE_CHANGE_VOLUNTARY,
+            GOVERNMENTAL_INSTITUTION
+        );
+        var updateRequest = updateRequestWith(
+            governmentalProfileChange,
+            BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION,
+            governmentalProfileChange.getEntityEmail()
+        );
+
+        // WHEN updating it
+        assertDoesNotThrow(() ->
+            service.updateTrustOnboardingSubmission(governmentalProfileChange.getId(), updateRequest)
+        );
+
+        // THEN the submission still asks for its own type
+        var refreshed = repos.trustOnboardingSubmission.findById(governmentalProfileChange.getId()).orElseThrow();
+        assertEquals(GOVERNMENTAL_INSTITUTION, refreshed.getRequestedPartnerType());
+    }
+
+    /** A profile change cannot promote a business partner to a governmental institution. */
+    @Test
+    void updateTrustOnboardingSubmission_rejectsTheGovernmentalTypeForABusinessProfileChange() {
+        // GIVEN a profile change of a business partner and an update that asks for GOVERNMENTAL_INSTITUTION
+        var businessProfileChange = savedSubmission(
+            ENTITY_B,
+            UNSUBMITTED,
+            PROFILE_CHANGE_VOLUNTARY,
+            BusinessPartnerType.BUSINESS
+        );
+        var updateRequest = updateRequestWith(
+            businessProfileChange,
+            BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION,
+            businessProfileChange.getEntityEmail()
+        );
+
+        // WHEN updating it
+        var ex = assertThrows(ValidationException.class, () ->
+            service.updateTrustOnboardingSubmission(businessProfileChange.getId(), updateRequest)
+        );
+
+        // THEN it is rejected with the partner type code
+        assertThat(ex.getViolations())
+            .extracting(ValidationException.Violation::reason)
+            .contains(PARTNER_TYPE_CHANGE_NOT_ALLOWED);
+
+        // AND the submission still asks for BUSINESS
+        var refreshed = repos.trustOnboardingSubmission.findById(businessProfileChange.getId()).orElseThrow();
+        assertEquals(BusinessPartnerType.BUSINESS, refreshed.getRequestedPartnerType());
+    }
+
+    /** A profile change of a business partner keeps its own type. */
+    @Test
+    void updateTrustOnboardingSubmission_allowsBusinessForABusinessProfileChange() {
+        // GIVEN a profile change of a business partner and an update that asks for BUSINESS
+        var businessProfileChange = savedSubmission(
+            ENTITY_B,
+            UNSUBMITTED,
+            PROFILE_CHANGE_VOLUNTARY,
+            BusinessPartnerType.BUSINESS
+        );
+        var updateRequest = updateRequestWith(
+            businessProfileChange,
+            BusinessPartnerTypeDto.BUSINESS,
+            businessProfileChange.getEntityEmail()
+        );
+
+        // WHEN updating it
+        assertDoesNotThrow(() -> service.updateTrustOnboardingSubmission(businessProfileChange.getId(), updateRequest));
+
+        // THEN the submission still asks for BUSINESS
+        var refreshed = repos.trustOnboardingSubmission.findById(businessProfileChange.getId()).orElseThrow();
+        assertEquals(BusinessPartnerType.BUSINESS, refreshed.getRequestedPartnerType());
+    }
+
+    /**
+     * An update without a requested partner type means "unchanged": a missing value must not read as BUSINESS,
+     * which would downgrade a governmental submission and, at approval, the partner with it.
+     */
+    @Test
+    void updateTrustOnboardingSubmission_keepsThePartnerTypeOfARegistrationWhenTheRequestOmitsIt() {
+        // GIVEN a GOVERNMENTAL_INSTITUTION registration and an update without a requested partner type
+        var governmentalRegistration = savedSubmission(ENTITY_A, UNSUBMITTED, REGISTRATION, GOVERNMENTAL_INSTITUTION);
+        var updateRequest = updateRequestWith(governmentalRegistration, null, MUTATED_EMAIL);
+
+        // WHEN updating it
+        assertDoesNotThrow(() ->
+            service.updateTrustOnboardingSubmission(governmentalRegistration.getId(), updateRequest)
+        );
+
+        // THEN the stored type survives and the rest of the update is applied
+        var refreshed = repos.trustOnboardingSubmission.findById(governmentalRegistration.getId()).orElseThrow();
+        assertEquals(
+            GOVERNMENTAL_INSTITUTION,
+            refreshed.getRequestedPartnerType(),
+            "a missing partner type must not read as BUSINESS"
+        );
+        assertEquals(MUTATED_EMAIL, refreshed.getEntityEmail());
+    }
+
+    /** The same for a profile change, the other type that carries a partner type. */
+    @Test
+    void updateTrustOnboardingSubmission_keepsThePartnerTypeOfAProfileChangeWhenTheRequestOmitsIt() {
+        // GIVEN a GOVERNMENTAL_INSTITUTION profile change and an update without a requested partner type
+        var governmentalProfileChange = savedSubmission(
+            ENTITY_A,
+            UNSUBMITTED,
+            PROFILE_CHANGE_VOLUNTARY,
+            GOVERNMENTAL_INSTITUTION
+        );
+        var updateRequest = updateRequestWith(governmentalProfileChange, null, MUTATED_EMAIL);
+
+        // WHEN updating it
+        assertDoesNotThrow(() ->
+            service.updateTrustOnboardingSubmission(governmentalProfileChange.getId(), updateRequest)
+        );
+
+        // THEN the stored type survives and the rest of the update is applied
+        var refreshed = repos.trustOnboardingSubmission.findById(governmentalProfileChange.getId()).orElseThrow();
+        assertEquals(
+            GOVERNMENTAL_INSTITUTION,
+            refreshed.getRequestedPartnerType(),
+            "a missing partner type must not read as BUSINESS"
+        );
+        assertEquals(MUTATED_EMAIL, refreshed.getEntityEmail());
+    }
+
+    /**
+     * Approval writes the reviewed value: a mutation attempted after submitting is rejected, so the partner keeps
+     * the type it had when the submission succeeds.
+     */
+    @Test
+    void markAsSucceeded_keepsThePartnerTypeWhenAMutationWasAttemptedAfterSubmitting() {
+        // GIVEN a submitted GOVERNMENTAL_INSTITUTION submission of a GOVERNMENTAL_INSTITUTION partner
+        var submittedSubmission = savedSubmission(ENTITY_A, SUBMITTED, REGISTRATION, GOVERNMENTAL_INSTITUTION);
+
+        // WHEN the partner tries to switch to BUSINESS after submitting
+        var updateRequest = updateRequestWith(submittedSubmission, BusinessPartnerTypeDto.BUSINESS, MUTATED_EMAIL);
+        assertThrows(ValidationException.class, () ->
+            service.updateTrustOnboardingSubmission(submittedSubmission.getId(), updateRequest)
+        );
+
+        // AND BJ approves the submission
+        service.markAsSucceeded(submittedSubmission.getId());
+
+        // THEN the partner keeps its type
+        assertEquals(
+            BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION,
+            businessPartnerService.getBusinessPartnerType(ENTITY_A)
+        );
+    }
+
     @Test
     void updateTrustOnboardingSubmission_replacesWithSameDidWhenUnsubmitted() {
         // GIVEN
@@ -281,7 +692,7 @@ class TrustOnboardingServiceIT {
             .contactPerson(resultDto.contactPerson())
             .registryIds(resultDto.registryIds())
             .dids(resultDto.proofOfPossessions().stream().map(ProofOfPossessionDto::did).toList())
-            .requestedPartnerType(BusinessPartnerTypeDto.BUSINESS)
+            .requestedPartnerType(BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION)
             .build();
         var resultDto2 = service.updateTrustOnboardingSubmission(resultDto.id(), requestDto);
 
@@ -390,7 +801,7 @@ class TrustOnboardingServiceIT {
                     Stream.of("did:example:new")
                 ).toList()
             )
-            .requestedPartnerType(BusinessPartnerTypeDto.BUSINESS)
+            .requestedPartnerType(BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION)
             .build();
         var resultDto2 = service.updateTrustOnboardingSubmission(resultDto.id(), requestDto);
 
@@ -1458,16 +1869,18 @@ class TrustOnboardingServiceIT {
     @ParameterizedTest(name = "{0}, {1} -> {2}: DOI discarded = {3}")
     @MethodSource("commercialRegisterDoiCases")
     void updateTrustOnboardingSubmission_doiInvalidationOnCommercialRegisterChange(
-        BusinessPartnerTypeDto partnerType,
+        BusinessPartnerType partnerType,
         boolean initialValue,
         Boolean requestedValue,
         boolean expectDoiDiscarded
     ) {
-        var submission = initProfileChangeWithDeclarationOfIntent(initialValue);
+        // GIVEN a profile change of a partner of that type, carrying a signed Declaration of Intent
+        var partnerId = savedPartnerOfType(partnerType);
+        var submission = initProfileChangeWithDeclarationOfIntent(partnerId, partnerType, initialValue);
 
         service.updateTrustOnboardingSubmission(
             submission.getId(),
-            doiNeutralRequestWith(submission, partnerType, requestedValue)
+            doiNeutralRequestWith(submission, toBusinessPartnerTypeDto(partnerType), requestedValue)
         );
 
         var refreshed = repos.trustOnboardingSubmission.findById(submission.getId()).orElseThrow();
@@ -1476,6 +1889,17 @@ class TrustOnboardingServiceIT {
         } else {
             assertNotNull(refreshed.getDeclarationOfIntent(), "signed DOI still matches the submission");
         }
+    }
+
+    /** The seeded partner of the given type; the seed has no INDIVIDUAL partner, so one is created for the test. */
+    private UUID savedPartnerOfType(BusinessPartnerType partnerType) {
+        return switch (partnerType) {
+            case GOVERNMENTAL_INSTITUTION -> ENTITY_A;
+            case BUSINESS -> ENTITY_B;
+            case INDIVIDUAL -> repos.businessPartner
+                .saveAndFlush(BusinessEntityTestData.businessPartnerOfTypeIndividual(UUID.randomUUID()))
+                .getId();
+        };
     }
 
     /**
@@ -1489,11 +1913,11 @@ class TrustOnboardingServiceIT {
         Boolean requestedValue,
         boolean expected
     ) {
-        var submission = initProfileChangeWithDeclarationOfIntent(storedValue);
+        var submission = initProfileChangeWithDeclarationOfIntent(ENTITY_A, GOVERNMENTAL_INSTITUTION, storedValue);
 
         service.updateTrustOnboardingSubmission(
             submission.getId(),
-            doiNeutralRequestWith(submission, BusinessPartnerTypeDto.BUSINESS, requestedValue)
+            doiNeutralRequestWith(submission, BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION, requestedValue)
         );
 
         var refreshed = repos.trustOnboardingSubmission.findById(submission.getId()).orElseThrow();
@@ -1514,26 +1938,31 @@ class TrustOnboardingServiceIT {
     private static Stream<Arguments> commercialRegisterDoiCases() {
         return Stream.of(
             // both switch directions reach the document of an INDIVIDUAL
-            Arguments.of(BusinessPartnerTypeDto.INDIVIDUAL, true, Boolean.FALSE, true),
-            Arguments.of(BusinessPartnerTypeDto.INDIVIDUAL, false, Boolean.TRUE, true),
+            Arguments.of(BusinessPartnerType.INDIVIDUAL, true, Boolean.FALSE, true),
+            Arguments.of(BusinessPartnerType.INDIVIDUAL, false, Boolean.TRUE, true),
             // the same value is not a change
-            Arguments.of(BusinessPartnerTypeDto.INDIVIDUAL, true, Boolean.TRUE, false),
-            Arguments.of(BusinessPartnerTypeDto.INDIVIDUAL, false, Boolean.FALSE, false),
+            Arguments.of(BusinessPartnerType.INDIVIDUAL, true, Boolean.TRUE, false),
+            Arguments.of(BusinessPartnerType.INDIVIDUAL, false, Boolean.FALSE, false),
             // null means the partner never touched the field
-            Arguments.of(BusinessPartnerTypeDto.INDIVIDUAL, true, null, false),
+            Arguments.of(BusinessPartnerType.INDIVIDUAL, true, null, false),
             // for the other partner types the entry reaches neither template nor content
-            Arguments.of(BusinessPartnerTypeDto.BUSINESS, true, Boolean.FALSE, false),
-            Arguments.of(BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION, true, Boolean.FALSE, false)
+            Arguments.of(BusinessPartnerType.BUSINESS, true, Boolean.FALSE, false),
+            Arguments.of(BusinessPartnerType.GOVERNMENTAL_INSTITUTION, true, Boolean.FALSE, false)
         );
     }
 
     private TrustOnboardingSubmission initProfileChangeWithDeclarationOfIntent(
+        UUID partnerId,
+        BusinessPartnerType partnerType,
         boolean isRegisteredInCommercialRegister
     ) {
         var submission = TrustOnboardingSubmissionTestData.trustOnboardingSubmission(
             UUID.randomUUID(),
-            BusinessEntityTestData.ENTITY_A,
-            TrustOnboardingSubmissionType.PROFILE_CHANGE_VOLUNTARY
+            partnerId,
+            TrustOnboardingSubmissionStatus.UNSUBMITTED,
+            Instant.now(),
+            TrustOnboardingSubmissionType.PROFILE_CHANGE_VOLUNTARY,
+            partnerType
         );
         submission.updateForTypeProfileChange(
             submission.getEntityName(),
@@ -1661,6 +2090,32 @@ class TrustOnboardingServiceIT {
         BusinessPartnerTypeDto partnerType,
         Boolean isRegisteredInCommercialRegister
     ) {
+        return updateRequestWith(
+            submission,
+            partnerType,
+            submission.getEntityEmail(),
+            isRegisteredInCommercialRegister
+        );
+    }
+
+    /**
+     * An update that changes nothing but the entity email and the requested partner type. It carries the submission's
+     * own DIDs, so that it also passes the re-verification DID check and reaches the rules under test.
+     */
+    private static TrustOnboardingSubmissionRequestDto updateRequestWith(
+        TrustOnboardingSubmission submission,
+        BusinessPartnerTypeDto requestedPartnerType,
+        String entityEmail
+    ) {
+        return updateRequestWith(submission, requestedPartnerType, entityEmail, null);
+    }
+
+    private static TrustOnboardingSubmissionRequestDto updateRequestWith(
+        TrustOnboardingSubmission submission,
+        BusinessPartnerTypeDto requestedPartnerType,
+        String entityEmail,
+        Boolean isRegisteredInCommercialRegister
+    ) {
         return TrustOnboardingSubmissionRequestDto.builder()
             .partnerId(submission.getPartnerId())
             .entityName(submission.getEntityName())
@@ -1669,15 +2124,27 @@ class TrustOnboardingServiceIT {
                     submission.getEntityAddress()
                 )
             )
-            .entityEmail(submission.getEntityEmail())
+            .entityEmail(entityEmail)
             .contactPerson(trustOnboardingSubmissionRequestDto().getContactPerson())
             .registryIds(Map.of("UID", submission.getUid()))
             .dids(submission.getProofOfPossessions().stream().map(ProofOfPossession::getDid).toList())
-            .requestedPartnerType(partnerType)
+            .requestedPartnerType(requestedPartnerType)
             .signingRule(trustOnboardingSubmissionRequestDto().signingRule())
             .signatories(trustOnboardingSubmissionRequestDto().signatories())
             .isRegisteredInCommercialRegister(isRegisteredInCommercialRegister)
             .build();
+    }
+
+    /** A persisted submission in exactly the given state, type and requested partner type. */
+    private TrustOnboardingSubmission savedSubmission(
+        UUID partnerId,
+        TrustOnboardingSubmissionStatus status,
+        TrustOnboardingSubmissionType type,
+        BusinessPartnerType requestedPartnerType
+    ) {
+        return repos.trustOnboardingSubmission.saveAndFlush(
+            trustOnboardingSubmission(UUID.randomUUID(), partnerId, status, Instant.now(), type, requestedPartnerType)
+        );
     }
 
     private static final String SUBMISSION_STREET = "Submission Street 2";
@@ -1865,8 +2332,12 @@ class TrustOnboardingServiceIT {
         repos.businessPartnerIdentity.saveAndFlush(bpi);
     }
 
+    /**
+     * A draft of a business partner carrying a signed Declaration of Intent. The partner is a business one because the
+     * tests using this draft update it with the business partner type of the test data.
+     */
     private TrustOnboardingSubmission initSubmissionWithDeclarationOfIntent() {
-        var submission = repos.trustOnboardingSubmission.save(trustOnboardingSubmission());
+        var submission = repos.trustOnboardingSubmission.save(trustOnboardingSubmission(UUID.randomUUID(), ENTITY_B));
         var document = partnerDocumentService.createTrustOnboardingSubmissionDocument(
             submission.getPartnerId(),
             submission.getId(),

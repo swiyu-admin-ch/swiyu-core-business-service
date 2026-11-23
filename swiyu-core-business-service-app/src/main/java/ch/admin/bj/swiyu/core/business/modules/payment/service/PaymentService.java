@@ -39,18 +39,23 @@ import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentInitial
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentRetryNotAllowedException;
 import ch.admin.bj.swiyu.messagetype.ti.TiPaymentChangeNotificationReceivedEvent;
 import ch.admin.bj.swiyu.messagetype.ti.TiPaymentSucceededEvent;
+import ch.admin.bj.swiyu.messagetype.ti.common.BeanReferenceMessageKey;
 import com.querydsl.core.BooleanBuilder;
 import jakarta.persistence.EntityManager;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.core.LockAssert;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -390,21 +395,69 @@ public class PaymentService {
      *
      * @param referenceId the payment referenceId from Saferpay
      */
+    @Transactional // the transactional outbox only publishes within a transaction
     public void handleSaferpayCallback(String referenceId) {
         Optional<Payment> paymentOpt = paymentRepository.findByReferenceId(referenceId);
         if (paymentOpt.isEmpty()) {
             // Return 200 even if not found (idempotency - Saferpay may retry)
             return;
         }
-        var payment = paymentOpt.get();
+        publishChangeNotification(paymentOpt.get().getId());
+    }
 
-        var event = TiPaymentChangeNotificationReceivedEventBuilder.create().paymentId(payment.getId()).build();
+    /**
+     * Safety net for payments whose Saferpay webhook never arrived: publishes the same change notification
+     * as the webhook for each PENDING payment whose Saferpay session expired, so finalizePayment runs.
+     *
+     * We wait for the session to expire because while the user is still paying, finalizePayment would mark
+     * the payment as FAILED.
+     *
+     * <p>Paged so the ids are not all loaded at once. The payments stay PENDING until this transaction
+     * commits (the outbox publishes afterwards), so the pages do not shift while we walk them.
+     *
+     * @return the number of notifications published
+     */
+    @Transactional
+    public int reconcilePendingPayments(Duration gracePeriod, Duration lookback, int batchSize) {
+        // only one pod may run this
+        LockAssert.assertLocked();
 
-        transactionalOutbox.sendMessage(
-            event,
-            payment.getId().toString(),
-            TiPaymentChangeNotificationReceivedEvent.TypeRef.DEFAULT_TOPIC
-        );
+        var now = Instant.now();
+        var cutoff = now.minus(gracePeriod);
+        var createdAfter = now.minus(lookback);
+        var published = 0;
+        Slice<UUID> page;
+        Pageable pageable = PageRequest.of(0, batchSize);
+        do {
+            page = paymentRepository.findPendingPaymentIdsToReconcile(cutoff, createdAfter, pageable);
+            for (var paymentId : page) {
+                log.info(
+                    "Payment {} is still PENDING after its Saferpay session expired, publishing a change notification",
+                    paymentId
+                );
+                publishChangeNotification(paymentId);
+                published++;
+            }
+            pageable = page.nextPageable();
+        } while (page.hasNext());
+        return published;
+    }
+
+    /** Triggers finalizePayment via Kafka. Used by the webhook and the reconciliation job. */
+    private void publishChangeNotification(UUID paymentId) {
+        var event = TiPaymentChangeNotificationReceivedEventBuilder.create().paymentId(paymentId).build();
+        var topic = TiPaymentChangeNotificationReceivedEvent.TypeRef.DEFAULT_TOPIC;
+
+        transactionalOutbox.sendMessage(event, messageKey(topic, paymentId), topic);
+    }
+
+    /** Kafka message key per payment. Must be an Avro record, a plain string cannot be serialized. */
+    private static BeanReferenceMessageKey messageKey(String topic, UUID paymentId) {
+        return BeanReferenceMessageKey.newBuilder()
+            .setNamespace(TiPaymentChangeNotificationReceivedEvent.TypeRef.SYSTEM_NAME)
+            .setName(topic)
+            .setId(paymentId.toString())
+            .build();
     }
 
     /**
@@ -524,7 +577,8 @@ public class PaymentService {
         // Step 4: Publish TiPaymentSucceededEvent
         var event = TiPaymentSucceededEventBuilder.create().paymentId(paymentId).build();
 
-        transactionalOutbox.sendMessage(event, paymentId.toString(), TiPaymentSucceededEvent.TypeRef.DEFAULT_TOPIC);
+        var succeededTopic = TiPaymentSucceededEvent.TypeRef.DEFAULT_TOPIC;
+        transactionalOutbox.sendMessage(event, messageKey(succeededTopic, paymentId), succeededTopic);
 
         // Step 5: Publish audit record
         var paymentAuditDto = new PaymentAuditDto(

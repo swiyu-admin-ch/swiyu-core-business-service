@@ -4,7 +4,6 @@ import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.ENTITY
 import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.insertTestBusinessPartners;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -17,9 +16,11 @@ import ch.admin.bj.swiyu.core.business.modules.payment.domain.Payment;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.ProductType;
 import ch.admin.bj.swiyu.core.business.test.TestRepositories;
 import ch.admin.bj.swiyu.core.business.test.container.WithAllTestContainerInitializers;
+import ch.admin.bj.swiyu.messagetype.ti.common.BeanReferenceMessageKey;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -59,7 +60,7 @@ class SaferpayNotifyB2BControllerIT {
 
         mockMvc.perform(get(NOTIFY_URL).param("referenceId", "P-ABC12345")).andExpect(status().isOk());
 
-        verify(transactionalOutbox).sendMessage(any(), eq(payment.getId().toString()), anyString());
+        verify(transactionalOutbox).sendMessage(any(), keyOf(payment.getId()), anyString());
     }
 
     @Test
@@ -83,7 +84,7 @@ class SaferpayNotifyB2BControllerIT {
 
         mockMvc.perform(get(NOTIFY_URL).param("referenceId", "P-INTEGRATION123")).andExpect(status().isOk());
 
-        verify(transactionalOutbox).sendMessage(any(), eq(payment.getId().toString()), anyString());
+        verify(transactionalOutbox).sendMessage(any(), keyOf(payment.getId()), anyString());
     }
 
     private Payment createTestPayment(String referenceId) {
@@ -94,6 +95,13 @@ class SaferpayNotifyB2BControllerIT {
             ProductType.BASE_REGISTRATION,
             Amount.chf(15_000),
             "https://portal.example.local/callback"
+        );
+    }
+
+    /** Matches the Avro message key of the payment with the given id. */
+    private static Object keyOf(UUID paymentId) {
+        return ArgumentMatchers.argThat(
+            key -> key instanceof BeanReferenceMessageKey ref && ref.getId().toString().equals(paymentId.toString())
         );
     }
 }

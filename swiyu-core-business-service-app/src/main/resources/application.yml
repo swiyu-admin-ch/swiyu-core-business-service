@@ -38,6 +38,15 @@ app:
       # does not drop that day's reminders. Must stay well below the 30 day gap between reminder points.
       window: ${EMAIL_NOTIFICATION_WINDOW:4d}
       page-size: ${EMAIL_NOTIFICATION_PAGE_SIZE:100}
+    payment-reconciliation:
+      # Safety net for payments whose Saferpay webhook never arrived
+      interval-ms: ${PAYMENT_RECONCILIATION_INTERVAL_MS:300000} # every 5 minutes
+      # Minutes to wait after the Saferpay session expired, so the webhook can come first
+      grace-period-minutes: ${PAYMENT_RECONCILIATION_GRACE_PERIOD_MINUTES:5}
+      # Older payments are ignored
+      lookback-hours: ${PAYMENT_RECONCILIATION_LOOKBACK_HOURS:24}
+      # How many payments are loaded at once, each run handles all of them
+      batch-size: ${PAYMENT_RECONCILIATION_BATCH_SIZE:50}
   limits:
     identifier:
       default-max-count: ${LIMITS_IDENTIFIER_DEFAULT_MAX_COUNT:100}
@@ -69,6 +78,10 @@ app:
         min-file-size: 1B
         allowed-content-types:
           - "application/pdf"
+    vqps-submission:
+      dcql-query:
+        # A DCQL query longer than this is rejected (DCET decision: 100'000 characters)
+        max-length: ${LIMITS_VQPS_DCQL_QUERY_MAX_LENGTH:100000}
   didresolver:
     max-did-log-size: ${LIMITS_DIDLOG_MAX_SIZE:1MB}
 

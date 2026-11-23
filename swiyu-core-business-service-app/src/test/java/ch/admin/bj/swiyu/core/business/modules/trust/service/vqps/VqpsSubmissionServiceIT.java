@@ -6,6 +6,7 @@ import static ch.admin.bj.swiyu.core.business.test.VqpsSubmissionTestData.vqpsSu
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
+import ch.admin.bj.swiyu.core.business.modules.identifier.service.IdentifierEntryService;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.DcqlQueryValidator;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.VqpsPublicationFailureReasonDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.VqpsSubmissionStatusDto;
@@ -43,6 +44,9 @@ class VqpsSubmissionServiceIT {
 
     @MockitoBean
     DcqlQueryValidator dcqlQueryValidator;
+
+    @MockitoBean
+    IdentifierEntryService identifierEntryService;
 
     @Autowired
     TestRepositories repos;

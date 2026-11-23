@@ -7,7 +7,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(name = "TrustOnboardingSubmissionValidatorErrorCode", enumAsRef = true)
 public enum TrustOnboardingSubmissionValidatorErrorCodeDto {
     EDITING_BLOCKED("editing_blocked"),
-    SUBMISSION_DEADLINE_EXPIRED("submission_deadline_expired");
+    SUBMISSION_DEADLINE_EXPIRED("submission_deadline_expired"),
+    PARTNER_TYPE_CHANGE_NOT_ALLOWED("partner_type_change_not_allowed");
 
     private String code;
 

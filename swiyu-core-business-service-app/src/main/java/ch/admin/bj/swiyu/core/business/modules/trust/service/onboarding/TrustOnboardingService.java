@@ -227,6 +227,14 @@ public class TrustOnboardingService {
             trustOnboardingSubmissionId
         );
 
+        // A submission the partner handed in is reviewed as it is: no field may change until it is editable again.
+        trustOnboardingSubmissionValidator.validateCanEdit(submission);
+
+        // The partner type is part of the reviewed decision and cannot be switched by an edit. Resolved before any
+        // write, and once: an omitted type means "unchanged", never a fallback to BUSINESS.
+        var requestedPartnerType = resolveRequestedPartnerType(submission, request);
+        validateRequestedPartnerTypeChange(submission, requestedPartnerType);
+
         // When the user starts making changes again after more information was requested,
         // the submission is moved back to UNSUBMITTED (see EID-6376).
         // RESUBMITTED is deliberately NOT included: it behaves like SUBMITTED (locked, no further changes).
@@ -273,7 +281,7 @@ public class TrustOnboardingService {
                 toContactEntity(request.contactPerson()),
                 uid,
                 popList,
-                toBusinessPartnerType(request.requestedPartnerType()),
+                requestedPartnerType,
                 toSigningRule(request.signingRule()),
                 toSignatories(request.signatories()),
                 Boolean.TRUE.equals(request.isRegisteredInCommercialRegister())
@@ -284,7 +292,7 @@ public class TrustOnboardingService {
                 request.entityEmail(),
                 toContactEntity(request.contactPerson()),
                 popList,
-                toBusinessPartnerType(request.requestedPartnerType()),
+                requestedPartnerType,
                 toSigningRule(request.signingRule()),
                 toSignatories(request.signatories()),
                 // decided here, where both the stored and the requested value are at hand
@@ -314,6 +322,44 @@ public class TrustOnboardingService {
         }
 
         return toTrustOnboardingsSubmissionDto(result);
+    }
+
+    /**
+     * The partner type the submission carries after the update: the requested one when the partner sent one, the stored
+     * one otherwise. A missing type means "unchanged" - the request of a re-verification does not carry one, and
+     * reading it as BUSINESS would switch a governmental submission to BUSINESS.
+     */
+    private static BusinessPartnerType resolveRequestedPartnerType(
+        TrustOnboardingSubmission submission,
+        TrustOnboardingSubmissionRequestDto request
+    ) {
+        return request.requestedPartnerType() != null
+            ? toBusinessPartnerType(request.requestedPartnerType())
+            : submission.getRequestedPartnerType();
+    }
+
+    /**
+     * Only the types that carry a partner type are checked: a RENEWAL leaves it alone, so its stored value may differ
+     * from the partner without the update deciding anything.
+     */
+    private void validateRequestedPartnerTypeChange(
+        TrustOnboardingSubmission submission,
+        BusinessPartnerType requestedPartnerType
+    ) {
+        if (submission.isRenewal()) {
+            return;
+        }
+        var currentPartnerType = toBusinessPartnerType(
+            businessPartnerService.getBusinessPartnerType(submission.getPartnerId())
+        );
+        var errors = trustOnboardingSubmissionValidator.validateRequestedPartnerTypeChange(
+            requestedPartnerType,
+            currentPartnerType,
+            null
+        );
+        if (errors.hasErrors()) {
+            throw new ValidationException("Requested partner type cannot be changed", errors);
+        }
     }
 
     /**
@@ -808,10 +854,7 @@ public class TrustOnboardingService {
         if (request.isRegisteredInCommercialRegister() == null) {
             return false;
         }
-        var partnerTypeAfterUpdate =
-            request.requestedPartnerType() != null
-                ? toBusinessPartnerType(request.requestedPartnerType())
-                : submission.getRequestedPartnerType();
+        var partnerTypeAfterUpdate = resolveRequestedPartnerType(submission, request);
         return (
             partnerTypeAfterUpdate == BusinessPartnerType.INDIVIDUAL &&
             !Objects.equals(

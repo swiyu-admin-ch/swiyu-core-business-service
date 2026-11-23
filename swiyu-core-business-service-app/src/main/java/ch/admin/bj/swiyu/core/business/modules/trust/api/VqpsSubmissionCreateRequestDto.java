@@ -23,7 +23,8 @@ public record VqpsSubmissionCreateRequestDto(
 
     @NotBlank
     @Schema(
-        description = "identifier of the verifier in a format defined in the swiss-profile-anchor 1.0",
+        description = "identifier of the verifier in a format defined in the swiss-profile-anchor 1.0. It must be a DID " +
+            "that is known to the identifier registry and belongs to the requesting business partner.",
         example = "did:tdw:DEADBEEF0000000000000000000000000000000000000000000000000000000000000000000000000000000000000:identifier-data-service-d.bit.admin.ch:api:v1:did:00000000-0000-0000-0000-000000000000",
         requiredMode = Schema.RequiredMode.REQUIRED // @NotBlank is ignored by springdoc openapi
     )
@@ -58,7 +59,7 @@ public record VqpsSubmissionCreateRequestDto(
     String scope,
 
     @Schema(
-        description = "The DCQL query",
+        description = "The DCQL query. It must not exceed 100'000 characters.",
         example = """
         {
             "credentials": [

@@ -34,6 +34,7 @@ import ch.admin.bj.swiyu.core.business.modules.trust.domain.onboarding.*;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.DeclarationOfIntentValidator;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.ProofOfPossessionValidator;
 import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.TrustOnboardingSubmissionDocumentValidator;
+import ch.admin.bj.swiyu.core.business.modules.trust.service.onboarding.validation.TrustOnboardingSubmissionValidator;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -74,6 +76,11 @@ class TrustOnboardingServiceDocumentUploadTest {
 
     @Mock
     private BusinessPartnerService businessPartnerService;
+
+    /** Real instance: the state guard and the partner type rule are what the update path runs first. */
+    @Spy
+    private TrustOnboardingSubmissionValidator trustOnboardingSubmissionValidator =
+        new TrustOnboardingSubmissionValidator();
 
     @InjectMocks
     private TrustOnboardingService trustOnboardingService;

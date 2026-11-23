@@ -75,6 +75,11 @@ public class TrustOnboardingSubmissionTestData {
 
     public static TrustOnboardingSubmissionRequestDto trustOnboardingSubmissionRequestDtoUpdate() {
         return trustOnboardingSubmissionRequestDtoBuilder()
+            // the default partner of the test data is a governmental institution, and an update may only confirm the
+            // partner type the partner already has
+            .requestedPartnerType(
+                ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto.GOVERNMENTAL_INSTITUTION
+            )
             .entityName(
                 fromLanguages(
                     "Updated Test Entity Name DE",
@@ -193,6 +198,22 @@ public class TrustOnboardingSubmissionTestData {
         Instant initiatedAt,
         TrustOnboardingSubmissionType type
     ) {
+        return trustOnboardingSubmission(id, partnerId, status, initiatedAt, type, BusinessPartnerType.BUSINESS);
+    }
+
+    /**
+     * A submission of the given type that asks for a partner type other than {@code BUSINESS}. The requested type is
+     * what approval writes onto the partner, so tests about that hand-over have to set it explicitly - deriving it
+     * from a test partner instead would hide the very value the test is about.
+     */
+    public static TrustOnboardingSubmission trustOnboardingSubmission(
+        UUID id,
+        UUID partnerId,
+        TrustOnboardingSubmissionStatus status,
+        Instant initiatedAt,
+        TrustOnboardingSubmissionType type,
+        BusinessPartnerType requestedPartnerType
+    ) {
         TrustOnboardingSubmissionRequestDto dto = trustOnboardingSubmissionRequestDto();
         var proofOfPossessions = List.of(SUBMITTED, REJECTED).contains(status)
             ? proofOfPossessionValid(dto.getDids())
@@ -208,7 +229,7 @@ public class TrustOnboardingSubmissionTestData {
             dto.getRegistryIds().get("UID"),
             true,
             proofOfPossessions,
-            BusinessPartnerType.BUSINESS,
+            requestedPartnerType,
             SigningRule.SINGLE_SIGNATURE,
             List.of(new Signatory("John", "Doe", "+41 79 123 45 67", "john.doe@example.com"))
         );

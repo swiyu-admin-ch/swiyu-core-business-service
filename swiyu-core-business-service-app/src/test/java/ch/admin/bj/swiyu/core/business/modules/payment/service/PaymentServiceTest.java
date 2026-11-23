@@ -2,7 +2,9 @@ package ch.admin.bj.swiyu.core.business.modules.payment.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -32,13 +34,19 @@ import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayI
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.saferpay.SaferpayInitializeResult;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentInitializationFailedException;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentRetryNotAllowedException;
+import ch.admin.bj.swiyu.messagetype.ti.TiPaymentChangeNotificationReceivedEvent;
+import ch.admin.bj.swiyu.messagetype.ti.common.BeanReferenceMessageKey;
 import jakarta.persistence.EntityManager;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
+import net.javacrumbs.shedlock.core.LockAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -46,6 +54,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -501,7 +512,7 @@ class PaymentServiceTest {
 
         verify(transactionalOutbox).sendMessage(
             ArgumentMatchers.any(),
-            ArgumentMatchers.eq(payment.getId().toString()),
+            keyOf(payment.getId()),
             ArgumentMatchers.anyString()
         );
     }
@@ -516,6 +527,114 @@ class PaymentServiceTest {
             ArgumentMatchers.any(),
             ArgumentMatchers.any(),
             ArgumentMatchers.anyString()
+        );
+    }
+
+    @Test
+    void reconcilePendingPayments_publishesOneNotificationPerPaymentToReconcile() {
+        var first = UUID.randomUUID();
+        var second = UUID.randomUUID();
+        var cutoff = ArgumentCaptor.forClass(Instant.class);
+        var createdAfter = ArgumentCaptor.forClass(Instant.class);
+        var pageable = ArgumentCaptor.forClass(Pageable.class);
+        when(
+            paymentRepository.findPendingPaymentIdsToReconcile(
+                cutoff.capture(),
+                createdAfter.capture(),
+                pageable.capture()
+            )
+        ).thenReturn(new SliceImpl<>(List.of(first, second), PageRequest.of(0, 50), false));
+
+        var count = withLock(() ->
+            paymentService.reconcilePendingPayments(Duration.ofMinutes(5), Duration.ofHours(24), 50)
+        );
+
+        assertThat(count).isEqualTo(2);
+        assertThat(cutoff.getValue()).isCloseTo(
+            Instant.now().minus(Duration.ofMinutes(5)),
+            within(10, ChronoUnit.SECONDS)
+        );
+        assertThat(createdAfter.getValue()).isCloseTo(
+            Instant.now().minus(Duration.ofHours(24)),
+            within(10, ChronoUnit.SECONDS)
+        );
+        assertThat(pageable.getValue().getPageSize()).isEqualTo(50);
+        verify(transactionalOutbox).sendMessage(
+            any(),
+            keyOf(first),
+            eq(TiPaymentChangeNotificationReceivedEvent.TypeRef.DEFAULT_TOPIC)
+        );
+        verify(transactionalOutbox).sendMessage(
+            any(),
+            keyOf(second),
+            eq(TiPaymentChangeNotificationReceivedEvent.TypeRef.DEFAULT_TOPIC)
+        );
+    }
+
+    @Test
+    void reconcilePendingPayments_morePaymentsThanTheBatchSize_walksAllBatches() {
+        var first = UUID.randomUUID();
+        var second = UUID.randomUUID();
+        var third = UUID.randomUUID();
+        when(paymentRepository.findPendingPaymentIdsToReconcile(any(), any(), eq(PageRequest.of(0, 2)))).thenReturn(
+            new SliceImpl<>(List.of(first, second), PageRequest.of(0, 2), true)
+        );
+        when(paymentRepository.findPendingPaymentIdsToReconcile(any(), any(), eq(PageRequest.of(1, 2)))).thenReturn(
+            new SliceImpl<>(List.of(third), PageRequest.of(1, 2), false)
+        );
+
+        var count = withLock(() ->
+            paymentService.reconcilePendingPayments(Duration.ofMinutes(5), Duration.ofHours(24), 2)
+        );
+
+        assertThat(count).isEqualTo(3);
+        verify(transactionalOutbox, times(3)).sendMessage(
+            any(),
+            any(),
+            eq(TiPaymentChangeNotificationReceivedEvent.TypeRef.DEFAULT_TOPIC)
+        );
+    }
+
+    @Test
+    void reconcilePendingPayments_noPaymentToReconcile_publishesNothing() {
+        when(paymentRepository.findPendingPaymentIdsToReconcile(any(), any(), any())).thenReturn(
+            new SliceImpl<>(List.of())
+        );
+
+        var count = withLock(() ->
+            paymentService.reconcilePendingPayments(Duration.ofMinutes(5), Duration.ofHours(24), 50)
+        );
+
+        assertThat(count).isZero();
+        verifyNoInteractions(transactionalOutbox);
+    }
+
+    @Test
+    void reconcilePendingPayments_withoutSchedulerLock_isRefused() {
+        var gracePeriod = Duration.ofMinutes(5);
+        var lookback = Duration.ofHours(24);
+
+        assertThatThrownBy(() -> paymentService.reconcilePendingPayments(gracePeriod, lookback, 50)).isInstanceOf(
+            IllegalStateException.class
+        );
+
+        verifyNoInteractions(transactionalOutbox);
+    }
+
+    /** Runs the action as if the scheduler lock of the job were held. */
+    private static <T> T withLock(Supplier<T> action) {
+        LockAssert.TestHelper.makeAllAssertsPass(true);
+        try {
+            return action.get();
+        } finally {
+            LockAssert.TestHelper.makeAllAssertsPass(false);
+        }
+    }
+
+    /** Matches the Avro message key of the payment with the given id. */
+    private static Object keyOf(UUID paymentId) {
+        return ArgumentMatchers.argThat(
+            key -> key instanceof BeanReferenceMessageKey ref && ref.getId().toString().equals(paymentId.toString())
         );
     }
 }

@@ -66,6 +66,22 @@ public class BusinessEntityTestData {
     }
 
     /**
+     * A single person as business partner. Not part of {@link #insertTestBusinessPartners}, so a test that needs one
+     * saves it itself and no other test sees an extra partner.
+     */
+    public static BusinessEntity businessPartnerOfTypeIndividual(UUID partnerId) {
+        return new BusinessEntity(
+            partnerId,
+            "Individual Name",
+            "individual@example.com",
+            BusinessPartnerType.INDIVIDUAL,
+            address(),
+            null,
+            "+41 78 1234567"
+        );
+    }
+
+    /**
      * A partner whose contact person has no email address. Partner notification emails are skipped for
      * such a partner - the publisher logs an error instead of failing the surrounding transaction.
      */

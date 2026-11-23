@@ -75,7 +75,7 @@ public record TrustOnboardingSubmissionRequestDto(
 
     @Getter @Schema(description = "Selected DIDs to be onboarded initially") List<String> dids,
     @Schema(
-        description = "The requested partner type. Can be different than the current partner type of the business partner."
+        description = "The requested partner type. Editing an existing submission may only confirm the partner type the business partner already has."
     )
     @Getter
     BusinessPartnerTypeDto requestedPartnerType,

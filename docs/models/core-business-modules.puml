@@ -44,6 +44,7 @@ dataimport --> payment
 
 jobs --> documents
 jobs --> trust
+jobs --> payment
 
 email --> management
 

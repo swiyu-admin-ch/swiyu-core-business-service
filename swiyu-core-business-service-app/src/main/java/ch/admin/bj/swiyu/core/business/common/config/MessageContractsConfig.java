@@ -25,6 +25,12 @@ import org.springframework.context.annotation.Configuration;
     value = TiProtectedVerificationSubmissionAcceptedEvent.TypeRef.class,
     encryptionKeyId = "messagingKey"
 )
+// Payment: we publish and consume the change notification ourselves (webhook and reconciliation job)
+@JeapMessageProducerContract(
+    value = TiPaymentChangeNotificationReceivedEvent.TypeRef.class,
+    encryptionKeyId = "messagingKey"
+)
+@JeapMessageProducerContract(value = TiPaymentSucceededEvent.TypeRef.class, encryptionKeyId = "messagingKey")
 @JeapMessageConsumerContracts(
     {
         TiVcSchemaPublicationSucceededEvent.TypeRef.class,
@@ -43,6 +49,7 @@ import org.springframework.context.annotation.Configuration;
         TiBusinessPartnerIdentityDeactivatedEvent.TypeRef.class,
         TiSendEmailCommand.TypeRef.class,
         TiHardDeleteBusinessPartnerCommand.TypeRef.class,
+        TiPaymentChangeNotificationReceivedEvent.TypeRef.class,
     }
 )
 @Configuration

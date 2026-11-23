@@ -1,5 +1,10 @@
 package ch.admin.bj.swiyu.core.business.modules.trust.infrastructure.web;
 
+import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.ENTITY_A;
+import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.ENTITY_B;
+import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.businessPartnerOfTypeBusiness;
+import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.businessPartnerOfTypeGov;
+import static ch.admin.bj.swiyu.core.business.test.IdentifierTestData.identifierEntry_Initialized;
 import static ch.admin.bj.swiyu.core.business.test.VqpsSubmissionTestData.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -7,6 +12,7 @@ import static org.mockito.Mockito.doAnswer;
 
 import ch.admin.bj.swiyu.core.business.common.api.ApiErrorCodeDto;
 import ch.admin.bj.swiyu.core.business.common.api.ApiErrorDto;
+import ch.admin.bj.swiyu.core.business.modules.management.domain.BusinessEntity;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.VqpsSubmissionB2BDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.VqpsSubmissionCreateRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.trust.api.VqpsSubmissionStatusDto;
@@ -54,6 +60,9 @@ class VqpsSubmissionB2BControllerIT {
 
     private static final String VQPS_SUBMISSIONS_B2B_BASE_URL = "/api/v1/trust/";
 
+    /** Mirrors {@code app.limits.vqps-submission.dcql-query.max-length} of the test profile. */
+    private static final int MAX_DCQL_QUERY_LENGTH = 100_000;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -75,6 +84,7 @@ class VqpsSubmissionB2BControllerIT {
     @BeforeEach
     void setUp() {
         repos.vqpsSubmission.deleteAllInBatch();
+        seedIdentifierEntry(businessPartnerOfTypeGov(ENTITY_A), VERIFIER_DID);
     }
 
     @Test
@@ -179,6 +189,69 @@ class VqpsSubmissionB2BControllerIT {
         var error = objectMapper.readValue(response.getResponse().getContentAsString(), ApiErrorDto.class);
         assertThat(error.errorCode()).isEqualTo(ApiErrorCodeDto.DATA_INVALID);
         assertThat(error.message()).contains("Invalid DCQL query");
+        assertThat(repos.vqpsSubmission.count()).isZero();
+    }
+
+    @Test
+    @WithExtendedJeapAuthenticationToken(
+        subject = "deadbeef-0000-0000-0000-000000000000",
+        bpRoles = "deadbeef-0000-0000-0000-000000000000 = ti_@vqpssubmission_#write"
+    )
+    void createVqpsSubmission_withSubUnknownToRegistry_returnsBadRequest() throws Exception {
+        // GIVEN
+        var request = requestWithSub(
+            "did:tdw:QmbVqpsTestScid:identifier-reg-r.trust-infra.swiyu.admin.ch:api:v1:did:11111111-1111-1111-1111-111111111111"
+        );
+
+        // WHEN
+        var response = executeCreateVqpsSubmission(request);
+
+        // THEN
+        assertThat(response.getResponse().getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        var error = objectMapper.readValue(response.getResponse().getContentAsString(), ApiErrorDto.class);
+        assertThat(error.errorCode()).isEqualTo(ApiErrorCodeDto.DATA_INVALID);
+        assertThat(error.message()).contains("sub must be a DID of the requesting business partner");
+        assertThat(repos.vqpsSubmission.count()).isZero();
+    }
+
+    @Test
+    @WithExtendedJeapAuthenticationToken(
+        subject = "deadbeef-0000-0000-0000-000000000000",
+        bpRoles = "deadbeef-0000-0000-0000-000000000000 = ti_@vqpssubmission_#write"
+    )
+    void createVqpsSubmission_withSubOfAnotherPartner_returnsBadRequest() throws Exception {
+        // GIVEN
+        seedIdentifierEntry(businessPartnerOfTypeBusiness(ENTITY_B), OTHER_PARTNER_DID);
+        var request = requestWithSub(OTHER_PARTNER_DID);
+
+        // WHEN
+        var response = executeCreateVqpsSubmission(request);
+
+        // THEN
+        assertThat(response.getResponse().getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        var error = objectMapper.readValue(response.getResponse().getContentAsString(), ApiErrorDto.class);
+        assertThat(error.errorCode()).isEqualTo(ApiErrorCodeDto.DATA_INVALID);
+        assertThat(error.message()).contains("sub must be a DID of the requesting business partner");
+        assertThat(repos.vqpsSubmission.count()).isZero();
+    }
+
+    @Test
+    @WithExtendedJeapAuthenticationToken(
+        subject = "deadbeef-0000-0000-0000-000000000000",
+        bpRoles = "deadbeef-0000-0000-0000-000000000000 = ti_@vqpssubmission_#write"
+    )
+    void createVqpsSubmission_withDcqlQueryExceedingMaxLength_returnsBadRequest() throws Exception {
+        // GIVEN
+        var request = requestWithQueryOfLength(MAX_DCQL_QUERY_LENGTH + 1);
+
+        // WHEN
+        var response = executeCreateVqpsSubmission(request);
+
+        // THEN
+        assertThat(response.getResponse().getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        var error = objectMapper.readValue(response.getResponse().getContentAsString(), ApiErrorDto.class);
+        assertThat(error.errorCode()).isEqualTo(ApiErrorCodeDto.DATA_INVALID);
+        assertThat(error.message()).contains("must not exceed 100000 characters");
         assertThat(repos.vqpsSubmission.count()).isZero();
     }
 
@@ -310,5 +383,41 @@ class VqpsSubmissionB2BControllerIT {
             base.scope(),
             query
         );
+    }
+
+    /** Builds a request whose DCQL query has exactly the given length when serialized compactly. */
+    private VqpsSubmissionCreateRequestDto requestWithQueryOfLength(int length) throws JacksonException {
+        var emptyQuery = objectMapper.readTree(
+            """
+            {"credentials":[{"meta":{"vct_values":[""]}}]}
+            """
+        );
+        var padding = "x".repeat(length - objectMapper.writeValueAsString(emptyQuery).length());
+        return requestWithQuery("{\"credentials\":[{\"meta\":{\"vct_values\":[\"" + padding + "\"]}}]}");
+    }
+
+    private VqpsSubmissionCreateRequestDto requestWithSub(String sub) {
+        var base = vqpsSubmissionCreateRequestDto();
+        return vqpsSubmissionCreateRequestDto(
+            sub,
+            base.purposeName(),
+            base.purposeDescription(),
+            base.scope(),
+            base.query()
+        );
+    }
+
+    /**
+     * Registers a DID as an initialized identifier entry of the given business partner. The business partner is
+     * created as needed, because {@code identifier_entry} has a foreign key on {@code business_entity}.
+     */
+    private void seedIdentifierEntry(BusinessEntity partner, String did) {
+        if (!repos.businessPartner.existsById(partner.getId())) {
+            repos.businessPartner.saveAndFlush(partner);
+        }
+        var entry = identifierEntry_Initialized(partner.getId(), did);
+        if (!repos.identifierEntry.existsById(entry.getId())) {
+            repos.identifierEntry.saveAndFlush(entry);
+        }
     }
 }

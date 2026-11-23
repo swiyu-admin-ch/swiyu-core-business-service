@@ -37,10 +37,22 @@ import tools.jackson.databind.JsonNode;
 @UtilityClass
 public class VqpsSubmissionTestData {
 
+    /**
+     * DID of the requesting business partner, registered as an initialized identifier entry in the tests.
+     */
+    public static final String VERIFIER_DID =
+        "did:tdw:QmbVqpsTestScid:identifier-reg-r.trust-infra.swiyu.admin.ch:api:v1:did:00000000-0000-0000-0000-000000000001";
+
+    /**
+     * DID that belongs to another business partner.
+     */
+    public static final String OTHER_PARTNER_DID =
+        "did:tdw:QmbVqpsTestScid:identifier-reg-r.trust-infra.swiyu.admin.ch:api:v1:did:00000000-0000-0000-0000-000000000002";
+
     public static VqpsSubmissionCreateRequestDto vqpsSubmissionCreateRequestDto() {
         return new VqpsSubmissionCreateRequestDto(
             true,
-            "someSub",
+            VERIFIER_DID,
             localizedMap(),
             purposeDescriptionMap(),
             "com.example.identityCardCredential_presentation",
@@ -136,7 +148,7 @@ public class VqpsSubmissionTestData {
         return new VqpsSubmission(
             UUID.randomUUID(),
             partnerId,
-            "someSub",
+            VERIFIER_DID,
             localizedMap(),
             purposeDescriptionMap(),
             "com.example.identityCardCredential_presentation",

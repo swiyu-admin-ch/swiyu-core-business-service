@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.17.0
+
+### Added
+
+- `PaymentReconciliationJob`: every 5 minutes it finalizes `PENDING` payments whose Saferpay webhook never arrived,
+  once their Saferpay session has expired. Also fixes the payment events, which could not be published before
+  (missing message contracts, wrong Kafka key, missing transaction in the webhook)
+
+## 4.16.0
+
+### Fixed
+
+- A trust onboarding submission can no longer be edited once it has been submitted or resubmitted: the update endpoint answers 400 with `editing_blocked` instead of failing with a server error
+- A trust onboarding submission can no longer ask for a partner type other than the one the business partner has; an
+  update that omits the partner type keeps the stored one instead of reading it as `BUSINESS`
+
+## 4.15.0
+
+### Added
+
+- Validate the vqPS subject DID against the identifier registry and limit the DCQL query to 100'000 characters
+
 ## 4.14.11
 
 ### Changed

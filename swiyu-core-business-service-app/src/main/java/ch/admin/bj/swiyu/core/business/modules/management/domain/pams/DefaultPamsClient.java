@@ -60,7 +60,8 @@ class DefaultPamsClient implements PamsClient {
             throw new ExternalSystemException(
                 "Error with system 'PAMS' during creation of BusinessPartner.",
                 ExternalSystem.PAMS,
-                e.getStatusCode()
+                e.getStatusCode(),
+                e
             );
         }
     }
@@ -98,7 +99,8 @@ class DefaultPamsClient implements PamsClient {
             throw new ExternalSystemException(
                 "Error with system 'PAMS' during update of BusinessPartner.",
                 ExternalSystem.PAMS,
-                e.getStatusCode()
+                e.getStatusCode(),
+                e
             );
         }
     }
@@ -127,7 +129,8 @@ class DefaultPamsClient implements PamsClient {
             throw new ExternalSystemException(
                 "Error with system 'PAMS' during deletion of BusinessPartner.",
                 ExternalSystem.PAMS,
-                e.getStatusCode()
+                e.getStatusCode(),
+                e
             );
         }
     }

@@ -101,7 +101,7 @@ class SaferpayNotifyB2BControllerIT {
     /** Matches the Avro message key of the payment with the given id. */
     private static Object keyOf(UUID paymentId) {
         return ArgumentMatchers.argThat(
-            key -> key instanceof BeanReferenceMessageKey ref && ref.getId().toString().equals(paymentId.toString())
+            key -> key instanceof BeanReferenceMessageKey ref && ref.getId().equals(paymentId.toString())
         );
     }
 }

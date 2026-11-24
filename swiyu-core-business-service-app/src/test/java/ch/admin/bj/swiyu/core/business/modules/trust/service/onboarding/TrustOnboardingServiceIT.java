@@ -291,8 +291,9 @@ class TrustOnboardingServiceIT {
         var updateRequest = updateRequestWith(submittedSubmission, BusinessPartnerTypeDto.BUSINESS, MUTATED_EMAIL);
 
         // WHEN updating it
+        var submittedSubmissionId = submittedSubmission.getId();
         var ex = assertThrows(ValidationException.class, () ->
-            service.updateTrustOnboardingSubmission(submittedSubmission.getId(), updateRequest)
+            service.updateTrustOnboardingSubmission(submittedSubmissionId, updateRequest)
         );
 
         // THEN it is rejected with the editing-blocked code
@@ -317,8 +318,9 @@ class TrustOnboardingServiceIT {
         var updateRequest = updateRequestWith(resubmittedSubmission, BusinessPartnerTypeDto.BUSINESS, MUTATED_EMAIL);
 
         // WHEN updating it
+        var resubmittedSubmissionId = resubmittedSubmission.getId();
         var ex = assertThrows(ValidationException.class, () ->
-            service.updateTrustOnboardingSubmission(resubmittedSubmission.getId(), updateRequest)
+            service.updateTrustOnboardingSubmission(resubmittedSubmissionId, updateRequest)
         );
 
         // THEN it is rejected with the editing-blocked code
@@ -401,8 +403,9 @@ class TrustOnboardingServiceIT {
         );
 
         // WHEN updating it
+        var governmentalRegistrationId = governmentalRegistration.getId();
         var ex = assertThrows(ValidationException.class, () ->
-            service.updateTrustOnboardingSubmission(governmentalRegistration.getId(), updateRequest)
+            service.updateTrustOnboardingSubmission(governmentalRegistrationId, updateRequest)
         );
 
         // THEN it is rejected with the partner type code
@@ -451,8 +454,9 @@ class TrustOnboardingServiceIT {
         );
 
         // WHEN updating it
+        var businessRegistrationId = businessRegistration.getId();
         var ex = assertThrows(ValidationException.class, () ->
-            service.updateTrustOnboardingSubmission(businessRegistration.getId(), updateRequest)
+            service.updateTrustOnboardingSubmission(businessRegistrationId, updateRequest)
         );
 
         // THEN it is rejected with the partner type code
@@ -504,8 +508,9 @@ class TrustOnboardingServiceIT {
         );
 
         // WHEN updating it
+        var governmentalProfileChangeId = governmentalProfileChange.getId();
         var ex = assertThrows(ValidationException.class, () ->
-            service.updateTrustOnboardingSubmission(governmentalProfileChange.getId(), updateRequest)
+            service.updateTrustOnboardingSubmission(governmentalProfileChangeId, updateRequest)
         );
 
         // THEN it is rejected with the partner type code
@@ -561,8 +566,9 @@ class TrustOnboardingServiceIT {
         );
 
         // WHEN updating it
+        var businessProfileChangeId = businessProfileChange.getId();
         var ex = assertThrows(ValidationException.class, () ->
-            service.updateTrustOnboardingSubmission(businessProfileChange.getId(), updateRequest)
+            service.updateTrustOnboardingSubmission(businessProfileChangeId, updateRequest)
         );
 
         // THEN it is rejected with the partner type code
@@ -662,12 +668,13 @@ class TrustOnboardingServiceIT {
 
         // WHEN the partner tries to switch to BUSINESS after submitting
         var updateRequest = updateRequestWith(submittedSubmission, BusinessPartnerTypeDto.BUSINESS, MUTATED_EMAIL);
+        var submittedSubmissionId = submittedSubmission.getId();
         assertThrows(ValidationException.class, () ->
-            service.updateTrustOnboardingSubmission(submittedSubmission.getId(), updateRequest)
+            service.updateTrustOnboardingSubmission(submittedSubmissionId, updateRequest)
         );
 
         // AND BJ approves the submission
-        service.markAsSucceeded(submittedSubmission.getId());
+        service.markAsSucceeded(submittedSubmissionId);
 
         // THEN the partner keeps its type
         assertEquals(

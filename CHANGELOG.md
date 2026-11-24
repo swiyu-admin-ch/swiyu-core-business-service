@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.17.2
+
+### Fixed
+
+- Tests only: resolve the Sonar findings of the payment tests (a redundant `toString()` on a `String`) and of
+  `TrustOnboardingServiceIT`, whose `assertThrows` lambdas contained two possibly throwing calls
+
+## 4.17.1
+
+### Fixed
+
+- Errors of the PAMS API when creating, updating or deleting a business partner now keep the underlying HTTP error as
+  the cause, so the response body and stack trace are no longer lost
+
 ## 4.17.0
 
 ### Added

@@ -13,6 +13,7 @@ app:
     data-service-base-url: http://localhost:8390/
   functionality:
     email-enabled: true # local Kafka only, no SMTP consumer attached
+    payment-enabled: true
   mail:
     service-portal:
       base-url: http://localhost:4200

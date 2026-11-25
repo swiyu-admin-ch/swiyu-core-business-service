@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org" lang="de" th:lang="${receipt.locale.language}">
+<head>
+    <meta charset="UTF-8" />
+    <title th:text="${msg_receipt_letterhead_headline}">Zahlungsbeleg</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 12mm 15mm 18mm 15mm;
+            @bottom-right {
+                content: counter(page) "/" counter(pages);
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 7pt;
+                color: #000;
+            }
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 8pt;
+            line-height: 1.35;
+            color: #000;
+            margin: 0;
+            padding: 0;
+        }
+        table { border-collapse: collapse; }
+        td, th { padding: 0; vertical-align: top; }
+        .bold { font-weight: bold; }
+        .pre-line { white-space: pre-line; }
+        .text-right { text-align: right; }
+
+        /* Header: logo left, department right */
+        .header { width: 100%; margin-bottom: 26mm; }
+        .header .logo-cell { width: 52%; }
+        .header .logo { height: 15mm; display: block; }
+        .header .dept-cell { width: 48%; font-size: 7pt; line-height: 1.4; }
+
+        /* Address (left) + payee / payment details (right) */
+        .address-block { width: 100%; margin-bottom: 22mm; }
+        .address-block .recipient-cell {
+            width: 52%;
+            vertical-align: bottom;
+            font-size: 10pt;
+            line-height: 1.3;
+        }
+        .address-block .info-cell { width: 48%; font-size: 7pt; line-height: 1.4; }
+        .info-title { font-weight: bold; }
+        .info-section { margin-bottom: 3.5mm; }
+        .details-table td { padding: 0 2mm 0 0; }
+        .details-table .details-label { width: 30mm; }
+
+        /* Business partner ID */
+        .partner-id { font-size: 7pt; margin-bottom: 8mm; }
+        .partner-id .value { padding-left: 4mm; }
+
+        /* Title */
+        h1 {
+            font-size: 20pt;
+            font-weight: bold;
+            margin: 0 0 4mm 0;
+            line-height: 1.2;
+        }
+
+        /* Items */
+        .items-table { width: 100%; font-size: 10pt; }
+        .items-table th {
+            font-weight: normal;
+            text-align: left;
+            padding: 0 0 3mm 0;
+            border-bottom: 0.75pt solid #000;
+        }
+        .items-table td {
+            padding: 4mm 0 2.5mm 0;
+            border-bottom: 0.75pt solid #000;
+        }
+        .items-table .total-row td {
+            font-weight: bold;
+            padding-top: 4mm;
+        }
+        .items-table th.text-right { text-align: right; }
+
+        @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<table class="header">
+    <tr>
+        <td class="logo-cell">
+            <img class="logo" src="logo.png" alt="Schweizerische Eidgenossenschaft" />
+        </td>
+        <td class="dept-cell">
+            <div th:text="${msg_receipt_recipient_department_value}">Bundesamt für Justiz BJ</div>
+            <div class="bold" th:text="${msg_receipt_recipient_division_value}">Fachbereich e-ID</div>
+        </td>
+    </tr>
+</table>
+
+<!-- Recipient address + payee / payment details -->
+<table class="address-block">
+    <tr>
+        <td class="recipient-cell">
+            <div class="bold" th:text="${msg_receipt_recipient_headline}">Zahlungsempfänger</div>
+            <div th:text="${receipt.businessPartnerName}">Tourismusverband Ostschweiz</div>
+            <div class="pre-line" th:text="${receipt.businessPartnerAddress}">Seetalstrasse 24
+                8600 Rothrist
+                Schweiz</div>
+        </td>
+        <td class="info-cell">
+            <div class="info-section">
+                <div class="info-title" th:text="${msg_receipt_recipient_headline}">Zahlungsempfänger</div>
+                <div th:text="${msg_receipt_recipient_department_value}">Bundesamt für Justiz BJ</div>
+                <div th:text="${msg_receipt_recipient_division_value}">Fachbereich e-ID</div>
+                <div th:text="${msg_receipt_recipient_street_value}">Bundesrain 20</div>
+                <div th:text="${msg_receipt_recipient_city_value}">CH-3003 Bern</div>
+            </div>
+            <div class="info-section">
+                <div class="info-title" th:text="${msg_receipt_details_headline}">Zahlungsdetails</div>
+                <table class="details-table">
+                    <tr>
+                        <td class="details-label" th:text="${msg_receipt_details_date_label}">Datum der Zahlung</td>
+                        <td th:text="${#temporals.format(receipt.payedAt, 'dd.MM.yyyy HH:mm', receipt.locale)}">30.07.2030 15:43</td>
+                    </tr>
+                    <tr>
+                        <td class="details-label" th:text="${msg_receipt_details_method_label}">Zahlungsmittel</td>
+                        <td th:text="${receipt.paymentMethod}">TWINT</td>
+                    </tr>
+                    <tr th:if="${receipt.paymentProvider}">
+                        <td class="details-label" th:text="${msg_receipt_details_provider_label}">Zahlungsdienstleister</td>
+                        <td th:text="${receipt.paymentProvider}">Saferpay</td>
+                    </tr>
+                    <tr th:if="${receipt.holdername}">
+                        <td class="details-label" th:text="${msg_receipt_details_holder_label}">Bezahlt von</td>
+                        <td th:text="${receipt.holdername}">Seraina Muster</td>
+                    </tr>
+                    <tr th:if="${receipt.transactionId}">
+                        <td class="details-label" th:text="${msg_receipt_details_id_provider_label}">Transaktions-Nr.</td>
+                        <td th:text="${receipt.transactionId}">CY83Lm170A</td>
+                    </tr>
+                    <tr>
+                        <td class="details-label" th:text="${msg_receipt_details_id_internal_label}">swiyu Bestell-Nr.</td>
+                        <td th:text="${receipt.referenceId}">P-1D9703CN</td>
+                    </tr>
+                </table>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!-- Business partner ID -->
+<div class="partner-id" th:if="${receipt.businessPartnerId}">
+    <span th:text="${msg_receipt_partner_id_partner_label}">Ihre Geschäftspartner-ID:</span>
+    <span class="value" th:text="${receipt.businessPartnerId}">a3f31a611c6f</span>
+</div>
+
+<!-- Title -->
+<h1 th:text="${msg_receipt_overview_headline}">Zahlungsbeleg</h1>
+
+<!-- Items -->
+<table class="items-table">
+    <thead>
+    <tr>
+        <th style="width: 75%;" th:text="${msg_receipt_overview_item_label}">Bezeichnung</th>
+        <th class="text-right" style="width: 25%;"
+            th:text="${msg_receipt_overview_price_label} + ' ' + ${receipt.currency}">Total CHF</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="item, iterStat : ${receipt.items}">
+        <td th:text="${item.quantity > 1} ? ${item.quantity} + ' × ' + ${__${'msg_itemDesc_' + iterStat.index}__} : ${__${'msg_itemDesc_' + iterStat.index}__}">swiyu Basisregister</td>
+        <td class="text-right" th:text="${#numbers.formatDecimal(item.totalAmount, 1, 2, 'POINT')}">500.00</td>
+    </tr>
+    <tr class="total-row">
+        <td th:text="${msg_receipt_overview_sum_label}">Total Bestellung</td>
+        <td class="text-right" th:text="${#numbers.formatDecimal(receipt.totalAmount, 1, 2, 'POINT')}">500.00</td>
+    </tr>
+    </tbody>
+</table>
+
+</body>
+</html>

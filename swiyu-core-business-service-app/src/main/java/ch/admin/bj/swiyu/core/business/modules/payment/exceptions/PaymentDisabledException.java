@@ -4,7 +4,7 @@ import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessException;
 import ch.admin.bj.swiyu.core.business.common.exceptions.BusinessExceptionErrorCode;
 
 /**
- * The payment feature (EIDARTFE_1297_PAYMENT) is disabled on this stage.
+ * The payment functionality (app.functionality.payment-enabled) is disabled on this stage.
  */
 public class PaymentDisabledException extends BusinessException {
 

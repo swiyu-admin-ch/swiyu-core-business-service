@@ -23,7 +23,7 @@ import org.thymeleaf.context.Context;
  * <p>A template is an HTML document with one {@code <section lang="...">} per language, in the order
  * DE / FR / IT / EN, and the subject - all four languages separated by "/" - in its {@code <title>}.
  * The stylesheet and the closing signature come from the fragments under
- * {@code email-templates/fragments}.
+ * {@code templates/email/fragments}.
  *
  * <p>The subject is read back out of the rendered document rather than from a separate front matter
  * block, so it goes through Thymeleaf like everything else and may contain variables. The stage

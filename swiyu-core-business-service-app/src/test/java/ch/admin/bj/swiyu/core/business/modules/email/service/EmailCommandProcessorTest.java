@@ -52,7 +52,7 @@ class EmailCommandProcessorTest {
         return new EmailCommandProcessor(
             sentNotificationService,
             emailSendService,
-            new FunctionalityProperties(emailEnabled),
+            new FunctionalityProperties(emailEnabled, false),
             auditPublisher
         );
     }

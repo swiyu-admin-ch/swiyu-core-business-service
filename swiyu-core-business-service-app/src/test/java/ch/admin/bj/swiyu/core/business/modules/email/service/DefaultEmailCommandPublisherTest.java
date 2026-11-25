@@ -88,7 +88,7 @@ class DefaultEmailCommandPublisherTest {
             outbox,
             renderer,
             mailProperties,
-            new FunctionalityProperties(emailEnabled),
+            new FunctionalityProperties(emailEnabled, false),
             businessPartnerService,
             sentNotificationService
         );

@@ -10,7 +10,7 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 @Configuration
 public class MailConfig {
 
-    public static final String TEMPLATE_PREFIX = "email-templates/";
+    public static final String TEMPLATE_PREFIX = "templates/email/";
     public static final String TEMPLATE_SUFFIX = ".html";
 
     /**

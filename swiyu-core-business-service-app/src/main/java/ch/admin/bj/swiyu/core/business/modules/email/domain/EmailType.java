@@ -29,7 +29,7 @@ public enum EmailType {
     TRUST_RENEWAL_REMINDER("trust-renewal-reminder");
 
     /**
-     * Name of the Thymeleaf template under {@code src/main/resources/email-templates}, without the
+     * Name of the Thymeleaf template under {@code src/main/resources/templates/email}, without the
      * {@code .html} suffix.
      */
     private final String templateName;

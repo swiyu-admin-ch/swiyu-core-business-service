@@ -21,6 +21,7 @@ app:
     data-service-base-url: https://trust-reg-d.trust-infra.swiyu.admin.ch/
   functionality:
     email-enabled: true # local Kafka only, no SMTP consumer attached
+    payment-enabled: true
   mail:
     # Non-prod stages send from the test mailbox, see "Email (Mailhost via BIT)"
     from: test-registries@swiyu.admin.ch
@@ -180,4 +181,3 @@ features:
   EIDARTFE_754_VC_SCHEMA: true
   EIDARTFE_1204_TRUST_ADD_DIDS: true
   EIDARTFE_1220_PROOF_OF_POSSESSION: true
-  EIDARTFE_1297_PAYMENT: true

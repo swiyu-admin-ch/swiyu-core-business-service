@@ -94,6 +94,7 @@ app:
     partner-id: 40f377d5-cd11-458a-944b-0c4f73f2ddaa # DEV/REF
   functionality:
     email-enabled: true
+    payment-enabled: true
   mail:
     from: registries@swiyu.admin.ch
     reply-to: registries@swiyu.admin.ch
@@ -237,5 +238,4 @@ logging:
 features:
   EIDARTFE_754_VC_SCHEMA: true
   EIDARTFE_1220_PROOF_OF_POSSESSION: true
-  EIDARTFE_1297_PAYMENT: true
 

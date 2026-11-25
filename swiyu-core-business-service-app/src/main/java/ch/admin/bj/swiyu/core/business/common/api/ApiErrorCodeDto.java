@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
            | max_size_exceeded                           | Indicates that the maximum size was exceeded.                                         |
            | object_count_limit_reached                  | Indicates that the object count limit was reached.                                    |
            | payment_disabled                            | Indicates that the payment feature is currently disabled.                             |
+           | payment_receipt_not_available               | Indicates that the payment receipt is not available for the given payment.            |
            | payment_return_url_not_allowed              | Indicates that the given return URL is not in the configured allowed origins.         |
            | status_list_validation_failed               | Indicates that the status list validation failed.                                     |
            | trust_onboarding_document_validation_failed | Indicates that the trust onboarding document validation failed.                       |
@@ -52,6 +53,7 @@ public enum ApiErrorCodeDto {
     PAYMENT_ALREADY_PENDING("payment_already_pending"),
     PAYMENT_DISABLED("payment_disabled"),
     PAYMENT_NOT_RETRYABLE("payment_not_retryable"),
+    PAYMENT_RECEIPT_NOT_AVAILABLE("payment_receipt_not_available"),
     PAYMENT_RETURN_URL_NOT_ALLOWED("payment_return_url_not_allowed"),
     STATUS_LIST_VALIDATION_FAILED("status_list_validation_failed"),
     TRUST_ONBOARDING_DOCUMENT_VALIDATION_FAILED("trust_onboarding_document_validation_failed"),

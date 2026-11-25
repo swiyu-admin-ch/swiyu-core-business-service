@@ -1,14 +1,19 @@
 package ch.admin.bj.swiyu.core.business.modules.payment.infrastructure.web;
 
 import ch.admin.bj.swiyu.core.business.common.api.ApiErrorDto;
-import ch.admin.bj.swiyu.core.business.common.features.FeaturesProperties;
+import ch.admin.bj.swiyu.core.business.common.config.FunctionalityProperties;
+import ch.admin.bj.swiyu.core.business.common.exceptions.PaymentReceiptNotAvailableException;
+import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.common.security.AuthSupport;
+import ch.admin.bj.swiyu.core.business.common.service.mapper.LanguageMapper;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentFilterDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentInitializationRequestDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentInitializationResponseDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentRetryRequestDto;
+import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentStatusDto;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentDisabledException;
+import ch.admin.bj.swiyu.core.business.modules.payment.service.PaymentReceiptPdfService;
 import ch.admin.bj.swiyu.core.business.modules.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,7 +21,9 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
@@ -25,7 +32,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PagedModel;
 import org.springframework.data.web.SortDefault;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +43,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,8 +54,9 @@ import org.springframework.web.bind.annotation.RestController;
 class PaymentInternalController {
 
     private final PaymentService paymentService;
+    private final PaymentReceiptPdfService paymentReceiptPdfService;
     private final AuthSupport authSupport;
-    private final FeaturesProperties featuresProperties;
+    private final FunctionalityProperties functionalityProperties;
 
     @GetMapping
     @PreAuthorize("hasRole('payment','read')")
@@ -98,6 +110,62 @@ class PaymentInternalController {
     public PaymentDto getPayment(@PathVariable UUID paymentId) {
         ensurePaymentEnabled();
         return paymentService.getPayment(paymentId);
+    }
+
+    @GetMapping("/business-partner/{businessPartnerId}/payment/{paymentId}/receipt")
+    @PreAuthorize("hasRoleForPartner('payment','read', #businessPartnerId.toString())")
+    @Operation(summary = "Download a PDF payment receipt for a succeeded payment.")
+    @ApiResponse(responseCode = "200", description = "PDF receipt", content = @Content(mediaType = "application/pdf"))
+    @ApiResponse(
+        responseCode = "404",
+        description = "Payment not found. Possible error codes: RESOURCE_NOT_FOUND.",
+        content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorDto.class))
+    )
+    @ApiResponse(
+        responseCode = "409",
+        description = "Payment status is not SUCCEEDED. Possible error codes: PAYMENT_RECEIPT_NOT_AVAILABLE.",
+        content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorDto.class))
+    )
+    @ApiResponse(
+        responseCode = "403",
+        description = "Not authorized.",
+        content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorDto.class))
+    )
+    public void getPaymentReceipt(
+        @PathVariable UUID businessPartnerId,
+        @PathVariable UUID paymentId,
+        @RequestParam(required = false) String locale,
+        HttpServletResponse response
+    ) throws IOException {
+        ensurePaymentEnabled();
+
+        // First, load the payment to get the referenceId for the filename and verify access
+        PaymentDto payment = paymentService.getPayment(paymentId);
+
+        if (!payment.businessPartnerId().equals(businessPartnerId)) {
+            throw new ResourceNotFoundException("No payment found with id " + paymentId);
+        }
+
+        // Only allow receipt generation for SUCCEEDED payments
+        if (payment.status() != PaymentStatusDto.SUCCEEDED) {
+            throw new PaymentReceiptNotAvailableException(
+                "Receipt can only be generated for SUCCEEDED payments. Current status: " + payment.status()
+            );
+        }
+
+        String filename = "receipt-" + payment.referenceId() + ".pdf";
+
+        response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+        response.setHeader(
+            HttpHeaders.CONTENT_DISPOSITION,
+            ContentDisposition.attachment().filename(filename).build().toString()
+        );
+        paymentReceiptPdfService.writeReceipt(
+            paymentId,
+            businessPartnerId,
+            LanguageMapper.fromLanguageTag(locale),
+            response.getOutputStream()
+        );
     }
 
     @PostMapping("/initiate")
@@ -156,7 +224,7 @@ class PaymentInternalController {
     }
 
     private void ensurePaymentEnabled() {
-        if (!Boolean.TRUE.equals(featuresProperties.getEidartfe1297Payment())) {
+        if (!Boolean.TRUE.equals(functionalityProperties.paymentEnabled())) {
             throw new PaymentDisabledException();
         }
     }

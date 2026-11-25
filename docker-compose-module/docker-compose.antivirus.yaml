@@ -1,6 +1,6 @@
 services:
   antivirus:
-    image: mockserver/mockserver:7.6.0
+    image: mockserver/mockserver:9.4.0
     container_name: antivirus
     ports:
       - "8203:8203"

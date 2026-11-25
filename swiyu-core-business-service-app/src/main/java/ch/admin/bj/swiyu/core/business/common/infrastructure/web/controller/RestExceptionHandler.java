@@ -7,6 +7,7 @@ import static ch.admin.bj.swiyu.core.business.common.infrastructure.web.controll
 
 import ch.admin.bj.swiyu.core.business.common.api.ApiErrorDto;
 import ch.admin.bj.swiyu.core.business.common.exceptions.*;
+import ch.admin.bj.swiyu.core.business.common.exceptions.PaymentReceiptNotAvailableException;
 import ch.admin.bj.swiyu.registry.identifier.common.exception.DidEntityNotFoundException;
 import ch.admin.bj.swiyu.registry.identifier.common.exception.DidEntityNotReadyException;
 import ch.admin.bj.swiyu.registry.status.common.exception.StatusListNotFoundException;
@@ -115,6 +116,12 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiErrorDto> handleConstraintViolations(final BusinessException e) {
         log.info("DataIntegrity ViolationException created.", e);
         return new ResponseEntity<>(toApiErrorDto(e.getErrorCode(), e.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(PaymentReceiptNotAvailableException.class)
+    public ResponseEntity<ApiErrorDto> handlePaymentReceiptNotAvailable(final PaymentReceiptNotAvailableException e) {
+        log.info("Payment receipt not available", e);
+        return new ResponseEntity<>(toApiErrorDto(e.getErrorCode(), e.getMessage()), HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(BusinessException.class)

@@ -3,7 +3,7 @@ package ch.admin.bj.swiyu.core.business.modules.payment.config;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ch.admin.bj.swiyu.core.business.common.features.FeaturesProperties;
+import ch.admin.bj.swiyu.core.business.common.config.FunctionalityProperties;
 import ch.admin.bj.swiyu.core.business.modules.payment.config.PaymentProperties.SaferpayProperties;
 import java.net.URI;
 import java.util.List;
@@ -49,13 +49,12 @@ class PaymentConfigTest {
         List<String> allowedReturnOrigins,
         SaferpayProperties saferpay
     ) {
-        var features = new FeaturesProperties();
-        features.setEidartfe1297Payment(paymentEnabled);
+        var functionality = new FunctionalityProperties(true, paymentEnabled);
         var properties = new PaymentProperties(
             allowedReturnOrigins,
             saferpay,
             List.of(new PaymentProperties.Product("BASE_REGISTRATION", "Base", 15_000))
         );
-        return new PaymentConfig(features, properties);
+        return new PaymentConfig(functionality, properties);
     }
 }

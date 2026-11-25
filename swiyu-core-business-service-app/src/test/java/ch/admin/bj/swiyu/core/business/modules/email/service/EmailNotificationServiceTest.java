@@ -61,7 +61,7 @@ class EmailNotificationServiceTest {
             businessPartnerService,
             trustOnboardingService,
             emailCommandPublisher,
-            new FunctionalityProperties(emailEnabled)
+            new FunctionalityProperties(emailEnabled, false)
         );
     }
 }

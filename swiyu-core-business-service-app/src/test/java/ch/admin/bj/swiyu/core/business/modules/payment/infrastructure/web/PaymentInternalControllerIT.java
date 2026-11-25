@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -539,5 +540,226 @@ class PaymentInternalControllerIT {
             ProductTypeDto.BASE_REGISTRATION,
             URI.create(returnUrl).toURL()
         );
+    }
+
+    // ===== Receipt Tests =====
+
+    private static final String RECEIPT_URL_BASE = "/api/v2/internal/payment/business-partner";
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = READ_ROLE)
+    void getPaymentReceipt_succeededPayment_returnsPdf() throws Exception {
+        var payment = saveSucceededPayment(ENTITY_A, "P-A3F8B2C1");
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.get(
+                    RECEIPT_URL_BASE + "/" + ENTITY_A_S + "/payment/" + payment.getId() + "/receipt"
+                )
+            )
+            .andExpect(status().isOk())
+            .andExpect(header().string("Content-Type", "application/pdf"))
+            .andExpect(header().string("Content-Disposition", "attachment; filename=\"receipt-P-A3F8B2C1.pdf\""))
+            .andExpect(result -> {
+                byte[] content = result.getResponse().getContentAsByteArray();
+                assertThat(content).isNotNull();
+                assertThat(content.length).isGreaterThan(0);
+                // PDF files start with %PDF
+                assertThat(new String(content, 0, 4)).isEqualTo("%PDF");
+            });
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = READ_ROLE)
+    void getPaymentReceipt_succeededPayment_withGermanLocale_returnsPdf() throws Exception {
+        var payment = saveSucceededPayment(ENTITY_A, "P-A3F8B2C1");
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.get(
+                    RECEIPT_URL_BASE + "/" + ENTITY_A_S + "/payment/" + payment.getId() + "/receipt"
+                ).param("locale", "de")
+            )
+            .andExpect(status().isOk())
+            .andExpect(header().string("Content-Type", "application/pdf"))
+            .andExpect(header().string("Content-Disposition", "attachment; filename=\"receipt-P-A3F8B2C1.pdf\""))
+            .andExpect(result -> {
+                byte[] content = result.getResponse().getContentAsByteArray();
+                assertThat(content).isNotNull();
+                assertThat(content.length).isGreaterThan(0);
+                assertThat(new String(content, 0, 4)).isEqualTo("%PDF");
+            });
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = READ_ROLE)
+    void getPaymentReceipt_succeededPayment_withFrenchLocale_returnsPdf() throws Exception {
+        var payment = saveSucceededPayment(ENTITY_A, "P-A3F8B2C1");
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.get(
+                    RECEIPT_URL_BASE + "/" + ENTITY_A_S + "/payment/" + payment.getId() + "/receipt"
+                ).param("locale", "fr")
+            )
+            .andExpect(status().isOk())
+            .andExpect(header().string("Content-Type", "application/pdf"))
+            .andExpect(header().string("Content-Disposition", "attachment; filename=\"receipt-P-A3F8B2C1.pdf\""));
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = READ_ROLE)
+    void getPaymentReceipt_succeededPayment_withItalianLocale_returnsPdf() throws Exception {
+        var payment = saveSucceededPayment(ENTITY_A, "P-A3F8B2C1");
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.get(
+                    RECEIPT_URL_BASE + "/" + ENTITY_A_S + "/payment/" + payment.getId() + "/receipt"
+                ).param("locale", "it")
+            )
+            .andExpect(status().isOk())
+            .andExpect(header().string("Content-Type", "application/pdf"))
+            .andExpect(header().string("Content-Disposition", "attachment; filename=\"receipt-P-A3F8B2C1.pdf\""));
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = READ_ROLE)
+    void getPaymentReceipt_succeededPayment_withUnsupportedLocale_fallsBackToEnglish() throws Exception {
+        var payment = saveSucceededPayment(ENTITY_A, "P-A3F8B2C1");
+
+        // Unsupported locale should fall back to English (no error, just uses default)
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.get(
+                    RECEIPT_URL_BASE + "/" + ENTITY_A_S + "/payment/" + payment.getId() + "/receipt"
+                ).param("locale", "es")
+            )
+            .andExpect(status().isOk())
+            .andExpect(header().string("Content-Type", "application/pdf"))
+            .andExpect(header().string("Content-Disposition", "attachment; filename=\"receipt-P-A3F8B2C1.pdf\""));
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = READ_ROLE)
+    void getPaymentReceipt_paymentNotFound_returns404() throws Exception {
+        var nonExistentPaymentId = UUID.randomUUID();
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.get(
+                    RECEIPT_URL_BASE + "/" + ENTITY_A_S + "/payment/" + nonExistentPaymentId + "/receipt"
+                )
+            )
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.errorCode").value("resource_not_found"));
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = READ_ROLE)
+    void getPaymentReceipt_pendingPayment_returns409() throws Exception {
+        var payment = savePayment(ENTITY_A, "P-00000001"); // PENDING by default
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.get(
+                    RECEIPT_URL_BASE + "/" + ENTITY_A_S + "/payment/" + payment.getId() + "/receipt"
+                )
+            )
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.errorCode").value("payment_receipt_not_available"))
+            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("SUCCEEDED")));
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = READ_ROLE)
+    void getPaymentReceipt_failedPayment_returns409() throws Exception {
+        var payment = savePayment(ENTITY_A, "P-00000001");
+        payment.markAsFailed();
+        repos.payment.saveAndFlush(payment);
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.get(
+                    RECEIPT_URL_BASE + "/" + ENTITY_A_S + "/payment/" + payment.getId() + "/receipt"
+                )
+            )
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.errorCode").value("payment_receipt_not_available"));
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = READ_ROLE)
+    void getPaymentReceipt_cancelledPayment_returns409() throws Exception {
+        var payment = savePayment(ENTITY_A, "P-00000001");
+        payment.markAsCancelled();
+        repos.payment.saveAndFlush(payment);
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.get(
+                    RECEIPT_URL_BASE + "/" + ENTITY_A_S + "/payment/" + payment.getId() + "/receipt"
+                )
+            )
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.errorCode").value("payment_receipt_not_available"));
+    }
+
+    @Test
+    @WithExtendedJeapAuthenticationToken(bpRoles = ENTITY_B_S + "=" + READ_ROLE)
+    void getPaymentReceipt_roleForOtherPartner_returns403() throws Exception {
+        // Payment belongs to ENTITY_A, but we only have read role for ENTITY_B
+        var payment = saveSucceededPayment(ENTITY_A, "P-A3F8B2C1");
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.get(
+                    RECEIPT_URL_BASE + "/" + ENTITY_A_S + "/payment/" + payment.getId() + "/receipt"
+                )
+            )
+            .andExpect(status().isForbidden()); // @PostAuthorize denies access with 403
+    }
+
+    @Test
+    @WithJeapAuthenticationToken(userRoles = WRITE_ROLE)
+    void getPaymentReceipt_missingReadRole_returns403() throws Exception {
+        var payment = saveSucceededPayment(ENTITY_A, "P-A3F8B2C1");
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.get(
+                    RECEIPT_URL_BASE + "/" + ENTITY_A_S + "/payment/" + payment.getId() + "/receipt"
+                )
+            )
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithJeapAuthenticationToken
+    void getPaymentReceipt_noRole_returns403() throws Exception {
+        var payment = saveSucceededPayment(ENTITY_A, "P-A3F8B2C1");
+
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.get(
+                    RECEIPT_URL_BASE + "/" + ENTITY_A_S + "/payment/" + payment.getId() + "/receipt"
+                )
+            )
+            .andExpect(status().isForbidden());
+    }
+
+    private Payment saveSucceededPayment(UUID businessPartnerId, String referenceId) {
+        var id = UUID.randomUUID();
+        var payment = new Payment(
+            id,
+            businessPartnerId,
+            referenceId,
+            ProductType.BASE_REGISTRATION,
+            Amount.chf(15_000),
+            "https://portal.example.local/callback/" + id
+        );
+        // Mark as succeeded with all receipt-relevant fields
+        payment.markAsSucceeded("txn-" + id, Instant.now(), "VISA", "J. Doe", true);
+        return repos.payment.saveAndFlush(payment);
     }
 }

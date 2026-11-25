@@ -7,7 +7,7 @@ services:
   # through its API. Keeping both ends on Mailpit means a green local run exercises the same
   # code path as the one on DEV; MailHog, which this replaces, has an incompatible API.
   mailpit:
-    image: axllent/mailpit:v1.31.1
+    image: axllent/mailpit:v1.34.0
     container_name: mailpit
     ports:
       - "1025:1025" # SMTP

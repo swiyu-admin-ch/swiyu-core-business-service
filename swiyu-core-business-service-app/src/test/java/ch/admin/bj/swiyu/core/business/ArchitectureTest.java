@@ -277,6 +277,11 @@ public class ArchitectureTest {
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.payment.service.."),
                 resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.service..")
             )
+            // payment -> management.api (receipt generation reads the partner's name, uid and address)
+            .ignoreDependency(
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.payment.service.."),
+                resideInAPackage("ch.admin.bj.swiyu.core.business.modules.management.api..")
+            )
             // demodata -> allow all
             .ignoreDependency(resideInAPackage("..core.business.modules.dataimport.."), alwaysTrue());
     }

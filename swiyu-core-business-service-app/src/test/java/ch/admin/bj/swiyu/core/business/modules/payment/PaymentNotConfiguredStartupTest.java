@@ -2,7 +2,7 @@ package ch.admin.bj.swiyu.core.business.modules.payment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ch.admin.bj.swiyu.core.business.common.features.FeaturesProperties;
+import ch.admin.bj.swiyu.core.business.common.config.FunctionalityProperties;
 import ch.admin.bj.swiyu.core.business.modules.payment.config.PaymentConfig;
 import ch.admin.bj.swiyu.core.business.modules.payment.config.PaymentProperties;
 import ch.admin.bj.swiyu.core.business.modules.payment.config.SaferpayConfig;
@@ -38,12 +38,12 @@ class PaymentNotConfiguredStartupTest {
             )
         )
         .withUserConfiguration(PaymentTestConfiguration.class)
-        .withPropertyValues("saferpay.mock=false");
+        .withPropertyValues("saferpay.mock=false", "app.functionality.email-enabled=true");
 
     @Test
     void paymentDisabledAndNothingConfigured_contextStarts() {
         contextRunner
-            .withPropertyValues("features.EIDARTFE_1297_PAYMENT=false")
+            .withPropertyValues("app.functionality.payment-enabled=false")
             .run(context -> {
                 assertThat(context).hasNotFailed();
                 assertThat(context.getBean(SaferpayClient.class)).isInstanceOf(DefaultSaferpayClient.class);
@@ -54,7 +54,7 @@ class PaymentNotConfiguredStartupTest {
     @Test
     void paymentEnabledAndNothingConfigured_contextFailsNamingTheMissingProperties() {
         contextRunner
-            .withPropertyValues("features.EIDARTFE_1297_PAYMENT=true")
+            .withPropertyValues("app.functionality.payment-enabled=true")
             .run(context ->
                 assertThat(context)
                     .getFailure()
@@ -65,7 +65,7 @@ class PaymentNotConfiguredStartupTest {
     }
 
     @Configuration
-    @EnableConfigurationProperties({ PaymentProperties.class, FeaturesProperties.class })
+    @EnableConfigurationProperties({ PaymentProperties.class, FunctionalityProperties.class })
     @Import({ PaymentConfig.class, SaferpayConfig.class, DefaultSaferpayClient.class })
     static class PaymentTestConfiguration {}
 }

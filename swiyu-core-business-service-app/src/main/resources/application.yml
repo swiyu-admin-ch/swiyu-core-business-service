@@ -8,6 +8,7 @@ app:
     partner-id: ${GOVERNMENTAL_ALLOWLIST_PARTNER_ID:}
   functionality:
     email-enabled: ${FUNCTIONALITY_EMAIL_ENABLED:}
+    payment-enabled: ${FUNCTIONALITY_PAYMENT_ENABLED:false}
   mail:
     from: ${MAIL_FROM:}
     reply-to: ${MAIL_REPLY_TO:}
@@ -95,8 +96,8 @@ pams:
     private-key: ${MANAGEMENT_PAMS_API_PRIVATE_KEY:}
   auto-applied-profile-group-id: "${MANAGEMENT_PAMS_AUTO_APPLIED_PROFILE_GROUP_ID:PublicBetaEcosystem}"
 
-# allowed-return-origins and saferpay.terminal-id/customer-id/base-url may stay empty while the feature
-# EIDARTFE_1297_PAYMENT is disabled. When it is enabled the application refuses to start without them.
+# allowed-return-origins and saferpay.terminal-id/customer-id/base-url may stay empty while the payment
+# functionality is disabled. When it is enabled the application refuses to start without them.
 payment:
   allowed-return-origins: ${PAYMENT_ALLOWED_RETURN_ORIGINS:}
   saferpay:
@@ -300,4 +301,3 @@ features:
   EIDARTFE_754_VC_SCHEMA: ${FEATURES_EIDARTFE_754_VC_SCHEMA:false}
   EIDARTFE_1220_PROOF_OF_POSSESSION: ${FEATURES_EIDARTFE_1220_PROOF_OF_POSSESSION:false}
   EIDARTFE_1204_TRUST_ADD_DIDS: ${FEATURES_EIDARTFE_1204_TRUST_ADD_DIDS:false}
-  EIDARTFE_1297_PAYMENT: ${FEATURES_EIDARTFE_1297_PAYMENT:false}

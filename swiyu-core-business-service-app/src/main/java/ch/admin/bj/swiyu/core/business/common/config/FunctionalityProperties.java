@@ -13,8 +13,9 @@ import org.springframework.validation.annotation.Validated;
  * {@link ch.admin.bj.swiyu.core.business.common.features.FeaturesProperties}, which mark work in
  * progress and are removed once the corresponding story is rolled out.
  *
- * @param emailEnabled If disabled, no partner notification email is published
+ * @param emailEnabled   If disabled, no partner notification email is published
+ * @param paymentEnabled If disabled, the payment API is unavailable
  */
 @Validated
 @ConfigurationProperties(prefix = "app.functionality")
-public record FunctionalityProperties(@NotNull Boolean emailEnabled) {}
+public record FunctionalityProperties(@NotNull Boolean emailEnabled, @NotNull Boolean paymentEnabled) {}

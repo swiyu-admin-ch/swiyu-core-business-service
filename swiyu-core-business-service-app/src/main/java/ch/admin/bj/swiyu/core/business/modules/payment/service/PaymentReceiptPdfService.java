@@ -14,12 +14,7 @@ import ch.admin.bj.swiyu.core.business.modules.payment.domain.receipt.PaymentRec
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.receipt.PaymentReceiptPdfGenerator;
 import java.io.OutputStream;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -48,6 +43,10 @@ public class PaymentReceiptPdfService {
     private final BusinessPartnerService businessPartnerService;
     private final PaymentReceiptPdfGenerator pdfGenerator;
     private final MessageSource receiptMessageSource;
+
+    private static ResourceNotFoundException paymentNotFound(UUID paymentId) {
+        return new ResourceNotFoundException("No payment found with id " + paymentId);
+    }
 
     /**
      * Writes a payment receipt PDF for a successfully paid payment to the supplied stream.
@@ -162,8 +161,8 @@ public class PaymentReceiptPdfService {
         return switch (product) {
             case BASE_REGISTRATION -> "eportal_global_product.BR_name.localized";
             // Future products:
-            // case TRUST_REGISTRATION -> "eportal_global_product.TR_name.localized";
-            // case DID -> "eportal_global_product.DID_name";
+            // NOSONAR case TRUST_REGISTRATION -> "eportal_global_product.TR_name.localized";
+            // NOSONAR case DID -> "eportal_global_product.DID_name";
             default -> "eportal_global_product." + product.name() + "_name.localized";
         };
     }
@@ -179,7 +178,7 @@ public class PaymentReceiptPdfService {
         if (addr.street() != null) {
             sb.append(addr.street());
         }
-        if (sb.length() > 0) sb.append(", ");
+        if (!sb.isEmpty()) sb.append(", ");
         if (addr.postalCode() != null) {
             sb.append(addr.postalCode()).append(" ");
         }
@@ -190,9 +189,5 @@ public class PaymentReceiptPdfService {
             sb.append(", ").append(addr.country());
         }
         return sb.toString();
-    }
-
-    private static ResourceNotFoundException paymentNotFound(UUID paymentId) {
-        return new ResourceNotFoundException("No payment found with id " + paymentId);
     }
 }

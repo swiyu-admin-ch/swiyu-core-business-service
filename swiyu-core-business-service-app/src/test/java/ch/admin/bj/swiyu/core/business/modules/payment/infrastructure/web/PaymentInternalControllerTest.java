@@ -4,23 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import ch.admin.bj.swiyu.core.business.common.api.ProductTypeDto;
 import ch.admin.bj.swiyu.core.business.common.config.FunctionalityProperties;
 import ch.admin.bj.swiyu.core.business.common.domain.Language;
 import ch.admin.bj.swiyu.core.business.common.exceptions.PaymentReceiptNotAvailableException;
 import ch.admin.bj.swiyu.core.business.common.security.AuthSupport;
-import ch.admin.bj.swiyu.core.business.modules.payment.api.AmountDto;
-import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentDto;
-import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentFilterDto;
-import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentInitializationRequestDto;
-import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentRetryRequestDto;
-import ch.admin.bj.swiyu.core.business.modules.payment.api.PaymentStatusDto;
+import ch.admin.bj.swiyu.core.business.modules.payment.api.*;
 import ch.admin.bj.swiyu.core.business.modules.payment.exceptions.PaymentDisabledException;
 import ch.admin.bj.swiyu.core.business.modules.payment.service.PaymentReceiptPdfService;
 import ch.admin.bj.swiyu.core.business.modules.payment.service.PaymentService;
@@ -66,15 +57,17 @@ class PaymentInternalControllerTest {
 
         assertThatThrownBy(() -> controller.initiatePayment(request)).isInstanceOf(PaymentDisabledException.class);
         assertThatThrownBy(() -> controller.retryPayment(retryRequest)).isInstanceOf(PaymentDisabledException.class);
+        var randomUUID = UUID.randomUUID();
+        var mockHttpServletResponse = new MockHttpServletResponse();
         assertThatThrownBy(() ->
-            controller.getPaymentReceipt(UUID.randomUUID(), paymentId, null, new MockHttpServletResponse())
+            controller.getPaymentReceipt(randomUUID, paymentId, null, mockHttpServletResponse)
         ).isInstanceOf(PaymentDisabledException.class);
         verifyNoInteractions(paymentService);
         verifyNoInteractions(paymentReceiptPdfService);
     }
 
     @Test
-    void getPaymentReceipt_featureEnabled_paymentNotFound_throwsResourceNotFound() throws Exception {
+    void getPaymentReceipt_featureEnabled_paymentNotFound_throwsResourceNotFound() {
         var functionality = new FunctionalityProperties(true, true);
         var enabledController = new PaymentInternalController(
             paymentService,
@@ -96,7 +89,7 @@ class PaymentInternalControllerTest {
     }
 
     @Test
-    void getPaymentReceipt_featureEnabled_paymentNotSucceeded_throwsPaymentReceiptNotAvailable() throws Exception {
+    void getPaymentReceipt_featureEnabled_paymentNotSucceeded_throwsPaymentReceiptNotAvailable() {
         var functionality = new FunctionalityProperties(true, true);
         var enabledController = new PaymentInternalController(
             paymentService,
@@ -123,8 +116,9 @@ class PaymentInternalControllerTest {
 
         when(paymentService.getPayment(paymentId)).thenReturn(paymentDto);
 
+        var mockHttpServletResponse = new MockHttpServletResponse();
         assertThatThrownBy(() ->
-            enabledController.getPaymentReceipt(businessPartnerId, paymentId, "de", new MockHttpServletResponse())
+            enabledController.getPaymentReceipt(businessPartnerId, paymentId, "de", mockHttpServletResponse)
         ).isInstanceOf(PaymentReceiptNotAvailableException.class);
     }
 

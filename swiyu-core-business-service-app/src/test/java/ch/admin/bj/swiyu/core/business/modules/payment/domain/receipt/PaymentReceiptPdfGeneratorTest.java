@@ -101,6 +101,7 @@ class PaymentReceiptPdfGeneratorTest {
     void generatePdf_localDevelopment_opensPdf() throws Exception {
         var output = new ByteArrayOutputStream();
         generator.generatePdf(createSampleData(Locale.GERMAN), Locale.GERMAN, output);
+        assertThat(output.size()).isGreaterThan(0);
         writeAndOpenPdf(output.toByteArray());
     }
 

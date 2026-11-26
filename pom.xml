@@ -4,7 +4,7 @@
 
     <groupId>ch.admin.bj.swiyu</groupId>
     <artifactId>swiyu-core-business-service</artifactId>
-    <version>4.18.0-SNAPSHOT</version>
+    <version>4.18.2-SNAPSHOT</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>ch.admin.bit.jeap</groupId>
@@ -14,13 +14,17 @@
             from the dependencyManagement section
          -->
         <!-- see https://github.com/jeap-admin-ch/jeap-spring-boot-parent/blob/main/CHANGELOG.md -->
-        <version>41.41.0</version>
+        <version>41.42.0</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
 
     <properties>
         <java.version>25</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
+        <!-- CVE override: the parent chain manages postgresql 42.7.14, 42.7.15 fixes the
+             SQL injection and failing-open findings (SNYK-JAVA-ORGPOSTGRESQL-22911540,
+             -22922528, -22928030, -22946104, -22953403, -22957226, -22957227). -->
+        <postgresql.version>42.7.15</postgresql.version>
         <archunit-junit5.version>1.5.1</archunit-junit5.version>
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
         <spotless-maven-plugin.version>3.12.0</spotless-maven-plugin.version>
@@ -66,6 +70,70 @@
                 <artifactId>commons-io</artifactId>
                 <version>2.22.0</version>
             </dependency>
+
+            <!-- CVE-OVERRIDES Start -->
+            <!-- The jEAP parent 41.42.0 (the latest) pins every Spring Boot, Spring Framework, Spring
+                 Security and Spring Kafka artifact literally, so the corresponding version properties have
+                 no effect. Spring Boot 4.1.3 is the first release that fixes
+                 SNYK-JAVA-ORGSPRINGFRAMEWORKBOOT-22729051 (high, insecure temporary file,
+                 spring-boot-actuator) and SNYK-JAVA-ORGSPRINGFRAMEWORKBOOT-22730851 (critical, use of
+                 non-canonical URL paths for authorization decisions, spring-boot-security). It ships
+                 Spring Framework 7.0.11 (fixes the spring-beans, spring-core and spring-web findings),
+                 Spring Security 7.1.3 (fixes the spring-security-core, spring-security-web and
+                 spring-security-oauth2-client findings) and Spring Kafka 4.1.3 (fixes the spring-kafka
+                 findings). The framework families are imported as BOMs so their artifacts stay
+                 consistent.
+                 Remove when the parent manages Spring Boot >= 4.1.3. -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot</artifactId>
+                <version>4.1.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-autoconfigure</artifactId>
+                <version>4.1.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-actuator</artifactId>
+                <version>4.1.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+                <version>4.1.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-security</artifactId>
+                <version>4.1.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-kafka</artifactId>
+                <version>4.1.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.kafka</groupId>
+                <artifactId>spring-kafka</artifactId>
+                <version>4.1.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-framework-bom</artifactId>
+                <version>7.0.11</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-bom</artifactId>
+                <version>7.1.3</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- CVE-OVERRIDES End -->
         </dependencies>
     </dependencyManagement>
 

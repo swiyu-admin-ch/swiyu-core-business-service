@@ -4,9 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import ch.admin.bj.swiyu.core.business.common.api.AddressDto;
 import ch.admin.bj.swiyu.core.business.common.api.BusinessPartnerTypeDto;
@@ -14,11 +12,7 @@ import ch.admin.bj.swiyu.core.business.common.domain.Language;
 import ch.admin.bj.swiyu.core.business.common.exceptions.ResourceNotFoundException;
 import ch.admin.bj.swiyu.core.business.modules.management.api.BusinessPartnerDto;
 import ch.admin.bj.swiyu.core.business.modules.management.service.BusinessPartnerService;
-import ch.admin.bj.swiyu.core.business.modules.payment.domain.Amount;
-import ch.admin.bj.swiyu.core.business.modules.payment.domain.Payment;
-import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentRepository;
-import ch.admin.bj.swiyu.core.business.modules.payment.domain.PaymentStatus;
-import ch.admin.bj.swiyu.core.business.modules.payment.domain.ProductType;
+import ch.admin.bj.swiyu.core.business.modules.payment.domain.*;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.receipt.PaymentReceiptData;
 import ch.admin.bj.swiyu.core.business.modules.payment.domain.receipt.PaymentReceiptPdfGenerator;
 import java.io.ByteArrayOutputStream;
@@ -103,9 +97,8 @@ class PaymentReceiptPdfServiceTest {
         );
 
         // When / Then
-        assertThatThrownBy(() ->
-            service.writeReceipt(paymentId, businessPartnerId, Language.EN, new ByteArrayOutputStream())
-        )
+        var byteArrayOutputStream = new ByteArrayOutputStream();
+        assertThatThrownBy(() -> service.writeReceipt(paymentId, businessPartnerId, Language.EN, byteArrayOutputStream))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("SUCCEEDED");
     }
@@ -123,9 +116,8 @@ class PaymentReceiptPdfServiceTest {
         );
 
         // When / Then
-        assertThatThrownBy(() ->
-            service.writeReceipt(paymentId, businessPartnerId, Language.EN, new ByteArrayOutputStream())
-        )
+        var byteArrayOutputStream = new ByteArrayOutputStream();
+        assertThatThrownBy(() -> service.writeReceipt(paymentId, businessPartnerId, Language.EN, byteArrayOutputStream))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("SUCCEEDED");
     }
@@ -143,9 +135,8 @@ class PaymentReceiptPdfServiceTest {
         );
 
         // When / Then
-        assertThatThrownBy(() ->
-            service.writeReceipt(paymentId, businessPartnerId, Language.EN, new ByteArrayOutputStream())
-        )
+        var byteArrayOutputStream = new ByteArrayOutputStream();
+        assertThatThrownBy(() -> service.writeReceipt(paymentId, businessPartnerId, Language.EN, byteArrayOutputStream))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("SUCCEEDED");
     }
@@ -159,8 +150,9 @@ class PaymentReceiptPdfServiceTest {
         when(paymentRepository.findByIdAndBusinessPartnerId(paymentId, businessPartnerId)).thenReturn(Optional.empty());
 
         // When / Then
+        var byteArrayOutputStream = new ByteArrayOutputStream();
         assertThatThrownBy(() ->
-            service.writeReceipt(paymentId, businessPartnerId, Language.EN, new ByteArrayOutputStream())
+            service.writeReceipt(paymentId, businessPartnerId, Language.EN, byteArrayOutputStream)
         ).isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -171,15 +163,16 @@ class PaymentReceiptPdfServiceTest {
         var businessPartnerId = UUID.randomUUID();
         var otherBusinessPartnerId = UUID.randomUUID();
 
-        Payment payment = createPayment(paymentId, businessPartnerId, PaymentStatus.SUCCEEDED);
+        createPayment(paymentId, businessPartnerId, PaymentStatus.SUCCEEDED);
 
         when(paymentRepository.findByIdAndBusinessPartnerId(paymentId, otherBusinessPartnerId)).thenReturn(
             Optional.empty()
         );
 
         // When / Then
+        var byteArrayOutputStream = new ByteArrayOutputStream();
         assertThatThrownBy(() ->
-            service.writeReceipt(paymentId, otherBusinessPartnerId, Language.EN, new ByteArrayOutputStream())
+            service.writeReceipt(paymentId, otherBusinessPartnerId, Language.EN, byteArrayOutputStream)
         ).isInstanceOf(ResourceNotFoundException.class);
     }
 

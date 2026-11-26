@@ -1,18 +1,10 @@
 package ch.admin.bj.swiyu.core.business.modules.payment.infrastructure.web;
 
-import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.ENTITY_A;
-import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.ENTITY_A_S;
-import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.ENTITY_B;
-import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.ENTITY_B_S;
-import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.insertTestBusinessPartners;
+import static ch.admin.bj.swiyu.core.business.test.BusinessEntityTestData.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import ch.admin.bit.jeap.security.test.WithJeapAuthenticationToken;
 import ch.admin.bj.swiyu.core.business.common.api.ProductTypeDto;
@@ -55,6 +47,11 @@ import tools.jackson.databind.ObjectMapper;
 @SpringBootTest
 @AutoConfigureMockMvc
 @WithAllTestContainerInitializers
+@SuppressWarnings(
+    {
+        "java:S5976", // Do not ennforce parameterized tests
+    }
+)
 class PaymentInternalControllerIT {
 
     private static final String INITIATE_URL = "/api/v2/internal/payment/initiate";
@@ -62,6 +59,7 @@ class PaymentInternalControllerIT {
     private static final String RETRY_URL = "/api/v2/internal/payment/retry";
     private static final String WRITE_ROLE = "ti_@payment_#write";
     private static final String READ_ROLE = "ti_@payment_#read";
+    private static final String RECEIPT_URL_BASE = "/api/v2/internal/payment/business-partner";
 
     @Autowired
     ObjectMapper objectMapper;
@@ -533,6 +531,8 @@ class PaymentInternalControllerIT {
         return new PaymentRetryRequestDto(previousPaymentId, businessPartnerId);
     }
 
+    // ===== Receipt Tests =====
+
     private PaymentInitializationRequestDto request(UUID businessPartnerId, String returnUrl)
         throws MalformedURLException {
         return new PaymentInitializationRequestDto(
@@ -541,10 +541,6 @@ class PaymentInternalControllerIT {
             URI.create(returnUrl).toURL()
         );
     }
-
-    // ===== Receipt Tests =====
-
-    private static final String RECEIPT_URL_BASE = "/api/v2/internal/payment/business-partner";
 
     @Test
     @WithJeapAuthenticationToken(userRoles = READ_ROLE)
@@ -563,7 +559,7 @@ class PaymentInternalControllerIT {
             .andExpect(result -> {
                 byte[] content = result.getResponse().getContentAsByteArray();
                 assertThat(content).isNotNull();
-                assertThat(content.length).isGreaterThan(0);
+                assertThat(content).hasSizeGreaterThan(0);
                 // PDF files start with %PDF
                 assertThat(new String(content, 0, 4)).isEqualTo("%PDF");
             });
@@ -586,7 +582,7 @@ class PaymentInternalControllerIT {
             .andExpect(result -> {
                 byte[] content = result.getResponse().getContentAsByteArray();
                 assertThat(content).isNotNull();
-                assertThat(content.length).isGreaterThan(0);
+                assertThat(content).hasSizeGreaterThan(0);
                 assertThat(new String(content, 0, 4)).isEqualTo("%PDF");
             });
     }

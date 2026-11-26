@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.18.2
+
+### Changed
+
+- Upgrade ch.admin.bit.jeap:jeap-spring-boot-parent from 41.41.0 to 41.42.0
+- Override postgresql to 42.7.15 to fix seven Snyk findings (four critical, three high) in
+  org.postgresql:postgresql 42.7.14 (SQL injection, failing open, uncontrolled search path element)
+- Keep the Spring Boot 4.1.3, Spring Framework 7.0.11, Spring Security 7.1.3 and Spring Kafka 4.1.3
+  overrides: the parent still manages Spring Boot 4.1.2
+- Re-scan the dependency trees and the container image with Snyk: no open high or critical CVE findings.
+  The only remaining Maven finding is the high severity license finding for
+  com.github.albfernandez:juniversalchardet 2.3.0 (GPL-3.0, LGPL-3.0, MPL-1.1), which is not a CVE and has
+  no version-based fix
+
+## 4.18.1
+
+### Changed
+
+- Override Spring Boot to 4.1.3, Spring Framework to 7.0.11, Spring Security to 7.1.3 and Spring Kafka to 4.1.3
+  to fix eleven Snyk findings (three critical, eight high) in spring-boot-actuator, spring-boot-security,
+  spring-beans, spring-core, spring-web, spring-kafka, spring-security-core, spring-security-web and
+  spring-security-oauth2-client; the latest jEAP parent 41.41.0 still manages Spring Boot 4.1.2 and pins the
+  Spring and Spring Kafka versions literally
+- Re-scan the dependency trees and the container image with Snyk: no open high or critical findings
+
 ## 4.18.0
 
 ### Added
